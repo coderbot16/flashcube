@@ -43,7 +43,12 @@
 //! there is no "entity ID" system, as the block position is the unique identifier.
 //!
 
+// Variable length bit collections
 extern crate bit_vec;
 
+// Execution dispatcher
+extern crate shred;
+
+pub mod world;
 pub mod storage;
 pub mod position;

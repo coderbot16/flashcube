@@ -1,5 +1,4 @@
-use level::anvil::NibbleVec;
-use types::position::ChunkPosition;
+use position::ChunkPosition;
 use std::hash::Hash;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -139,6 +138,8 @@ impl<R> Chunk<u16, R> where R: Record<ChunkPosition> {
 		Ok((self.bits, palette, &self.storage.raw_storage()))
 	}
 
+	/*
+	use level::anvil::NibbleVec;
 	/// Returns the Blocks, Metadata, and Add arrays for this chunk.
 	/// Returns Err if unable to resolve an association.
 	pub fn to_anvil(&self) -> Result<(Vec<i8>, NibbleVec, Option<NibbleVec>), usize> {
@@ -179,7 +180,7 @@ impl<R> Chunk<u16, R> where R: Record<ChunkPosition> {
 			
 			Ok((blocks, meta, None))
 		}
-	}
+	}*/
 }
 
 // TODO: THESE FIELDS SHOULD NOT BE PUBLIC!

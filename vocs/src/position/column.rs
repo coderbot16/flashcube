@@ -1,5 +1,4 @@
 use position::ChunkPosition;
-use storage::packed::PackedIndex;
 use position::LayerPosition;
 use std::fmt::{Debug, Formatter, Result};
 

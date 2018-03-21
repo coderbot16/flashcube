@@ -1,4 +1,4 @@
-use position::{ChunkPosition, LayerPosition, GlobalSectorPosition, GlobalColumnPosition, GlobalChunkPosition};
+use position::{ChunkPosition, GlobalSectorPosition, GlobalColumnPosition, GlobalChunkPosition};
 use storage::mask::pool::Pool;
 use storage::mask::{Mask, ChunkMask, LayerMask};
 use storage::mask::scan::Scan;
