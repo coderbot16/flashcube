@@ -8,7 +8,7 @@ mod scan;
 mod pool;
 
 /// Implements sparse masks for blocks, chunks, or layers. This builds on the base masks
-/// provided in the base rs25::storage::mask package;
+/// provided in the base mask package.
 pub mod sparse;
 
 /// Contains SpillChunkMask, allowing relative sets on a ChunkMask that may "spill" over into adjacent ChunkMasks.
@@ -22,6 +22,8 @@ use bit_vec::BitVec;
 use position::{ChunkPosition, LayerPosition};
 use std::ops::Index;
 use std::u64;
+
+// TODO: SparseIncoming mask: Like SparseMask, but ChunkMask is replaced with IncomingChunkMask.
 
 // Hackish constants for implementing Index on bit packed structures.
 const FALSE_REF: &bool = &false;

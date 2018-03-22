@@ -49,6 +49,10 @@ extern crate bit_vec;
 // Execution dispatcher
 extern crate shred;
 
+// Efficient and fine-grained locks
+extern crate parking_lot;
+
 pub mod world;
 pub mod storage;
 pub mod position;
+pub mod system;

@@ -15,3 +15,19 @@ pub mod nibbles;
 pub mod packed;
 
 pub use self::mask::{Mask, ChunkMask, LayerMask};
+
+/// A component usable in an ECS.
+pub trait Component {
+	type ChunkStorage;
+	type LayerStorage;
+}
+
+// TODO: Basic ECS: Allow common tasks to fall under common 7 types, but provide extension with specs. This can avoid dynamic type casting in most cases.
+// bool: ChunkMask
+// u4: ChunkNibbles
+// u8: [u8; 4096]
+// uXX: Packed
+// f32: [f32; 4096]
+// f64: [f64; 4096]
+// String: HashMap<ChunkPosition, String>
+// Entity: A complex struct stored in the local specs ECS.

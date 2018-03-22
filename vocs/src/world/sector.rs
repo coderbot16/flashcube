@@ -1,28 +1,32 @@
 use position::{ChunkPosition, LayerPosition};
 use world::chunk::{Chunk, Target, Record, PaletteAssociation};
+use storage::{Mask, ChunkMask};
 use std::slice;
 use std::ops::Index;
 
 pub struct Sector<T> {
 	chunks: Box<[Option<T>]>,
-	present: usize
-}
-
-impl<T> Sector<T> where T: Clone {
-	pub fn new() -> Self {
-		Sector {
-			chunks: vec![None; 4096].into_boxed_slice(),
-			present: 0
-		}
-	}
+	present: ChunkMask,
+	count: usize
 }
 
 impl<T> Sector<T> {
+	pub fn new() -> Self {
+		let mut chunks = Vec::with_capacity(4096);
+
+		for _ in 0..4096 {
+			chunks.push(None);
+		}
+
+		Sector { chunks: chunks.into_boxed_slice(), present: ChunkMask::default(), count: 0 }
+	}
+
 	pub fn set(&mut self, position: ChunkPosition, chunk: T) {
 		let target = &mut self.chunks[position.yzx() as usize];
 
 		if target.is_none() {
-			self.present += 1;
+			self.present.set_true(position);
+			self.count += 1;
 		}
 
 		*target = Some(chunk);
@@ -32,16 +36,25 @@ impl<T> Sector<T> {
 		let value = self.chunks[position.yzx() as usize].take();
 
 		if value.is_some() {
-			self.present -= 1;
+			self.present.set_false(position);
+			self.count -= 1;
 		}
 
 		value
 	}
 
 	/// Gets a mutable reference to an individual element of the sector,
-	/// This is not implemented as IndexMut because it may cause the internal present counter to get out of sync.
+	/// This is not implemented as IndexMut because it would cause the internal present counter to get out of sync.
 	pub fn get_mut(&mut self, position: ChunkPosition) -> Option<&mut T> {
 		self.chunks[position.yzx() as usize].as_mut()
+	}
+
+	pub fn enumerate_present(&self) -> SectorEnumeratePresent<T> {
+		unimplemented!()
+	}
+
+	pub fn enumerate_present_mut(&self) -> SectorEnumeratePresentMut<T> {
+		unimplemented!()
 	}
 
 	pub fn iter(&self) -> slice::Iter<Option<T>> {
@@ -54,7 +67,7 @@ impl<T> Sector<T> {
 	}
 
 	pub fn is_empty(&self) -> bool {
-		self.present == 0
+		self.count == 0
 	}
 
 	pub fn columns(&self) -> SectorColumns<T> {
@@ -202,6 +215,16 @@ impl<'a, T> Iterator for SectorColumnsMut<'a, T> where T: 'a  {
 
 		Some(chunks)
 	}
+}
+
+pub struct SectorEnumeratePresent<'a, T> where T: 'a {
+	region: &'a Sector<T>,
+	// TODO: ChunkMask iter
+}
+
+pub struct SectorEnumeratePresentMut<'a, T> where T: 'a {
+	region: &'a mut Sector<T>,
+	// TODO: ChunkMask iter_mut
 }
 
 pub struct LayerSector<T> {

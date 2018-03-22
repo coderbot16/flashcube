@@ -2,11 +2,11 @@ use position::ChunkPosition;
 use world::sector::Sector;
 use std::collections::hash_map::{HashMap, Entry, Iter, IterMut};
 
-pub struct World<T> where T: Clone {
+pub struct World<T> {
 	regions: HashMap<(i32, i32), Sector<T>>
 }
 
-impl<T> World<T> where T: Clone {
+impl<T> World<T> {
 	pub fn new() -> Self {
 		World {
 			regions: HashMap::new()
