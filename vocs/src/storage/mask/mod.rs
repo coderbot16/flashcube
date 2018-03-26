@@ -4,9 +4,6 @@ mod scan_clear;
 /// Scans bit collections for set bits.
 mod scan;
 
-/// Implements a primitive pool to prevent excessive reallocation with sparse WorldMasks.
-mod pool;
-
 /// Implements sparse masks for blocks, chunks, or layers. This builds on the base masks
 /// provided in the base mask package.
 pub mod sparse;
