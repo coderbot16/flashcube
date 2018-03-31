@@ -6,19 +6,15 @@ fn nibble_index(index: usize) -> (usize, u8) {
 	(index >> 1, ((index & 1) as u8) << 2)
 }
 
-pub struct ChunkNibbles([u8; 2048]);
+pub struct ChunkNibbles(Box<[u8; 2048]>);
 impl ChunkNibbles {
 	pub fn new() -> Self {
-		ChunkNibbles([0; 2048])
-	}
-
-	pub fn boxed() -> Box<Self> {
-		Box::new(ChunkNibbles([0; 2048]))
+		ChunkNibbles(Box::new([0; 2048]))
 	}
 
 	/// Clears every value value to 0. Equivalent to `fill(0)`
 	pub fn clear(&mut self) {
-		for term in &mut self.0 as &mut [u8] {
+		for term in self.0.iter_mut() {
 			*term = 0;
 		}
 	}
@@ -28,7 +24,7 @@ impl ChunkNibbles {
 		let value = value & 15;
 		let fill = (value << 4) | value;
 
-		for term in &mut self.0 as &mut [u8] {
+		for term in self.0.iter_mut() {
 			*term = fill;
 		}
 	}
@@ -75,7 +71,7 @@ impl Debug for ChunkNibbles {
 
 impl Clone for ChunkNibbles {
 	fn clone(&self) -> Self {
-		let mut other = [0; 2048];
+		let mut other = Box::new([0; 2048]);
 
 		other.copy_from_slice(&self.0[..]);
 

@@ -14,12 +14,19 @@ pub mod nibbles;
 /// Variable length bit packed storage. Usually accessed using a palette.
 pub mod packed;
 
+pub use self::nibbles::ChunkNibbles;
 pub use self::mask::{Mask, ChunkMask, LayerMask};
 
 /// A component usable in an ECS.
 pub trait Component {
+	/// Dense storage in a 16x16x16 chunk.
 	type ChunkStorage;
+	/// Dense storage in a 16x16 layer.
 	type LayerStorage;
+	/// Dense storage of an unknown length.
+	type DenseBulk;
+	/// Sparse storage of an unknown length.
+	type SparseBulk;
 }
 
 // TODO: Basic ECS: Allow common tasks to fall under common 7 types, but provide extension with specs. This can avoid dynamic type casting in most cases.
