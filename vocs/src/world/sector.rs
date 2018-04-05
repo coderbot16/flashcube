@@ -1,5 +1,5 @@
 use position::{ChunkPosition, LayerPosition};
-use world::chunk::{Chunk, Target, Record, PaletteAssociation};
+use world::chunk::{Chunk, Target};
 use storage::{Mask, ChunkMask};
 use std::slice;
 use std::ops::Index;
@@ -110,7 +110,7 @@ impl<T> Sector<T> {
 	}
 }
 
-impl<B, R> Sector<Chunk<B, R>> where B: Target, R: Record<ChunkPosition> {
+impl<B> Sector<Chunk<B>> where B: Target {
 	pub fn set_block_immediate(&mut self, x: u8, y: u8, z: u8, target: &B) -> Option<()> {
 		let (chunk, block) = (
 			ChunkPosition::new(x / 16, y / 16, z / 16),
@@ -120,7 +120,7 @@ impl<B, R> Sector<Chunk<B, R>> where B: Target, R: Record<ChunkPosition> {
 		self.get_mut(chunk).map(|chunk| chunk.set_immediate(block, &target))
 	}
 
-	pub fn get_block(&self, x: u8, y: u8, z: u8) -> Option<PaletteAssociation<B>> {
+	pub fn get_block(&self, x: u8, y: u8, z: u8) -> Option<Option<&B>> {
 		let (chunk, block) = (
 			ChunkPosition::new(x / 16, y / 16, z / 16),
 			ChunkPosition::new(x % 16, y % 16, z % 16)
@@ -218,12 +218,12 @@ impl<'a, T> Iterator for SectorColumnsMut<'a, T> where T: 'a  {
 }
 
 pub struct SectorEnumeratePresent<'a, T> where T: 'a {
-	region: &'a Sector<T>,
+	sector: &'a Sector<T>,
 	// TODO: ChunkMask iter
 }
 
 pub struct SectorEnumeratePresentMut<'a, T> where T: 'a {
-	region: &'a mut Sector<T>,
+	sector: &'a mut Sector<T>,
 	// TODO: ChunkMask iter_mut
 }
 

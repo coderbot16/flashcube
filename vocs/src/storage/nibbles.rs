@@ -61,6 +61,10 @@ impl ChunkNibbles {
 	pub fn raw(&self) -> &[u8; 2048] {
 		&self.0
 	}
+
+	pub fn into_raw(self) -> Box<[u8; 2048]> {
+		self.0
+	}
 }
 
 impl Debug for ChunkNibbles {

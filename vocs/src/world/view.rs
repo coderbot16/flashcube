@@ -1,12 +1,13 @@
-use world::chunk::{Target, Chunk, PaletteAssociation, Palette, NullRecorder};
-use position::{ChunkPosition, ColumnPosition};
-use storage::packed::PackedBlockStorage;
+use world::chunk::{Target, Chunk};
+use storage::indexed::palette::Palette;
+use position::ColumnPosition;
+use storage::packed::ChunkPacked;
 
 #[derive(Debug)]
 pub struct ColumnMut<'c, B>(pub &'c mut [Chunk<B>; 16]) where B: 'c + Target;
 
 impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
-	pub fn get(&self, at: ColumnPosition) -> PaletteAssociation<B> {
+	pub fn get(&self, at: ColumnPosition) -> Option<&B> {
 		let chunk_y = at.chunk_y() as usize;
 
 		self.0[chunk_y].get(at.chunk())
@@ -55,18 +56,20 @@ impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 }
 
 #[derive(Debug)]
-pub struct ColumnBlocks<'a>([&'a mut PackedBlockStorage<ChunkPosition>; 16]);
+pub struct ColumnBlocks<'a>([&'a mut ChunkPacked; 16]);
 impl<'a> ColumnBlocks<'a> {
-	pub fn get<'p, B>(&self, at: ColumnPosition, palettes: &ColumnPalettes<'p, B>) -> PaletteAssociation<'p, B> where B: Target {
+	pub fn get<'p, B>(&self, at: ColumnPosition, palettes: &ColumnPalettes<'p, B>) -> Option<&'p B> where B: Target {
 		let chunk_y = at.chunk_y() as usize;
 
-		self.0[chunk_y].get(at.chunk(), palettes.0[chunk_y])
+		let raw = self.0[chunk_y].get(at.chunk());
+
+		palettes.0[chunk_y].entries()[raw as usize].as_ref()
 	}
 
-	pub fn set<B>(&mut self, at: ColumnPosition, association: &ColumnAssociation<B>) where B: Target {
+	pub fn set<B>(&mut self, at: ColumnPosition, association: &ColumnAssociation) where B: Target {
 		let chunk_y = at.chunk_y() as usize;
 
-		self.0[chunk_y].set(at.chunk(), &association.0[chunk_y], &mut NullRecorder)
+		self.0[chunk_y].set(at.chunk(), association.0[chunk_y])
 	}
 }
 
@@ -74,56 +77,30 @@ impl<'a> ColumnBlocks<'a> {
 pub struct ColumnPalettes<'a, B>([&'a Palette<B>; 16]) where B: 'a + Target;
 impl<'a, B> ColumnPalettes<'a, B> where B: 'a + Target {
 	/// Gets an association that will reference back to the target. Note that several indices may point to the same target, this returns one of them.
-	pub fn reverse_lookup(&self, target: &B) -> Result<ColumnAssociation<B>, usize> {
-		let palettes = slice_to_tuple_16(&self.0);
-
+	pub fn reverse_lookup(&self, target: &B) -> Result<ColumnAssociation, usize> {
 		Ok(ColumnAssociation ([
-			palettes. 0.reverse_lookup(target).ok_or( 0usize)?,
-			palettes. 1.reverse_lookup(target).ok_or( 1usize)?,
-			palettes. 2.reverse_lookup(target).ok_or( 2usize)?,
-			palettes. 3.reverse_lookup(target).ok_or( 3usize)?,
-			palettes. 4.reverse_lookup(target).ok_or( 4usize)?,
-			palettes. 5.reverse_lookup(target).ok_or( 5usize)?,
-			palettes. 6.reverse_lookup(target).ok_or( 6usize)?,
-			palettes. 7.reverse_lookup(target).ok_or( 7usize)?,
-			palettes. 8.reverse_lookup(target).ok_or( 8usize)?,
-			palettes. 9.reverse_lookup(target).ok_or( 9usize)?,
-			palettes.10.reverse_lookup(target).ok_or(10usize)?,
-			palettes.11.reverse_lookup(target).ok_or(11usize)?,
-			palettes.12.reverse_lookup(target).ok_or(12usize)?,
-			palettes.13.reverse_lookup(target).ok_or(13usize)?,
-			palettes.14.reverse_lookup(target).ok_or(14usize)?,
-			palettes.15.reverse_lookup(target).ok_or(15usize)?,
+			self.0 [0].reverse_lookup(target).ok_or( 0usize)?,
+			self.0 [1].reverse_lookup(target).ok_or( 1usize)?,
+			self.0 [2].reverse_lookup(target).ok_or( 2usize)?,
+			self.0 [3].reverse_lookup(target).ok_or( 3usize)?,
+			self.0 [4].reverse_lookup(target).ok_or( 4usize)?,
+			self.0 [5].reverse_lookup(target).ok_or( 5usize)?,
+			self.0 [6].reverse_lookup(target).ok_or( 6usize)?,
+			self.0 [7].reverse_lookup(target).ok_or( 7usize)?,
+			self.0 [8].reverse_lookup(target).ok_or( 8usize)?,
+			self.0 [9].reverse_lookup(target).ok_or( 9usize)?,
+			self.0[10].reverse_lookup(target).ok_or(10usize)?,
+			self.0[11].reverse_lookup(target).ok_or(11usize)?,
+			self.0[12].reverse_lookup(target).ok_or(12usize)?,
+			self.0[13].reverse_lookup(target).ok_or(13usize)?,
+			self.0[14].reverse_lookup(target).ok_or(14usize)?,
+			self.0[15].reverse_lookup(target).ok_or(15usize)?,
 		]))
 	}
 }
 
 #[derive(Debug)]
-pub struct ColumnAssociation<'a, B>([PaletteAssociation<'a, B>; 16]) where B: 'a + Target;
-impl<'a, B> ColumnAssociation<'a, B> where B: 'a + Target {
-	pub fn raw_values(&self) -> [usize; 16] {
-		let associations = slice_to_tuple_16(&self.0);
-
-		[
-			associations. 0.raw_value(),
-			associations. 1.raw_value(),
-			associations. 2.raw_value(),
-			associations. 3.raw_value(),
-			associations. 4.raw_value(),
-			associations. 5.raw_value(),
-			associations. 6.raw_value(),
-			associations. 7.raw_value(),
-			associations. 8.raw_value(),
-			associations. 9.raw_value(),
-			associations.10.raw_value(),
-			associations.11.raw_value(),
-			associations.12.raw_value(),
-			associations.13.raw_value(),
-			associations.14.raw_value(),
-			associations.15.raw_value()
-		]
-	}
-}
+pub struct ColumnAssociation([u32; 16]);
 
 pub fn slice_to_tuple_mut_16<T>(slice: &mut [T; 16])
 								-> (&mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T)
@@ -149,32 +126,5 @@ pub fn slice_to_tuple_mut_16<T>(slice: &mut [T; 16])
 		&mut s4 [0], &mut s5 [0], &mut s6 [0], &mut s7 [0],
 		&mut s8 [0], &mut s9 [0], &mut s10[0], &mut s11[0],
 		&mut s12[0], &mut s13[0], &mut s14[0], &mut s15[0]
-	)
-}
-
-pub fn slice_to_tuple_16<T>(slice: &[T; 16])
-							-> (&T, &T, &T, &T, &T, &T, &T, &T, &T, &T, &T, &T, &T, &T, &T, &T)
-{
-	let (s0 , slice) = slice.split_at(1);
-	let (s1 , slice) = slice.split_at(1);
-	let (s2 , slice) = slice.split_at(1);
-	let (s3 , slice) = slice.split_at(1);
-	let (s4 , slice) = slice.split_at(1);
-	let (s5 , slice) = slice.split_at(1);
-	let (s6 , slice) = slice.split_at(1);
-	let (s7 , slice) = slice.split_at(1);
-	let (s8 , slice) = slice.split_at(1);
-	let (s9 , slice) = slice.split_at(1);
-	let (s10, slice) = slice.split_at(1);
-	let (s11, slice) = slice.split_at(1);
-	let (s12, slice) = slice.split_at(1);
-	let (s13, slice) = slice.split_at(1);
-	let (s14, s15  ) = slice.split_at(1);
-
-	(
-		&s0 [0], &s1 [0], &s2 [0], &s3 [0],
-		&s4 [0], &s5 [0], &s6 [0], &s7 [0],
-		&s8 [0], &s9 [0], &s10[0], &s11[0],
-		&s12[0], &s13[0], &s14[0], &s15[0]
 	)
 }

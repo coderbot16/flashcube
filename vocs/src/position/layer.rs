@@ -35,15 +35,15 @@ impl LayerPosition {
 }
 
 impl PackedIndex for LayerPosition {
-	fn entries() -> usize {
-		256
+	fn size_factor() -> usize {
+		4
 	}
 
-	fn from_index(index: usize) -> Self {
+	fn from_usize(index: usize) -> Self {
 		LayerPosition::from_zx(index as u8)
 	}
 
-	fn to_index(&self) -> usize {
+	fn to_usize(&self) -> usize {
 		self.zx() as usize
 	}
 }

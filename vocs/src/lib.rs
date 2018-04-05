@@ -52,6 +52,9 @@ extern crate shred;
 // Efficient and fine-grained locks
 extern crate parking_lot;
 
+// Fast hash map
+extern crate fxhash;
+
 pub mod world;
 pub mod storage;
 pub mod position;

@@ -14,6 +14,8 @@ pub mod nibbles;
 /// Variable length bit packed storage. Usually accessed using a palette.
 pub mod packed;
 
+pub mod indexed;
+
 pub use self::nibbles::ChunkNibbles;
 pub use self::mask::{Mask, ChunkMask, LayerMask};
 

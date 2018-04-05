@@ -172,17 +172,17 @@ impl ChunkPosition {
 }
 
 impl PackedIndex for ChunkPosition {
-	fn entries() -> usize {
-		4096
+	fn size_factor() -> usize {
+		64
 	}
 
-	fn from_index(index: usize) -> Self {
+	fn from_usize(index: usize) -> Self {
 		debug_assert!(index < 4096);
 
 		ChunkPosition::from_yzx(index as u16)
 	}
 
-	fn to_index(&self) -> usize {
+	fn to_usize(&self) -> usize {
 		self.yzx() as usize
 	}
 }

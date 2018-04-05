@@ -7,3 +7,4 @@ authors = ["coderbot16 <coderbot16@gmail.com>"]
 bit-vec = "0.4"
 shred = "0.6"
 parking_lot = "0.5"
+fxhash = "0.2.1"
