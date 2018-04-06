@@ -57,7 +57,7 @@ impl<B> ChunkIndexed<B> where B: Target {
 		&self.palette
 	}
 	
-	pub fn freeze_read_only(&self) -> (&ChunkPacked, &Palette<B>) {
+	pub fn freeze(&self) -> (&ChunkPacked, &Palette<B>) {
 		(&self.storage, &self.palette)
 	}
 
