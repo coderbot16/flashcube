@@ -1,7 +1,7 @@
-use storage::indexed::{Target, ChunkIndexed};
-use storage::indexed::palette::Palette;
+use indexed::{Target, ChunkIndexed};
+use indexed::palette::Palette;
 use position::ColumnPosition;
-use storage::packed::ChunkPacked;
+use packed::ChunkPacked;
 
 #[derive(Debug)]
 pub struct ColumnMut<'c, B>(pub &'c mut [ChunkIndexed<B>; 16]) where B: 'c + Target;

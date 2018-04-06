@@ -1,8 +1,8 @@
 use position::{GlobalSectorPosition, GlobalChunkPosition};
-use storage::mask::sparse::recycle::{Recycler, AllocCache};
-use storage::mask::{Mask, ChunkMask};
-use storage::mask::scan::Scan;
-use storage::mask::scan_clear::ScanClear;
+use mask::sparse::recycle::{Recycler, AllocCache};
+use mask::{Mask, ChunkMask};
+use mask::scan::Scan;
+use mask::scan_clear::ScanClear;
 use std::collections::HashMap;
 use std::collections::hash_map::{Entry, Keys};
 use std::ops::Index;

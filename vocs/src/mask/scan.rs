@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use storage::mask::{Mask, ChunkMask};
+use mask::{Mask, ChunkMask};
 use position::ChunkPosition;
 use std::cmp;
 
@@ -80,7 +80,7 @@ impl<'a> Iterator for ChunkScan<'a> {
 #[cfg(test)]
 mod tests {
 	use position::ChunkPosition;
-	use storage::mask::{Mask, ChunkMask};
+	use mask::{Mask, ChunkMask};
 	use std::collections::BTreeSet;
 
 	#[test]

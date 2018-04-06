@@ -1,5 +1,5 @@
 use position::ChunkPosition;
-use storage::mask::{Mask, LayerMask, ChunkMask};
+use mask::{Mask, LayerMask, ChunkMask};
 
 #[derive(Default, Clone)]
 pub struct Spills {

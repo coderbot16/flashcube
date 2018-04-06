@@ -1,6 +1,6 @@
 use position::{ChunkPosition, LayerPosition};
-use storage::indexed::{ChunkIndexed, Target};
-use storage::{Mask, ChunkMask};
+use indexed::{ChunkIndexed, Target};
+use mask::{Mask, ChunkMask};
 use std::slice;
 use std::ops::Index;
 

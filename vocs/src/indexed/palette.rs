@@ -1,4 +1,4 @@
-use storage::indexed::Target;
+use indexed::Target;
 use fxhash::FxHashMap;
 use std::collections::hash_map::Entry;
 use std::mem;

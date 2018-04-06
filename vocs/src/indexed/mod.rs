@@ -4,8 +4,8 @@ use position::ChunkPosition;
 use std::hash::Hash;
 use std::mem;
 use std::fmt::Debug;
-use storage::packed::ChunkPacked;
-use storage::indexed::palette::Palette;
+use packed::ChunkPacked;
+use self::palette::Palette;
 
 pub trait Target: Eq + Hash + Clone + Debug {}
 impl<T> Target for T where T: Eq + Hash + Clone + Debug {}

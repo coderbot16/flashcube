@@ -1,5 +1,5 @@
 use position::{ChunkPosition, LayerPosition};
-use storage::mask::{Mask, ChunkMask, LayerMask};
+use mask::{Mask, ChunkMask, LayerMask};
 use bit_vec::BitVec;
 use std::marker::PhantomData;
 

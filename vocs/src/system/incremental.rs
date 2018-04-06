@@ -1,5 +1,5 @@
-use storage::mask::{ChunkMask, LayerMask};
-use storage::mask::spill::SpillChunkMask;
+use mask::{ChunkMask, LayerMask};
+use mask::spill::SpillChunkMask;
 use world::world::World;
 use parking_lot::Mutex;
 
