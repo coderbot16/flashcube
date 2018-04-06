@@ -1,10 +1,10 @@
-use world::chunk::{Target, Chunk};
+use storage::indexed::{Target, ChunkIndexed};
 use storage::indexed::palette::Palette;
 use position::ColumnPosition;
 use storage::packed::ChunkPacked;
 
 #[derive(Debug)]
-pub struct ColumnMut<'c, B>(pub &'c mut [Chunk<B>; 16]) where B: 'c + Target;
+pub struct ColumnMut<'c, B>(pub &'c mut [ChunkIndexed<B>; 16]) where B: 'c + Target;
 
 impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 	pub fn get(&self, at: ColumnPosition) -> Option<&B> {

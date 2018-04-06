@@ -1,5 +1,5 @@
 use position::{ChunkPosition, LayerPosition};
-use world::chunk::{Chunk, Target};
+use storage::indexed::{ChunkIndexed, Target};
 use storage::{Mask, ChunkMask};
 use std::slice;
 use std::ops::Index;
@@ -110,7 +110,7 @@ impl<T> Sector<T> {
 	}
 }
 
-impl<B> Sector<Chunk<B>> where B: Target {
+impl<B> Sector<ChunkIndexed<B>> where B: Target {
 	pub fn set_block_immediate(&mut self, x: u8, y: u8, z: u8, target: &B) -> Option<()> {
 		let (chunk, block) = (
 			ChunkPosition::new(x / 16, y / 16, z / 16),

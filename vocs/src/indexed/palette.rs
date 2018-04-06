@@ -1,4 +1,4 @@
-use world::chunk::Target;
+use storage::indexed::Target;
 use fxhash::FxHashMap;
 use std::collections::hash_map::Entry;
 use std::mem;

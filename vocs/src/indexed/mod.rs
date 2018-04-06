@@ -1,3 +1,5 @@
+pub mod palette;
+
 use position::ChunkPosition;
 use std::hash::Hash;
 use std::mem;
@@ -9,14 +11,14 @@ pub trait Target: Eq + Hash + Clone + Debug {}
 impl<T> Target for T where T: Eq + Hash + Clone + Debug {}
 
 #[derive(Debug, Clone)]
-pub struct Chunk<B> where B: Target {
-	storage:  ChunkPacked,
-	palette:  Palette<B>
+pub struct ChunkIndexed<B> where B: Target {
+	storage: ChunkPacked,
+	palette: Palette<B>
 }
 
-impl<B> Chunk<B> where B: Target {
+impl<B> ChunkIndexed<B> where B: Target {
 	pub fn new(bits: u8, default: B) -> Self {
-		Chunk {
+		ChunkIndexed {
 			storage: ChunkPacked::new(bits),
 			palette: Palette::new(bits, default)
 		}
@@ -77,7 +79,7 @@ impl<B> Chunk<B> where B: Target {
 	}
 }
 
-impl Chunk<u16> {
+impl ChunkIndexed<u16> {
 	pub fn anvil_empty(&self) -> bool {
 		/*if let Some(assoc) = self.palette.reverse_lookup(&0) {
 			self.storage.get_count(&assoc) == 4096
