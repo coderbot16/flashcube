@@ -66,7 +66,7 @@ impl<'a> ColumnBlocks<'a> {
 		palettes.0[chunk_y].entries()[raw as usize].as_ref()
 	}
 
-	pub fn set<B>(&mut self, at: ColumnPosition, association: &ColumnAssociation) where B: Target {
+	pub fn set(&mut self, at: ColumnPosition, association: &ColumnAssociation) {
 		let chunk_y = at.chunk_y() as usize;
 
 		self.0[chunk_y].set(at.chunk(), association.0[chunk_y])
