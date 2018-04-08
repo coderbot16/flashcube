@@ -1,5 +1,5 @@
 use indexed::{Target, ChunkIndexed};
-use indexed::palette::Palette;
+use indexed::Palette;
 use position::ColumnPosition;
 use packed::ChunkPacked;
 

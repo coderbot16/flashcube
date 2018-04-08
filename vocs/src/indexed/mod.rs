@@ -1,34 +1,38 @@
-pub mod palette;
+mod palette;
 
-use position::ChunkPosition;
 use std::hash::Hash;
 use std::mem;
 use std::fmt::Debug;
-use packed::ChunkPacked;
-use self::palette::Palette;
+use packed::{PackedStorage, PackedIndex};
+use position::{ChunkPosition, LayerPosition};
+
+pub use self::palette::Palette;
+
+pub type ChunkIndexed<B> = IndexedStorage<B, ChunkPosition>;
+pub type LayerIndexed<B> = IndexedStorage<B, LayerPosition>;
 
 pub trait Target: Eq + Hash + Clone + Debug {}
 impl<T> Target for T where T: Eq + Hash + Clone + Debug {}
 
 #[derive(Debug, Clone)]
-pub struct ChunkIndexed<B> where B: Target {
-	storage: ChunkPacked,
+pub struct IndexedStorage<B, P> where B: Target, P: PackedIndex {
+	storage: PackedStorage<P>,
 	palette: Palette<B>
 }
 
-impl<B> ChunkIndexed<B> where B: Target {
+impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 	pub fn new(bits: u8, default: B) -> Self {
-		ChunkIndexed {
-			storage: ChunkPacked::new(bits),
+		IndexedStorage {
+			storage: PackedStorage::new(bits),
 			palette: Palette::new(bits, default)
 		}
 	}
 
 	/// Increases the capacity of this chunk's storage by the specified amount of bits, and returns the old storage for reuse purposes.
-	pub fn reserve_bits(&mut self, bits: u8) -> ChunkPacked {
+	pub fn reserve_bits(&mut self, bits: u8) -> PackedStorage<P> {
 		self.palette.expand(bits);
 
-		let mut replacement_storage = ChunkPacked::new(self.storage.bits() + bits);
+		let mut replacement_storage = PackedStorage::new(self.storage.bits() + bits);
 
 		replacement_storage.clone_from(&self.storage, None, 0);
 
@@ -43,7 +47,7 @@ impl<B> ChunkIndexed<B> where B: Target {
 		 }
 	}
 	
-	pub fn get(&self, position: ChunkPosition) -> Option<&B> {
+	pub fn get(&self, position: P) -> Option<&B> {
 		self.palette.entries()[self.storage.get(position) as usize].as_ref()
 	}
 	
@@ -57,17 +61,17 @@ impl<B> ChunkIndexed<B> where B: Target {
 		&self.palette
 	}
 	
-	pub fn freeze(&self) -> (&ChunkPacked, &Palette<B>) {
+	pub fn freeze(&self) -> (&PackedStorage<P>, &Palette<B>) {
 		(&self.storage, &self.palette)
 	}
 
-	pub fn freeze_palette(&mut self) -> (&mut ChunkPacked, &Palette<B>) {
+	pub fn freeze_palette(&mut self) -> (&mut PackedStorage<P>, &Palette<B>) {
 		(&mut self.storage, &self.palette)
 	}
 	
 	/// Preforms the ensure_available, reverse_lookup, and set calls all in one.
 	/// Prefer freezing the palette for larger scale block sets.
-	pub fn set_immediate(&mut self, position: ChunkPosition, target: &B) {
+	pub fn set_immediate(&mut self, position: P, target: &B) {
 		self.ensure_available(target.clone());
 		let association = self.palette.reverse_lookup(&target).unwrap();
 		
@@ -86,7 +90,7 @@ impl ChunkIndexed<u16> {
 		} else {
 			false
 		}*/
-		unimplemented!()
+		false /*TODO*/
 	}
 
 	pub fn to_protocol_section(&self) -> Result<(u8, Vec<i32>, &[u64]), u8> {
