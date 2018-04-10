@@ -1,6 +1,7 @@
 mod chunk;
 mod layer;
 mod column;
+mod quad;
 
 /// Global positioning to complement the local positions.
 ///
@@ -12,4 +13,5 @@ mod global;
 pub use self::chunk::ChunkPosition;
 pub use self::layer::LayerPosition;
 pub use self::column::ColumnPosition;
+pub use self::quad::QuadPosition;
 pub use self::global::{GlobalPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
