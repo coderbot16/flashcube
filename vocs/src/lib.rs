@@ -77,6 +77,9 @@ pub mod packed;
 
 pub mod indexed;
 
+/// Ways of viewing a collection of chunks.
+pub mod view;
+
 /// A component usable in an ECS.
 pub trait Component {
 	/// Dense storage in a 16x16x16 chunk.
