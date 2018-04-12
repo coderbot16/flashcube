@@ -4,9 +4,34 @@ use position::ColumnPosition;
 use packed::ChunkPacked;
 
 #[derive(Debug)]
-pub struct ColumnMut<'c, B>(pub &'c mut [ChunkIndexed<B>; 16]) where B: 'c + Target;
+pub struct ColumnMut<'c, B>(pub [&'c mut ChunkIndexed<B>; 16]) where B: 'c + Target;
 
 impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
+	pub fn from_array(array: &'c mut [ChunkIndexed<B>; 16]) -> Self {
+		let (s0 , slice) = array.split_at_mut(1);
+		let (s1 , slice) = slice.split_at_mut(1);
+		let (s2 , slice) = slice.split_at_mut(1);
+		let (s3 , slice) = slice.split_at_mut(1);
+		let (s4 , slice) = slice.split_at_mut(1);
+		let (s5 , slice) = slice.split_at_mut(1);
+		let (s6 , slice) = slice.split_at_mut(1);
+		let (s7 , slice) = slice.split_at_mut(1);
+		let (s8 , slice) = slice.split_at_mut(1);
+		let (s9 , slice) = slice.split_at_mut(1);
+		let (s10, slice) = slice.split_at_mut(1);
+		let (s11, slice) = slice.split_at_mut(1);
+		let (s12, slice) = slice.split_at_mut(1);
+		let (s13, slice) = slice.split_at_mut(1);
+		let (s14, s15  ) = slice.split_at_mut(1);
+
+		ColumnMut([
+			&mut s0 [0], &mut s1 [0], &mut s2 [0], &mut s3 [0],
+			&mut s4 [0], &mut s5 [0], &mut s6 [0], &mut s7 [0],
+			&mut s8 [0], &mut s9 [0], &mut s10[0], &mut s11[0],
+			&mut s12[0], &mut s13[0], &mut s14[0], &mut s15[0]
+		])
+	}
+
 	pub fn get(&self, at: ColumnPosition) -> Option<&B> {
 		let chunk_y = at.chunk_y() as usize;
 
@@ -28,8 +53,33 @@ impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 		}
 	}
 
-	pub fn freeze_palettes(&mut self) -> (ColumnBlocks, ColumnPalettes<B>) {
-		let chunks = slice_to_tuple_mut_16(self.0);
+	fn chunks_tuple(&mut self) -> (&mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>) {
+		let (s0 , slice) = self.0.split_at_mut(1);
+		let (s1 , slice) = slice.split_at_mut(1);
+		let (s2 , slice) = slice.split_at_mut(1);
+		let (s3 , slice) = slice.split_at_mut(1);
+		let (s4 , slice) = slice.split_at_mut(1);
+		let (s5 , slice) = slice.split_at_mut(1);
+		let (s6 , slice) = slice.split_at_mut(1);
+		let (s7 , slice) = slice.split_at_mut(1);
+		let (s8 , slice) = slice.split_at_mut(1);
+		let (s9 , slice) = slice.split_at_mut(1);
+		let (s10, slice) = slice.split_at_mut(1);
+		let (s11, slice) = slice.split_at_mut(1);
+		let (s12, slice) = slice.split_at_mut(1);
+		let (s13, slice) = slice.split_at_mut(1);
+		let (s14, s15  ) = slice.split_at_mut(1);
+
+		(
+			&mut s0 [0], &mut s1 [0], &mut s2 [0], &mut s3 [0],
+			&mut s4 [0], &mut s5 [0], &mut s6 [0], &mut s7 [0],
+			&mut s8 [0], &mut s9 [0], &mut s10[0], &mut s11[0],
+			&mut s12[0], &mut s13[0], &mut s14[0], &mut s15[0]
+		)
+	}
+
+	pub fn freeze_palette(&mut self) -> (ColumnBlocks, ColumnPalettes<B>) {
+		let chunks = self.chunks_tuple();
 
 		let frozen = (
 			chunks. 0.freeze_palette(), chunks. 1.freeze_palette(), chunks. 2.freeze_palette(), chunks. 3.freeze_palette(),
@@ -101,30 +151,3 @@ impl<'a, B> ColumnPalettes<'a, B> where B: 'a + Target {
 
 #[derive(Debug)]
 pub struct ColumnAssociation([u32; 16]);
-
-pub fn slice_to_tuple_mut_16<T>(slice: &mut [T; 16])
-								-> (&mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T, &mut T)
-{
-	let (s0 , slice) = slice.split_at_mut(1);
-	let (s1 , slice) = slice.split_at_mut(1);
-	let (s2 , slice) = slice.split_at_mut(1);
-	let (s3 , slice) = slice.split_at_mut(1);
-	let (s4 , slice) = slice.split_at_mut(1);
-	let (s5 , slice) = slice.split_at_mut(1);
-	let (s6 , slice) = slice.split_at_mut(1);
-	let (s7 , slice) = slice.split_at_mut(1);
-	let (s8 , slice) = slice.split_at_mut(1);
-	let (s9 , slice) = slice.split_at_mut(1);
-	let (s10, slice) = slice.split_at_mut(1);
-	let (s11, slice) = slice.split_at_mut(1);
-	let (s12, slice) = slice.split_at_mut(1);
-	let (s13, slice) = slice.split_at_mut(1);
-	let (s14, s15  ) = slice.split_at_mut(1);
-
-	(
-		&mut s0 [0], &mut s1 [0], &mut s2 [0], &mut s3 [0],
-		&mut s4 [0], &mut s5 [0], &mut s6 [0], &mut s7 [0],
-		&mut s8 [0], &mut s9 [0], &mut s10[0], &mut s11[0],
-		&mut s12[0], &mut s13[0], &mut s14[0], &mut s15[0]
-	)
-}

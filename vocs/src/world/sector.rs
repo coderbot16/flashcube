@@ -1,6 +1,7 @@
 use position::{ChunkPosition, LayerPosition};
 use indexed::{ChunkIndexed, Target};
 use mask::{Mask, ChunkMask};
+use view::QuadMut;
 use std::slice;
 use std::ops::Index;
 
@@ -43,10 +44,100 @@ impl<T> Sector<T> {
 		value
 	}
 
+	pub fn layers_mut(&mut self) -> (&mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>], &mut [Option<T>]) {
+		let slice = &mut self.chunks;
+
+		let (s0 , slice) = slice.split_at_mut(256);
+		let (s1 , slice) = slice.split_at_mut(256);
+		let (s2 , slice) = slice.split_at_mut(256);
+		let (s3 , slice) = slice.split_at_mut(256);
+		let (s4 , slice) = slice.split_at_mut(256);
+		let (s5 , slice) = slice.split_at_mut(256);
+		let (s6 , slice) = slice.split_at_mut(256);
+		let (s7 , slice) = slice.split_at_mut(256);
+		let (s8 , slice) = slice.split_at_mut(256);
+		let (s9 , slice) = slice.split_at_mut(256);
+		let (s10, slice) = slice.split_at_mut(256);
+		let (s11, slice) = slice.split_at_mut(256);
+		let (s12, slice) = slice.split_at_mut(256);
+		let (s13, slice) = slice.split_at_mut(256);
+		let (s14, s15  ) = slice.split_at_mut(256);
+
+		(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
+	}
+
 	/// Gets a mutable reference to an individual element of the sector,
 	/// This is not implemented as IndexMut because it would cause the internal present counter to get out of sync.
 	pub fn get_mut(&mut self, position: ChunkPosition) -> Option<&mut T> {
 		self.chunks[position.yzx() as usize].as_mut()
+	}
+
+	pub fn get_column_mut(&mut self, position: LayerPosition) -> Option<[&mut T; 16]> {
+		let index = position.zx() as usize;
+		let s = self.layers_mut();
+		
+		let chunks = (
+			s.0[index].as_mut(), s.1[index].as_mut(), s.2[index].as_mut(), s.3[index].as_mut(),
+			s.4[index].as_mut(), s.5[index].as_mut(), s.6[index].as_mut(), s.7[index].as_mut(),
+			s.8[index].as_mut(), s.9[index].as_mut(), s.10[index].as_mut(), s.11[index].as_mut(),
+			s.12[index].as_mut(), s.13[index].as_mut(), s.14[index].as_mut(), s.15[index].as_mut()
+		);
+		
+		match chunks {
+			(Some(c0), Some(c1), Some(c2), Some(c3),
+			 Some(c4), Some(c5), Some(c6), Some(c7),
+			 Some(c8), Some(c9), Some(c10), Some(c11),
+			 Some(c12), Some(c13), Some(c14), Some(c15))
+			  => Some([c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15]),
+			_ => None
+		}
+	}
+
+	pub fn get2_column_mut(&mut self, a: LayerPosition, b: LayerPosition) -> Option<([&mut T; 16], [&mut T; 16])> {
+		if a == b {
+			return None;
+		}
+
+		let a = a.zx() as usize;
+		let b = b.zx() as usize;
+		let mut s = self.layers_mut();
+
+		// get2 for a slice with no unsafe code. This uses split_at_mut.
+		fn get2_safe<T>(s: &mut [T], a: usize, b: usize) -> (&mut T, &mut T) {
+			assert_ne!(a, b);
+
+			if a < b {
+				let (low, high) = s.split_at_mut(b);
+
+				(&mut low[a], &mut high[0])
+			} else {
+				let (low, high) = s.split_at_mut(a);
+
+				(&mut high[0], &mut low[b])
+			}
+		}
+
+		let (c0a,  c0b ) = match get2_safe(s.0,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c1a,  c1b ) = match get2_safe(s.1,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c2a,  c2b ) = match get2_safe(s.2,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c3a,  c3b ) = match get2_safe(s.3,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c4a,  c4b ) = match get2_safe(s.4,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c5a,  c5b ) = match get2_safe(s.5,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c6a,  c6b ) = match get2_safe(s.6,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c7a,  c7b ) = match get2_safe(s.7,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c8a,  c8b ) = match get2_safe(s.8,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c9a,  c9b ) = match get2_safe(s.9,  a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c10a, c10b) = match get2_safe(s.10, a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c11a, c11b) = match get2_safe(s.11, a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c12a, c12b) = match get2_safe(s.12, a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c13a, c13b) = match get2_safe(s.13, a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c14a, c14b) = match get2_safe(s.14, a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+		let (c15a, c15b) = match get2_safe(s.15, a, b) { (&mut Some(ref mut a), &mut Some(ref mut b)) => (a, b), _ => return None };
+
+		Some((
+			[c0a, c1a, c2a, c3a, c4a, c5a, c6a, c7a, c8a, c9a, c10a, c11a, c12a, c13a, c14a, c15a],
+			[c0b, c1b, c2b, c3b, c4b, c5b, c6b, c7b, c8b, c9b, c10b, c11b, c12b, c13b, c14b, c15b]
+		))
 	}
 
 	pub fn enumerate_present(&self) -> SectorEnumeratePresent<T> {
@@ -72,37 +163,21 @@ impl<T> Sector<T> {
 
 	pub fn columns(&self) -> SectorColumns<T> {
 		SectorColumns {
-			region: &self,
+			sector: &self,
 			column: LayerPosition::from_zx(0),
 			done: false
 		}
 	}
 
 	pub fn columns_mut(&mut self) -> SectorColumnsMut<T> {
-		let slice = &mut self.chunks[..];
-
-		let (s0 , slice) = slice.split_at_mut(256);
-		let (s1 , slice) = slice.split_at_mut(256);
-		let (s2 , slice) = slice.split_at_mut(256);
-		let (s3 , slice) = slice.split_at_mut(256);
-		let (s4 , slice) = slice.split_at_mut(256);
-		let (s5 , slice) = slice.split_at_mut(256);
-		let (s6 , slice) = slice.split_at_mut(256);
-		let (s7 , slice) = slice.split_at_mut(256);
-		let (s8 , slice) = slice.split_at_mut(256);
-		let (s9 , slice) = slice.split_at_mut(256);
-		let (s10, slice) = slice.split_at_mut(256);
-		let (s11, slice) = slice.split_at_mut(256);
-		let (s12, slice) = slice.split_at_mut(256);
-		let (s13, slice) = slice.split_at_mut(256);
-		let (s14, s15  ) = slice.split_at_mut(256);
+		let s = self.layers_mut();
 
 		SectorColumnsMut {
 			layers: (
-				s0 .iter_mut(), s1 .iter_mut(), s2 .iter_mut(), s3 .iter_mut(),
-				s4 .iter_mut(), s5 .iter_mut(), s6 .iter_mut(), s7 .iter_mut(),
-				s8 .iter_mut(), s9 .iter_mut(), s10.iter_mut(), s11.iter_mut(),
-				s12.iter_mut(), s13.iter_mut(), s14.iter_mut(), s15.iter_mut()
+				s.0 .iter_mut(), s.1 .iter_mut(), s.2 .iter_mut(), s.3 .iter_mut(),
+				s.4 .iter_mut(), s.5 .iter_mut(), s.6 .iter_mut(), s.7 .iter_mut(),
+				s.8 .iter_mut(), s.9 .iter_mut(), s.10.iter_mut(), s.11.iter_mut(),
+				s.12.iter_mut(), s.13.iter_mut(), s.14.iter_mut(), s.15.iter_mut()
 			),
 			index: 0,
 			done: false
@@ -129,6 +204,10 @@ impl<B> Sector<ChunkIndexed<B>> where B: Target {
 		// TODO: Better error handling.
 		self[chunk].as_ref().map(|chunk| chunk.get(block))
 	}
+
+	pub fn get_quad_mut(&mut self, position: LayerPosition) -> Option<QuadMut<B>> {
+		unimplemented!()
+	}
 }
 
 impl<T> Index<ChunkPosition> for Sector<T> {
@@ -140,7 +219,7 @@ impl<T> Index<ChunkPosition> for Sector<T> {
 }
 
 pub struct SectorColumns<'a, T> where T: 'a {
-	region: &'a Sector<T>,
+	sector: &'a Sector<T>,
 	column: LayerPosition,
 	done:   bool
 }
@@ -158,7 +237,7 @@ impl<'a, T> Iterator for SectorColumns<'a, T> where T: 'a {
 		for y in 0..16 {
 			let position = ChunkPosition::from_layer(y, self.column);
 
-			chunks[y as usize] = self.region[position].as_ref();
+			chunks[y as usize] = self.sector[position].as_ref();
 		}
 
 		if self.column == LayerPosition::from_zx(255) {

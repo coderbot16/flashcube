@@ -14,6 +14,12 @@ impl QuadPosition {
 		QuadPosition(ColumnPosition::new(x, y, z), q)
 	}
 
+	/// Creates a new QuadPosition from a ColumnPosition, relative to the center part of the quad.
+	/// This is equivalent to QuadPosition::new(column.x() + 8, column.y(), column.z() + 8).
+	pub fn from_centered(column: ColumnPosition) -> Self {
+		QuadPosition::new(column.x() + 8, column.y(), column.z() + 8)
+	}
+
 	/// Returns the X component.
 	pub fn x(&self) -> u8 {
 		self.0.x() | ((self.1 & 1) << 4)
@@ -34,6 +40,18 @@ impl QuadPosition {
 
 	/// Returns the index of the column, from 0 to 3.
 	pub fn q(&self) -> u8 { self.1 }
+
+	/// The opposite of from_centered.
+	/// Returns an Option because not all QuadPositions are in the center of the quad.
+	pub fn to_centered(&self) -> Option<ColumnPosition> {
+		let (x, z) = (self.x(), self.z());
+
+		if x < 8 || x > 23 || z < 8 || z > 23 {
+			None
+		} else {
+			Some(ColumnPosition::new(x - 8, self.y(), z - 8))
+		}
+	}
 
 	/// Offsets this position by the coordinates.
 	/// Returns None if they would be out of bounds.

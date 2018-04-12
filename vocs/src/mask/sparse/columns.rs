@@ -15,7 +15,7 @@ impl ColumnsMask {
 		ColumnsMask(HashMap::new())
 	}
 
-	pub fn regions(&self) -> Iter<GlobalSectorPosition, LayerMask> {
+	pub fn sectors(&self) -> Iter<GlobalSectorPosition, LayerMask> {
 		self.0.iter()
 	}
 
@@ -75,12 +75,12 @@ impl Mask<GlobalColumnPosition> for ColumnsMask {
 	}
 
 	fn scan(&self) -> Scan<Self, GlobalColumnPosition> {
-		// TODO: Scanning sparse maps has a non deterministic order. Return regions instead?
+		// TODO: Scanning sparse maps has a non deterministic order. Return sectors instead?
 		unimplemented!("No clear / logical way to scan a sparse map yet...")
 	}
 
 	fn scan_clear(&mut self) -> ScanClear<Self, GlobalColumnPosition> {
-		// TODO: Scanning sparse maps has a non deterministic order. Return regions instead?
+		// TODO: Scanning sparse maps has a non deterministic order. Return sectors instead?
 		unimplemented!("No clear / logical way to scan a sparse map yet...")
 	}
 

@@ -55,6 +55,9 @@ extern crate parking_lot;
 // Fast hash map
 extern crate fxhash;
 
+// Access multiple distinct hash map entries at same time
+extern crate splitmut;
+
 pub mod world;
 pub mod position;
 pub mod system;

@@ -3,8 +3,6 @@ use std::fmt::{Debug, Display, Result, Formatter};
 
 const MAX_U56: u64 =  72057594037927935;
 const MAX_U28: u64 =  268435455;
-const MAX_I28: i32 =  134217727;
-const MIN_I28: i32 = -134217728;
 
 // Note: Due to alignment, this will still be 12 bytes as if it were an (i32, i32, i32).
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]

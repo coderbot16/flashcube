@@ -29,11 +29,11 @@ impl<'c, B> QuadMut<'c, B> where B: 'c + Target {
 		
 	}
 
-	pub fn freeze_palettes(&mut self) -> (QuadBlocks, QuadPalettes<B>) {
+	pub fn freeze_palette(&mut self) -> (QuadBlocks, QuadPalettes<B>) {
 		let columns = slice_to_tuple_mut_4(&mut self.0);
 
 		let frozen = (
-			columns. 0.freeze_palettes(), columns. 1.freeze_palettes(), columns. 2.freeze_palettes(), columns. 3.freeze_palettes()
+			columns. 0.freeze_palette(), columns. 1.freeze_palette(), columns. 2.freeze_palette(), columns. 3.freeze_palette()
 		);
 
 		(
