@@ -1,7 +1,7 @@
 use position::{ChunkPosition, LayerPosition};
 use indexed::{ChunkIndexed, Target};
 use mask::{Mask, ChunkMask};
-use view::QuadMut;
+use view::{ColumnMut, QuadMut};
 use std::slice;
 use std::ops::Index;
 
@@ -31,6 +31,19 @@ impl<T> Sector<T> {
 		}
 
 		*target = Some(chunk);
+	}
+
+	pub fn set_column(&mut self, position: LayerPosition, column: [T; 16]) {
+		// TODO: This is hackish, and needs a heap allocation. Find a better way!
+		// Or, wait for slice patterns.
+
+		let mut chunks = (Box::new(column) as Box<[_]>).into_vec();
+
+		for (index, chunk) in chunks.drain(..).enumerate() {
+			let position = ChunkPosition::new(position.x(), index as u8, position.z());
+
+			self.set(position, chunk);
+		}
 	}
 
 	pub fn remove(&mut self, position: ChunkPosition) -> Option<T> {
@@ -72,23 +85,67 @@ impl<T> Sector<T> {
 		self.chunks[position.yzx() as usize].as_mut()
 	}
 
+	pub fn enumerate_present(&self) -> SectorEnumeratePresent<T> {
+		unimplemented!()
+	}
+
+	pub fn enumerate_present_mut(&self) -> SectorEnumeratePresentMut<T> {
+		unimplemented!()
+	}
+
+	pub fn iter(&self) -> slice::Iter<Option<T>> {
+		self.chunks.iter()
+	}
+
+	// TODO: This can result in the present counter getting out of sync.
+	pub fn iter_mut(&mut self) -> slice::IterMut<Option<T>> {
+		self.chunks.iter_mut()
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.count == 0
+	}
+
+	pub fn columns(&self) -> SectorColumns<T> {
+		SectorColumns {
+			sector: &self,
+			column: LayerPosition::from_zx(0),
+			done: false
+		}
+	}
+
+	pub fn columns_mut(&mut self) -> SectorColumnsMut<T> {
+		let s = self.layers_mut();
+
+		SectorColumnsMut {
+			layers: (
+				s.0 .iter_mut(), s.1 .iter_mut(), s.2 .iter_mut(), s.3 .iter_mut(),
+				s.4 .iter_mut(), s.5 .iter_mut(), s.6 .iter_mut(), s.7 .iter_mut(),
+				s.8 .iter_mut(), s.9 .iter_mut(), s.10.iter_mut(), s.11.iter_mut(),
+				s.12.iter_mut(), s.13.iter_mut(), s.14.iter_mut(), s.15.iter_mut()
+			),
+			index: 0,
+			done: false
+		}
+	}
+
 	pub fn get_column_mut(&mut self, position: LayerPosition) -> Option<[&mut T; 16]> {
 		let index = position.zx() as usize;
 		let s = self.layers_mut();
-		
+
 		let chunks = (
 			s.0[index].as_mut(), s.1[index].as_mut(), s.2[index].as_mut(), s.3[index].as_mut(),
 			s.4[index].as_mut(), s.5[index].as_mut(), s.6[index].as_mut(), s.7[index].as_mut(),
 			s.8[index].as_mut(), s.9[index].as_mut(), s.10[index].as_mut(), s.11[index].as_mut(),
 			s.12[index].as_mut(), s.13[index].as_mut(), s.14[index].as_mut(), s.15[index].as_mut()
 		);
-		
+
 		match chunks {
 			(Some(c0), Some(c1), Some(c2), Some(c3),
-			 Some(c4), Some(c5), Some(c6), Some(c7),
-			 Some(c8), Some(c9), Some(c10), Some(c11),
-			 Some(c12), Some(c13), Some(c14), Some(c15))
-			  => Some([c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15]),
+				Some(c4), Some(c5), Some(c6), Some(c7),
+				Some(c8), Some(c9), Some(c10), Some(c11),
+				Some(c12), Some(c13), Some(c14), Some(c15))
+			=> Some([c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15]),
 			_ => None
 		}
 	}
@@ -140,48 +197,48 @@ impl<T> Sector<T> {
 		))
 	}
 
-	pub fn enumerate_present(&self) -> SectorEnumeratePresent<T> {
-		unimplemented!()
-	}
+	fn get4_column_mut(&mut self, a: LayerPosition, b: LayerPosition, c: LayerPosition, d: LayerPosition) -> Option<([&mut T; 16], [&mut T; 16], [&mut T; 16], [&mut T; 16])> {
+		let a = a.zx() as usize;
+		let b = b.zx() as usize;
+		let c = c.zx() as usize;
+		let d = d.zx() as usize;
 
-	pub fn enumerate_present_mut(&self) -> SectorEnumeratePresentMut<T> {
-		unimplemented!()
-	}
+		assert!(a < b && b < c && c < d);
 
-	pub fn iter(&self) -> slice::Iter<Option<T>> {
-		self.chunks.iter()
-	}
+		let mut s = self.layers_mut();
 
-	// TODO: This can result in the present counter getting out of sync.
-	pub fn iter_mut(&mut self) -> slice::IterMut<Option<T>> {
-		self.chunks.iter_mut()
-	}
+		// get4 for a slice with no unsafe code. This uses split_at_mut.
+		fn get4_safe<T>(s: &mut [T], a: usize, b: usize, c: usize, d: usize) -> (&mut T, &mut T, &mut T, &mut T) {
+			let (low, b_start) = s.split_at_mut(b);
+			let (b_start, c_start) = b_start.split_at_mut(c - b);
+			let (c_start, d_start) = c_start.split_at_mut(d - c);
 
-	pub fn is_empty(&self) -> bool {
-		self.count == 0
-	}
-
-	pub fn columns(&self) -> SectorColumns<T> {
-		SectorColumns {
-			sector: &self,
-			column: LayerPosition::from_zx(0),
-			done: false
+			(&mut low[a], &mut b_start[0], &mut c_start[0], &mut d_start[0])
 		}
-	}
 
-	pub fn columns_mut(&mut self) -> SectorColumnsMut<T> {
-		let s = self.layers_mut();
+		let (c0a,  c0b,  c0c,  c0d ) = match get4_safe(s.0,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c1a,  c1b,  c1c,  c1d ) = match get4_safe(s.1,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c2a,  c2b,  c2c,  c2d ) = match get4_safe(s.2,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c3a,  c3b,  c3c,  c3d ) = match get4_safe(s.3,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c4a,  c4b,  c4c,  c4d ) = match get4_safe(s.4,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c5a,  c5b,  c5c,  c5d ) = match get4_safe(s.5,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c6a,  c6b,  c6c,  c6d ) = match get4_safe(s.6,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c7a,  c7b,  c7c,  c7d ) = match get4_safe(s.7,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c8a,  c8b,  c8c,  c8d ) = match get4_safe(s.8,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c9a,  c9b,  c9c,  c9d ) = match get4_safe(s.9,  a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c10a, c10b, c10c, c10d) = match get4_safe(s.10, a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c11a, c11b, c11c, c11d) = match get4_safe(s.11, a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c12a, c12b, c12c, c12d) = match get4_safe(s.12, a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c13a, c13b, c13c, c13d) = match get4_safe(s.13, a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c14a, c14b, c14c, c14d) = match get4_safe(s.14, a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
+		let (c15a, c15b, c15c, c15d) = match get4_safe(s.15, a, b, c, d) { (&mut Some(ref mut a), &mut Some(ref mut b), &mut Some(ref mut c), &mut Some(ref mut d)) => (a, b, c, d), _ => return None };
 
-		SectorColumnsMut {
-			layers: (
-				s.0 .iter_mut(), s.1 .iter_mut(), s.2 .iter_mut(), s.3 .iter_mut(),
-				s.4 .iter_mut(), s.5 .iter_mut(), s.6 .iter_mut(), s.7 .iter_mut(),
-				s.8 .iter_mut(), s.9 .iter_mut(), s.10.iter_mut(), s.11.iter_mut(),
-				s.12.iter_mut(), s.13.iter_mut(), s.14.iter_mut(), s.15.iter_mut()
-			),
-			index: 0,
-			done: false
-		}
+		Some((
+			[c0a, c1a, c2a, c3a, c4a, c5a, c6a, c7a, c8a, c9a, c10a, c11a, c12a, c13a, c14a, c15a],
+			[c0b, c1b, c2b, c3b, c4b, c5b, c6b, c7b, c8b, c9b, c10b, c11b, c12b, c13b, c14b, c15b],
+			[c0c, c1c, c2c, c3c, c4c, c5c, c6c, c7c, c8c, c9c, c10c, c11c, c12c, c13c, c14c, c15c],
+			[c0d, c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d, c9d, c10d, c11d, c12d, c13d, c14d, c15d]
+		))
 	}
 }
 
@@ -206,7 +263,14 @@ impl<B> Sector<ChunkIndexed<B>> where B: Target {
 	}
 
 	pub fn get_quad_mut(&mut self, position: LayerPosition) -> Option<QuadMut<B>> {
-		unimplemented!()
+		self.get4_column_mut(
+			position,
+			LayerPosition::new(position.x() + 1, position.z()),
+			LayerPosition::new(position.x(), position.z() + 1),
+			LayerPosition::new(position.x() + 1, position.z() + 1)
+		).map(|(primary, plus_x, plus_z, plus_xz)|
+			QuadMut([ColumnMut(primary), ColumnMut(plus_x), ColumnMut(plus_z), ColumnMut(plus_xz)])
+		)
 	}
 }
 

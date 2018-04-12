@@ -21,7 +21,14 @@ impl<T> World<T> {
 		
 		self.sectors.entry(sector).or_insert(Sector::new()).set(inner, chunk);
 	}
-	
+
+	pub fn set_column(&mut self, coords: (i32, i32), column: [T; 16]) {
+		let sector = (coords.0 >> 4, coords.1 >> 4);
+		let inner = LayerPosition::new((coords.0 & 15) as u8, (coords.1 & 15) as u8);
+
+		self.sectors.entry(sector).or_insert(Sector::new()).set_column(inner, column);
+	}
+
 	pub fn remove(&mut self, coords: (i32, u8, i32)) -> Option<T> {
 		let (sector, inner) = Self::split_coords(coords);
 		
@@ -48,6 +55,13 @@ impl<T> World<T> {
 		let (sector, inner) = Self::split_coords(coords);
 		
 		self.sectors.get_mut(&sector).and_then(|sector| sector.get_mut(inner))
+	}
+
+	pub fn get_column_mut(&mut self, coords: (i32, i32)) -> Option<[&mut T; 16]> {
+		let sector = (coords.0 >> 4, coords.1 >> 4);
+		let inner = LayerPosition::new((coords.0 & 15) as u8, (coords.1 & 15) as u8);
+
+		self.sectors.get_mut(&sector).and_then(|sector| sector.get_column_mut(inner))
 	}
 
 	pub fn sectors(&self) -> Iter<(i32, i32), Sector<T>> {
