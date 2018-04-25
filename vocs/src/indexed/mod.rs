@@ -66,8 +66,8 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		&self.palette
 	}
 	
-	pub fn freeze(&self) -> (&PackedStorage<P>, &Palette<B>) {
-		(&self.storage, &self.palette)
+	pub fn freeze(&self) -> (&PackedStorage<P>, &[Option<B>]) {
+		(&self.storage, self.palette.entries())
 	}
 
 	/// Freezes the palette, and returns a mutable storage.
@@ -82,7 +82,7 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 	/// Configures a setter to set a certain block in this storage.
 	/// This has the same performance cost as set_immediate for a single set,
 	/// but is cheaper for multiple sets.
-	pub fn setter(&mut self, target: B) -> Setter<P> {
+	pub fn setter(&mut self, target: B) -> (Setter<P>, &[Option<B>]) {
 		let value = match self.palette.try_insert(target) {
 			Err(target) => {
 				self.reserve_bits(1);
@@ -91,7 +91,7 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 			Ok(value) => value
 		};
 
-		self.storage.setter(value)
+		(self.storage.setter(value), self.palette.entries())
 	}
 	
 	/// Preforms the ensure_available, reverse_lookup, and set calls all in one.
