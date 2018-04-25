@@ -3,7 +3,7 @@ mod palette;
 use std::hash::Hash;
 use std::mem;
 use std::fmt::Debug;
-use packed::{PackedStorage, PackedIndex};
+use packed::{PackedStorage, PackedIndex, Setter};
 use position::{ChunkPosition, LayerPosition};
 
 pub use self::palette::Palette;
@@ -73,13 +73,29 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 	/// Freezes the palette, and returns a mutable storage.
 	/// Setting invalid values in the PackedStorage will lead to errors.
 	/// This is the only API that can set invalid values in the storage.
+	/// If only setting one value, then use IndexedStorage::setter instead.
 	// TODO: Fix the corruption hole.
 	pub fn freeze_palette(&mut self) -> (&mut PackedStorage<P>, &Palette<B>) {
 		(&mut self.storage, &self.palette)
 	}
+
+	/// Configures a setter to set a certain block in this storage.
+	/// This has the same performance cost as set_immediate for a single set,
+	/// but is cheaper for multiple sets.
+	pub fn setter(&mut self, target: B) -> Setter<P> {
+		let value = match self.palette.try_insert(target) {
+			Err(target) => {
+				self.reserve_bits(1);
+				self.palette.try_insert(target).expect("There should be room for a new entry, we just made some!")
+			},
+			Ok(value) => value
+		};
+
+		self.storage.setter(value)
+	}
 	
 	/// Preforms the ensure_available, reverse_lookup, and set calls all in one.
-	/// Prefer freezing the palette for larger scale block sets.
+	/// Prefer freezing the palette for larger scale block sets, or using a setter.
 	pub fn set_immediate(&mut self, position: P, target: &B) {
 		self.ensure_available(target.clone());
 		let association = self.palette.reverse_lookup(&target).unwrap();
