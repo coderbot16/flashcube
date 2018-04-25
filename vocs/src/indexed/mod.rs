@@ -50,13 +50,18 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 	pub fn get(&self, position: P) -> Option<&B> {
 		self.palette.entries()[self.storage.get(position) as usize].as_ref()
 	}
-	
-	// TODO: Methods to work with the palette: pruning, etc.
-	
-	pub fn palette_mut(&mut self) -> &mut Palette<B> {
-		&mut self.palette
+
+	pub fn fill(&mut self, block: B) {
+		self.palette.clear();
+
+		if self.palette.entries().len() == 0 {
+			self.palette.expand(1);
+		}
+
+		self.palette.replace(0, block);
+		self.storage.fill(0);
 	}
-	
+
 	pub fn palette(&self) -> &Palette<B> {
 		&self.palette
 	}
@@ -65,6 +70,10 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		(&self.storage, &self.palette)
 	}
 
+	/// Freezes the palette, and returns a mutable storage.
+	/// Setting invalid values in the PackedStorage will lead to errors.
+	/// This is the only API that can set invalid values in the storage.
+	// TODO: Fix the corruption hole.
 	pub fn freeze_palette(&mut self) -> (&mut PackedStorage<P>, &Palette<B>) {
 		(&mut self.storage, &self.palette)
 	}

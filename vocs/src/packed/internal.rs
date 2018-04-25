@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use packed::setter::Setter;
 
 struct Indices {
 	start: usize,
@@ -80,6 +81,28 @@ impl<P> PackedStorage<P> where P: PackedIndex {
 		if indices.start != indices.end {
 			let end_sub_index = 64 - sub_index;
 			self.0[indices.end] = self.0[indices.end] >> end_sub_index << end_sub_index | value >> end_sub_index;
+		}
+	}
+
+	pub fn setter(&mut self, value: u32) -> Setter<P> {
+		Setter::new(self, value)
+	}
+
+	pub fn clear(&mut self) {
+		for value in self.0.iter_mut() {
+			*value = 0;
+		}
+	}
+
+	pub fn fill(&mut self, value: u32) {
+		if value == 0 {
+			self.clear();
+			return;
+		}
+
+		// TODO: Possibly repeat values into a bit pattern?
+		for index in 0..P::size_factor()*64 {
+			self.set(P::from_usize(index), value)
 		}
 	}
 

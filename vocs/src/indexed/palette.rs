@@ -33,6 +33,14 @@ impl<B> Palette<B> where B: Target {
 		mem::replace(&mut self.entries, entries)
 	}
 
+	pub fn clear(&mut self) {
+		self.reverse.clear();
+
+		for entry in self.entries.iter_mut() {
+			*entry = None;
+		}
+	}
+
 	/// Tries to shrink the palette without remapping any elements.
 	pub fn try_shrink(&mut self) -> Option<(Box<[Option<B>]>, u8)> {
 		let mut half_size = self.entries.len() / 2;

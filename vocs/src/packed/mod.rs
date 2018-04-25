@@ -1,6 +1,7 @@
 use position::{LayerPosition, ChunkPosition};
 
 mod internal;
+mod setter;
 
 pub use self::internal::{PackedIndex, PackedStorage};
 
