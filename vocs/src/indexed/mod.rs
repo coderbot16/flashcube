@@ -47,8 +47,8 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		 }
 	}
 	
-	pub fn get(&self, position: P) -> Option<&B> {
-		self.palette.entries()[self.storage.get(position) as usize].as_ref()
+	pub fn get(&self, position: P) -> &B {
+		self.palette.entries()[self.storage.get(position) as usize].as_ref().expect("IndexedStorage is corrupted; A user of freeze_palette has likely violated the API contract!")
 	}
 
 	pub fn fill(&mut self, block: B) {

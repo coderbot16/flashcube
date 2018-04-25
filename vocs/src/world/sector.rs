@@ -252,7 +252,7 @@ impl<B> Sector<ChunkIndexed<B>> where B: Target {
 		self.get_mut(chunk).map(|chunk| chunk.set_immediate(block, &target))
 	}
 
-	pub fn get_block(&self, x: u8, y: u8, z: u8) -> Option<Option<&B>> {
+	pub fn get_block(&self, x: u8, y: u8, z: u8) -> Option<&B> {
 		let (chunk, block) = (
 			ChunkPosition::new(x / 16, y / 16, z / 16),
 			ChunkPosition::new(x % 16, y % 16, z % 16)

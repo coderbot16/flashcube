@@ -6,7 +6,7 @@ use super::{ColumnAssociation, ColumnBlocks, ColumnMut, ColumnPalettes};
 pub struct QuadMut<'c, B>(pub [ColumnMut<'c, B>; 4]) where B: 'c + Target;
 
 impl<'c, B> QuadMut<'c, B> where B: 'c + Target {
-	pub fn get(&self, at: QuadPosition) -> Option<&B> {
+	pub fn get(&self, at: QuadPosition) -> &B {
 		let q = at.q() as usize;
 
 		self.0[q].get(at.column())
@@ -50,7 +50,7 @@ impl<'c, B> QuadMut<'c, B> where B: 'c + Target {
 #[derive(Debug)]
 pub struct QuadBlocks<'a>([ColumnBlocks<'a>; 4]);
 impl<'a> QuadBlocks<'a> {
-	pub fn get<'p, B>(&self, at: QuadPosition, palettes: &QuadPalettes<'p, B>) -> Option<&'p B> where B: Target {
+	pub fn get<'p, B>(&self, at: QuadPosition, palettes: &QuadPalettes<'p, B>) -> &'p B where B: Target {
 		let q = at.q() as usize;
 
 		self.0[q].get(at.column(), &palettes.0[q])

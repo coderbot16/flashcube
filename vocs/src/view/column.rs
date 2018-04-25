@@ -32,7 +32,7 @@ impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 		])
 	}
 
-	pub fn get(&self, at: ColumnPosition) -> Option<&B> {
+	pub fn get(&self, at: ColumnPosition) -> &B {
 		let chunk_y = at.chunk_y() as usize;
 
 		self.0[chunk_y].get(at.chunk())
@@ -108,12 +108,12 @@ impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 #[derive(Debug)]
 pub struct ColumnBlocks<'a>([&'a mut ChunkPacked; 16]);
 impl<'a> ColumnBlocks<'a> {
-	pub fn get<'p, B>(&self, at: ColumnPosition, palettes: &ColumnPalettes<'p, B>) -> Option<&'p B> where B: Target {
+	pub fn get<'p, B>(&self, at: ColumnPosition, palettes: &ColumnPalettes<'p, B>) -> &'p B where B: Target {
 		let chunk_y = at.chunk_y() as usize;
 
 		let raw = self.0[chunk_y].get(at.chunk());
 
-		palettes.0[chunk_y].entries()[raw as usize].as_ref()
+		palettes.0[chunk_y].entries()[raw as usize].as_ref().expect("Column is corrupted; A user of freeze_palette has likely violated the API contract!")
 	}
 
 	pub fn set(&mut self, at: ColumnPosition, association: &ColumnAssociation) {
