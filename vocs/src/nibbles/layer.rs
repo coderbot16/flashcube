@@ -23,6 +23,16 @@ impl LayerStorage<u4> for LayerNibbles {
 		self.0[index].extract(shift)
 	}
 
+	fn is_empty(&self) -> bool {
+		for &term in self.0.iter() {
+			if term.ba() != 0 {
+				return false;
+			}
+		}
+
+		true
+	}
+
 	fn set(&mut self, at: LayerPosition, value: u4) {
 		let (index, shift) = nibble_index(at.zx() as usize);
 

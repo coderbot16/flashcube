@@ -85,3 +85,5 @@ pub mod view;
 
 /// The core of the voxel component system.
 pub mod component;
+
+pub mod sparse;

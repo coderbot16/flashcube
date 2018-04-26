@@ -31,7 +31,6 @@ impl Component for bool {
 	type Chunk = ChunkMask;
 	type Layer = LayerMask;
 	type Bulk = ();
-	type BulkSparse = ();
 }
 
 pub trait Mask<P>: Index<P, Output=bool> {
@@ -190,6 +189,10 @@ impl LayerMask {
 impl LayerStorage<bool> for LayerMask {
 	fn get(&self, position: LayerPosition) -> bool {
 		self[position]
+	}
+
+	fn is_empty(&self) -> bool {
+		self.0 == [0, 0, 0, 0]
 	}
 
 	fn set(&mut self, position: LayerPosition, value: bool) {

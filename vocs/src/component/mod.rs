@@ -18,8 +18,6 @@ pub trait Component: Sized + Clone + Default {
 	type Layer: LayerStorage<Self> + Default;
 	/// Dense storage of an unknown length.
 	type Bulk;
-	/// Sparse storage of an unknown length.
-	type BulkSparse;
 }
 
 pub trait ChunkStorage<V> where V: Clone {
@@ -42,6 +40,8 @@ pub trait ChunkStorage<V> where V: Clone {
 pub trait LayerStorage<V> where V: Clone {
 	/// Gets the value at the position.
 	fn get(&self, position: LayerPosition) -> V;
+
+	fn is_empty(&self) -> bool;
 
 	/// Sets the value at the position.
 	fn set(&mut self, position: LayerPosition, value: V);

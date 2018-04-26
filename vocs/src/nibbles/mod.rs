@@ -17,7 +17,6 @@ impl Component for u4 {
 	type Chunk = ChunkNibbles;
 	type Layer = LayerNibbles;
 	type Bulk = ();
-	type BulkSparse = ();
 }
 
 #[allow(non_camel_case_types)]
