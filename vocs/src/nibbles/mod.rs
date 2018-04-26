@@ -29,6 +29,14 @@ impl u4 {
 	pub fn raw(self) -> u8 {
 		self.0
 	}
+
+	pub fn saturating_add(self, b: Self) -> Self {
+		u4(::std::cmp::min(self.0 + b.0, 15))
+	}
+
+	pub fn saturating_sub(self, b: Self) -> Self {
+		u4(self.0.saturating_sub(b.0))
+	}
 }
 
 #[allow(non_camel_case_types)]

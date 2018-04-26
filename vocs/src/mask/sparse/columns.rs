@@ -39,13 +39,13 @@ impl ColumnsMask {
 
 		self.0.insert(coordinates, mask);
 	}
+
+	pub fn clear(&mut self) {
+		self.0.clear();
+	}
 }
 
 impl Mask<GlobalColumnPosition> for ColumnsMask {
-	/*fn clear(&mut self) {
-		self.0.clear();
-	}*/
-
 	fn set_false(&mut self, column: GlobalColumnPosition) {
 		let (sector, position) = (column.global_sector(), column.local_layer());
 
