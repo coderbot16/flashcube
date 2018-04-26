@@ -157,7 +157,7 @@ impl<T> Sector<T> {
 
 		let a = a.zx() as usize;
 		let b = b.zx() as usize;
-		let mut s = self.layers_mut();
+		let s = self.layers_mut();
 
 		// get2 for a slice with no unsafe code. This uses split_at_mut.
 		fn get2_safe<T>(s: &mut [T], a: usize, b: usize) -> (&mut T, &mut T) {
@@ -205,7 +205,7 @@ impl<T> Sector<T> {
 
 		assert!(a < b && b < c && c < d);
 
-		let mut s = self.layers_mut();
+		let s = self.layers_mut();
 
 		// get4 for a slice with no unsafe code. This uses split_at_mut.
 		fn get4_safe<T>(s: &mut [T], a: usize, b: usize, c: usize, d: usize) -> (&mut T, &mut T, &mut T, &mut T) {

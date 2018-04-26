@@ -83,24 +83,5 @@ pub mod indexed;
 /// Ways of viewing a collection of chunks.
 pub mod view;
 
-/// A component usable in an ECS.
-pub trait Component {
-	/// Dense storage in a 16x16x16 chunk.
-	type ChunkStorage;
-	/// Dense storage in a 16x16 layer.
-	type LayerStorage;
-	/// Dense storage of an unknown length.
-	type DenseBulk;
-	/// Sparse storage of an unknown length.
-	type SparseBulk;
-}
-
-// TODO: Basic ECS: Allow common tasks to fall under common 7 types, but provide extension with specs. This can avoid dynamic type casting in most cases.
-// bool: ChunkMask
-// u4: ChunkNibbles
-// u8: [u8; 4096]
-// uXX: Packed
-// f32: [f32; 4096]
-// f64: [f64; 4096]
-// String: HashMap<ChunkPosition, String>
-// Entity: A complex struct stored in the local specs ECS.
+/// The core of the voxel component system.
+pub mod component;

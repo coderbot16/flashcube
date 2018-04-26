@@ -61,14 +61,14 @@ impl ChunksMask {
 }
 
 impl Mask<GlobalChunkPosition> for ChunksMask {
-	fn clear(&mut self) {
+	/*fn clear(&mut self) {
 		for (_, (mut value, _)) in self.sectors.drain().take(self.cache.remaining_capacity()) {
 			value.clear();
 			self.cache.destroy(value);
 		}
 
 		self.sectors.clear();
-	}
+	}*/
 
 	fn set_true(&mut self, chunk: GlobalChunkPosition) {
 		let (sector, inner) = (chunk.global_sector(), chunk.local_chunk());

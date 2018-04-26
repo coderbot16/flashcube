@@ -13,6 +13,7 @@ pub mod spill;
 
 use self::scan::Scan;
 use self::scan_clear::ScanClear;
+use component::{Component, ChunkStorage, LayerStorage};
 pub use self::scan_clear::{ChunkScanClear, LayerScanClear};
 
 use bit_vec::BitVec;
@@ -26,9 +27,14 @@ use std::u64;
 const FALSE_REF: &bool = &false;
 const TRUE_REF:  &bool = &true;
 
-pub trait Mask<P>: Index<P, Output=bool> {
-	fn clear(&mut self);
+impl Component for bool {
+	type Chunk = ChunkMask;
+	type Layer = LayerMask;
+	type Bulk = ();
+	type BulkSparse = ();
+}
 
+pub trait Mask<P>: Index<P, Output=bool> {
 	fn set_true(&mut self, index: P);
 	fn set_false(&mut self, index: P);
 
@@ -79,13 +85,29 @@ impl ChunkMask {
 	}
 }
 
-impl Mask<ChunkPosition> for ChunkMask {
-	fn clear(&mut self) {
-		for value in self.0.iter_mut() {
-			*value = 0;
-		}
+impl ChunkStorage<bool> for ChunkMask {
+	fn get(&self, position: ChunkPosition) -> bool {
+		self[position]
 	}
 
+	fn set(&mut self, position: ChunkPosition, value: bool) {
+		<Self as Mask<ChunkPosition>>::set(self, position, value);
+	}
+
+	fn fill(&mut self, value: bool) {
+		if value {
+			for value in self.0.iter_mut() {
+				*value = u64::max_value();
+			}
+		} else {
+			for value in self.0.iter_mut() {
+				*value = 0;
+			}
+		}
+	}
+}
+
+impl Mask<ChunkPosition> for ChunkMask {
 	fn set_true(&mut self, position: ChunkPosition) {
 		let index = position.yzx() as usize;
 
@@ -156,13 +178,6 @@ impl Default for ChunkMask {
 #[derive(Debug, Default, Clone)]
 pub struct LayerMask([u64; 4]);
 impl LayerMask {
-	pub fn fill(&mut self) {
-		self.0[0] = u64::MAX;
-		self.0[1] = u64::MAX;
-		self.0[2] = u64::MAX;
-		self.0[3] = u64::MAX;
-	}
-
 	pub fn blocks(&self) -> &[u64; 4] {
 		&self.0
 	}
@@ -172,14 +187,31 @@ impl LayerMask {
 	}
 }
 
-impl Mask<LayerPosition> for LayerMask {
-	fn clear(&mut self) {
-		self.0[0] = 0;
-		self.0[1] = 0;
-		self.0[2] = 0;
-		self.0[3] = 0;
+impl LayerStorage<bool> for LayerMask {
+	fn get(&self, position: LayerPosition) -> bool {
+		self[position]
 	}
 
+	fn set(&mut self, position: LayerPosition, value: bool) {
+		<Self as Mask<LayerPosition>>::set(self, position, value);
+	}
+
+	fn fill(&mut self, value: bool) {
+		if value {
+			self.0[0] = u64::max_value();
+			self.0[1] = u64::max_value();
+			self.0[2] = u64::max_value();
+			self.0[3] = u64::max_value();
+		} else {
+			self.0[0] = 0;
+			self.0[1] = 0;
+			self.0[2] = 0;
+			self.0[3] = 0;
+		}
+	}
+}
+
+impl Mask<LayerPosition> for LayerMask {
 	fn set_true(&mut self, position: LayerPosition) {
 		let index = position.zx() as usize;
 
@@ -228,9 +260,9 @@ impl Index<LayerPosition> for LayerMask {
 }
 
 impl Mask<usize> for BitVec<u32> {
-	fn clear(&mut self) {
+	/*fn clear(&mut self) {
 		BitVec::clear(self);
-	}
+	}*/
 
 	fn set_true(&mut self, index: usize) {
 		self.set(index, true);

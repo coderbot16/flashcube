@@ -5,6 +5,7 @@ use mask::scan_clear::ScanClear;
 use std::collections::HashMap;
 use std::collections::hash_map::{Entry, Iter, IterMut};
 use std::ops::Index;
+use component::*;
 
 const FALSE_REF: &bool = &false;
 
@@ -34,16 +35,16 @@ impl ColumnsMask {
 
 	pub fn fill_sector(&mut self, coordinates: GlobalSectorPosition) {
 		let mut mask = LayerMask::default();
-		mask.fill();
+		mask.fill(true);
 
 		self.0.insert(coordinates, mask);
 	}
 }
 
 impl Mask<GlobalColumnPosition> for ColumnsMask {
-	fn clear(&mut self) {
+	/*fn clear(&mut self) {
 		self.0.clear();
-	}
+	}*/
 
 	fn set_false(&mut self, column: GlobalColumnPosition) {
 		let (sector, position) = (column.global_sector(), column.local_layer());
