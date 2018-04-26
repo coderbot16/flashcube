@@ -1,8 +1,10 @@
 mod chunk;
 mod layer;
+mod bulk;
 
-pub use self::chunk::ChunkNibbles as ChunkNibbles;
-pub use self::layer::LayerNibbles as LayerNibbles;
+pub use self::chunk::ChunkNibbles;
+pub use self::layer::LayerNibbles;
+pub use self::bulk::BulkNibbles;
 
 use component::Component;
 
