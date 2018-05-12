@@ -5,6 +5,10 @@ use component::ChunkStorage;
 
 pub struct ChunkNibbles(Box<[u8; 2048]>);
 impl ChunkNibbles {
+	pub fn from_raw(raw: Box<[u8; 2048]>) -> Self {
+		ChunkNibbles(raw)
+	}
+
 	/// Sets the lighting value using bitwise OR without clearing the slot first.
 	/// This avoids an unnecessary clear when operating on a known-cleared buffer,
 	/// but users should prefer `set` instead.
