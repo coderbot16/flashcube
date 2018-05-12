@@ -14,7 +14,7 @@ impl BulkNibbles {
 		let last = shift != 0;
 
 		BulkNibbles {
-			data: vec![u4x2::default(); len],
+			data: vec![u4x2::default(); data_len],
 			last
 		}
 	}
@@ -28,7 +28,7 @@ impl BulkNibbles {
 
 		let (index, shift) = nibble_index(index);
 
-		self.data[index].extract(shift)
+		self.data[index].extract((shift != 0) as u8)
 	}
 
 	pub fn set(&mut self, index: usize, value: u4) {
@@ -40,7 +40,7 @@ impl BulkNibbles {
 
 		let (index, shift) = nibble_index(index);
 
-		self.data[index] = self.data[index].replace(shift, value);
+		self.data[index] = self.data[index].replace((shift != 0) as u8, value);
 	}
 
 	pub fn set_or(&mut self, index: usize, value: u4) {
@@ -52,10 +52,10 @@ impl BulkNibbles {
 
 		let (index, shift) = nibble_index(index);
 
-		self.data[index] = self.data[index].replace_or(shift, value);
+		self.data[index] = self.data[index].replace_or((shift != 0) as u8, value);
 	}
 
 	pub fn len(&self) -> usize {
-		self.data.len() + self.last as usize
+		self.data.len() * 2 + self.last as usize
 	}
 }

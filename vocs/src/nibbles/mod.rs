@@ -57,20 +57,20 @@ impl u4x2 {
 	}
 
 	pub fn extract(self, d: u8) -> u4 {
-		let shift = (d&1) * 4;
+		let shift = ((d != 0) as u8)  * 4;
 		let single = self.0 & (0xF << shift);
 
 		u4(single >> shift)
 	}
 
 	pub fn clear(self, d: u8) -> Self {
-		let shift = (d&1) * 4;
+		let shift = ((d != 0) as u8)  * 4;
 
 		u4x2(!((!self.0) | (0xF << shift)))
 	}
 
 	pub fn replace(self, d: u8, v: u4) -> Self {
-		let shift = (d&1) * 4;
+		let shift = ((d != 0) as u8)  * 4;
 
 		let cleared = !((!self.0) | (0xF << shift));
 
@@ -78,7 +78,7 @@ impl u4x2 {
 	}
 
 	pub fn replace_or(self, d: u8, v: u4) -> Self {
-		let shift = (d&1) * 4;
+		let shift = ((d != 0) as u8)  * 4;
 
 		u4x2(self.0 | (v.0 << shift))
 	}

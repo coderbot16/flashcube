@@ -23,9 +23,11 @@ impl LayerStorage<u4> for LayerNibbles {
 		self.0[index].extract(shift)
 	}
 
-	fn is_empty(&self) -> bool {
+	fn is_filled(&self, value: u4) -> bool {
+		let fill = u4x2::splat(value);
+
 		for &term in self.0.iter() {
-			if term.ba() != 0 {
+			if term != fill {
 				return false;
 			}
 		}

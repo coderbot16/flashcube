@@ -41,7 +41,7 @@ pub trait LayerStorage<V> where V: Clone {
 	/// Gets the value at the position.
 	fn get(&self, position: LayerPosition) -> V;
 
-	fn is_empty(&self) -> bool;
+	fn is_filled(&self, value: V) -> bool;
 
 	/// Sets the value at the position.
 	fn set(&mut self, position: LayerPosition, value: V);

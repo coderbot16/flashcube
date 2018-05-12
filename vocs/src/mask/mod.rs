@@ -191,8 +191,10 @@ impl LayerStorage<bool> for LayerMask {
 		self[position]
 	}
 
-	fn is_empty(&self) -> bool {
-		self.0 == [0, 0, 0, 0]
+	fn is_filled(&self, value: bool) -> bool {
+		let term = if value { u64::max_value() } else { 0 };
+
+		self.0 == [term, term, term, term]
 	}
 
 	fn set(&mut self, position: LayerPosition, value: bool) {
