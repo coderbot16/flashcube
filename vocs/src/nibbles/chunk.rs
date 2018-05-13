@@ -12,8 +12,8 @@ impl ChunkNibbles {
 	/// Sets the lighting value using bitwise OR without clearing the slot first.
 	/// This avoids an unnecessary clear when operating on a known-cleared buffer,
 	/// but users should prefer `set` instead.
-	pub fn set_uncleared(&mut self, at: ChunkPosition, value: u8) {
-		let value = value & 15;
+	pub fn set_uncleared(&mut self, at: ChunkPosition, value: u4) {
+		let value = value.raw() & 15;
 
 		let (index, shift) = nibble_index(at.yzx() as usize);
 
