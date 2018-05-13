@@ -23,7 +23,7 @@ impl<C> SparseStorage<C> where C: Component + Eq {
 			LayerPosition::from_zx((index % 256) as u8)
 		);
 
-		self.pages.get(&(index / 256)).map(|page| page.get(inner)).unwrap_or_else(|| self.default.clone())
+		self.pages.get(&page).map(|page| page.get(inner)).unwrap_or_else(|| self.default.clone())
 	}
 
 	pub fn set(&mut self, index: usize, v: C) {

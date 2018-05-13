@@ -1,15 +1,8 @@
 use position::ChunkPosition;
 use mask::{Mask, LayerMask, ChunkMask};
+use view::SplitDirectional;
 
-#[derive(Default, Clone)]
-pub struct Spills {
-	pub up:      LayerMask,
-	pub down:    LayerMask,
-	pub plus_x:  LayerMask,
-	pub minus_x: LayerMask,
-	pub plus_z:  LayerMask,
-	pub minus_z: LayerMask
-}
+pub type Spills = SplitDirectional<LayerMask>;
 
 #[derive(Default, Clone)]
 pub struct SpillChunkMask {
