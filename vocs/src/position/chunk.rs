@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Display, Result, Formatter};
-use position::LayerPosition;
+use position::{LayerPosition, Offset, Up, Down, PlusX, MinusX, PlusZ, MinusZ};
 use packed::PackedIndex;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -10,7 +10,7 @@ impl ChunkPosition {
 	/// ### Out of bounds behavior
 	/// If the arguments are out of bounds, then they are truncated.
 	pub fn new(x: u8, y: u8, z: u8) -> Self {
-		ChunkPosition(
+		ChunkPosition (
 			(((y&0xF) as u16) << 8) |
 			(((z&0xF) as u16) << 4) |
 			 ((x&0xF) as u16)
@@ -112,63 +112,6 @@ impl ChunkPosition {
 		let raw = self.yzx();
 		((raw >> 1) as usize, (raw & 1) as u8 * 4)
 	}
-
-	// Component offsetting
-
-	/// Subtracts 1 from X, returning None if it would underflow.
-	pub fn minus_x(&self) -> Option<ChunkPosition> {
-		if self.x() != 0 {
-			Some(ChunkPosition(self.0 - 0x0001))
-		} else {
-			None
-		}
-	}
-
-
-	/// Adds 1 to X, returning None if it would overflow.
-	pub fn plus_x(&self) -> Option<ChunkPosition> {
-		if self.x() != 15 {
-			Some(ChunkPosition(self.0 + 0x0001))
-		} else {
-			None
-		}
-	}
-
-	/// Subtracts 1 from Z, returning None if it would underflow.
-	pub fn minus_z(&self) -> Option<ChunkPosition> {
-		if self.z() != 0 {
-			Some(ChunkPosition(self.0 - 0x0010))
-		} else {
-			None
-		}
-	}
-
-	/// Adds 1 to Z, returning None if it would overflow.
-	pub fn plus_z(&self) -> Option<ChunkPosition> {
-		if self.z() != 15 {
-			Some(ChunkPosition(self.0 + 0x0010))
-		} else {
-			None
-		}
-	}
-
-	/// Subtracts 1 from Y, returning None if it would underflow.
-	pub fn minus_y(&self) -> Option<ChunkPosition> {
-		if self.y() > 0 {
-			Some(ChunkPosition(self.0 - 0x0100))
-		} else {
-			None
-		}
-	}
-
-	/// Adds 1 to Y, returning None if it would overflow.
-	pub fn plus_y(&self) -> Option<ChunkPosition> {
-		if self.y() < 15 {
-			Some(ChunkPosition(self.0 + 0x0100))
-		} else {
-			None
-		}
-	}
 }
 
 impl PackedIndex for ChunkPosition {
@@ -196,5 +139,101 @@ impl Display for ChunkPosition {
 impl Debug for ChunkPosition {
 	fn fmt(&self, f: &mut Formatter) -> Result {
 		write!(f, "ChunkPosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
+	}
+}
+
+impl Offset<Up> for ChunkPosition {
+	fn offset(self, _: Up) -> Option<Self> {
+		if self.y() < 15 {
+			Some(ChunkPosition(self.0 + 0x0100))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: Up) -> Self {
+		ChunkPosition::from_yzx(self.0 + 0x0100)
+	}
+}
+
+impl Offset<Down> for ChunkPosition {
+	fn offset(self, _: Down) -> Option<Self> {
+		if self.y() > 0 {
+			Some(ChunkPosition(self.0 - 0x0100))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: Down) -> Self {
+		ChunkPosition::from_yzx(self.0.wrapping_sub(0x0100))
+	}
+}
+
+impl Offset<PlusX> for ChunkPosition {
+	fn offset(self, _: PlusX) -> Option<Self> {
+		if self.x() != 15 {
+			Some(ChunkPosition(self.0 + 0x0001))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: PlusX) -> Self {
+		let base = self.0 & 0x0FF0;
+		let add = ((self.x() + 1) & 15) as u16;
+
+		ChunkPosition(base | add)
+	}
+}
+
+impl Offset<MinusX> for ChunkPosition {
+	fn offset(self, _: MinusX) -> Option<Self> {
+		if self.x() != 0 {
+			Some(ChunkPosition(self.0 - 0x0001))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: MinusX) -> Self {
+		let base = self.0 & 0x0FF0;
+		let add = ((self.x().wrapping_sub(1)) & 15) as u16;
+
+		ChunkPosition(base | add)
+	}
+}
+
+impl Offset<PlusZ> for ChunkPosition {
+	fn offset(self, _: PlusZ) -> Option<Self> {
+		if self.z() != 15 {
+			Some(ChunkPosition(self.0 + 0x0010))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: PlusZ) -> Self {
+		let base = self.0 & 0x0F0F;
+		let add = ((self.z() + 1) & 15) as u16;
+
+		ChunkPosition(base | (add << 4))
+	}
+}
+
+impl Offset<MinusZ> for ChunkPosition {
+	fn offset(self, _: MinusZ) -> Option<Self> {
+		if self.z() != 0 {
+			Some(ChunkPosition(self.0 - 0x0010))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: MinusZ) -> Self {
+		let base = self.0 & 0x0F0F;
+		let add = ((self.z().wrapping_sub(1)) & 15) as u16;
+
+		ChunkPosition(base | (add << 4))
 	}
 }

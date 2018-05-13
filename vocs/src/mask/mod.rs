@@ -17,7 +17,7 @@ use component::{Component, ChunkStorage, LayerStorage};
 pub use self::scan_clear::{ChunkScanClear, LayerScanClear};
 
 use bit_vec::BitVec;
-use position::{ChunkPosition, LayerPosition};
+use position::{ChunkPosition, LayerPosition, Offset, Up, Down, PlusX, MinusX, PlusZ, MinusZ};
 use std::ops::Index;
 use std::u64;
 
@@ -67,12 +67,12 @@ impl ChunkMask {
 	}
 
 	pub fn set_neighbors(&mut self, position: ChunkPosition) {
-		position.minus_x().map(|at| self.set_true(at));
-		position. plus_x().map(|at| self.set_true(at));
-		position.minus_z().map(|at| self.set_true(at));
-		position. plus_z().map(|at| self.set_true(at));
-		position.minus_y().map(|at| self.set_true(at));
-		position. plus_y().map(|at| self.set_true(at));
+		position.offset(MinusX).map(|at| self.set_true(at));
+		position.offset(PlusX ).map(|at| self.set_true(at));
+		position.offset(MinusZ).map(|at| self.set_true(at));
+		position.offset(PlusZ ).map(|at| self.set_true(at));
+		position.offset(Down  ).map(|at| self.set_true(at));
+		position.offset(Up    ).map(|at| self.set_true(at));
 	}
 
 	pub fn blocks(&self) -> &[u64; 64] {
