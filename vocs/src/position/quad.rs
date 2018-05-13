@@ -1,4 +1,4 @@
-use position::ColumnPosition;
+use position::{ColumnPosition, Offset, dir};
 use std::fmt::{Debug, Formatter, Result};
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -52,10 +52,16 @@ impl QuadPosition {
 			Some(ColumnPosition::new(x - 8, self.y(), z - 8))
 		}
 	}
+}
 
-	/// Offsets this position by the coordinates.
-	/// Returns None if they would be out of bounds.
-	pub fn offset(&self, x: i8, y: i8, z: i8) -> Option<Self> {
+impl Debug for QuadPosition {
+	fn fmt(&self, f: &mut Formatter) -> Result {
+		write!(f, "QuadPosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
+	}
+}
+
+impl Offset<(i8, i8, i8)> for QuadPosition {
+	fn offset(self, (x, y, z): (i8, i8, i8)) -> Option<Self> {
 		let x = (self.x() as i16) + (x as i16);
 		let y = (self.y() as i16) + (y as i16);
 		let z = (self.z() as i16) + (z as i16);
@@ -67,18 +73,83 @@ impl QuadPosition {
 		}
 	}
 
-	pub fn minus_y(&self) -> Option<QuadPosition> { self.0.minus_y().map(|c| QuadPosition(c, self.1)) }
-	pub fn plus_y(&self)  -> Option<QuadPosition> { self.0.plus_y() .map(|c| QuadPosition(c, self.1)) }
+	fn offset_wrapping(self, (x, y, z): (i8, i8, i8)) -> Self {
+		let x = (self.x() as i16) + (x as i16);
+		let y = (self.y() as i16) + (y as i16);
+		let z = (self.z() as i16) + (z as i16);
 
-	// TODO: Is there a more efficient way to implement these?
-	pub fn minus_x(&self) -> Option<QuadPosition> { self.offset(-1, 0 , 0) }
-	pub fn plus_x(&self)  -> Option<QuadPosition> { self.offset( 1, 0 , 0) }
-	pub fn minus_z(&self) -> Option<QuadPosition> { self.offset(0, 0 , -1) }
-	pub fn plus_z(&self)  -> Option<QuadPosition> { self.offset( 0, 0 , 1) }
+		let (x, y, z) = (
+			(x as u8) & 31,
+			(y as u8),
+			(z as u8) & 31
+		);
+
+		QuadPosition::new(x, y, z)
+	}
 }
 
-impl Debug for QuadPosition {
-	fn fmt(&self, f: &mut Formatter) -> Result {
-		write!(f, "QuadPosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
+impl Offset<dir::Up> for QuadPosition {
+	fn offset(self, _: dir::Up) -> Option<Self> {
+		self.0.offset(dir::Up).map(|c| QuadPosition(c, self.1))
+	}
+
+	fn offset_wrapping(self, _: dir::Up) -> Self {
+		let c = self.0.offset_wrapping(dir::Up);
+
+		QuadPosition(c, self.1)
+	}
+}
+
+impl Offset<dir::Down> for QuadPosition {
+	fn offset(self, _: dir::Down) -> Option<Self> {
+		self.0.offset(dir::Down).map(|c| QuadPosition(c, self.1))
+	}
+
+	fn offset_wrapping(self, _: dir::Down) -> Self {
+		let c = self.0.offset_wrapping(dir::Down);
+
+		QuadPosition(c, self.1)
+	}
+}
+
+// TODO: Is there a more efficient way to implement these?
+
+impl Offset<dir::PlusX> for QuadPosition {
+	fn offset(self, _: dir::PlusX) -> Option<Self> {
+		self.offset((1, 0 , 0))
+	}
+
+	fn offset_wrapping(self, _: dir::PlusX) -> Self {
+		self.offset_wrapping((1, 0, 0))
+	}
+}
+
+impl Offset<dir::MinusX> for QuadPosition {
+	fn offset(self, _: dir::MinusX) -> Option<Self> {
+		self.offset((-1, 0, 0))
+	}
+
+	fn offset_wrapping(self, _: dir::MinusX) -> Self {
+		self.offset_wrapping((-1, 0, 0))
+	}
+}
+
+impl Offset<dir::PlusZ> for QuadPosition {
+	fn offset(self, _: dir::PlusZ) -> Option<Self> {
+		self.offset((0, 0, 1))
+	}
+
+	fn offset_wrapping(self, _: dir::PlusZ) -> Self {
+		self.offset_wrapping((0, 0, 1))
+	}
+}
+
+impl Offset<dir::MinusZ> for QuadPosition {
+	fn offset(self, _: dir::MinusZ) -> Option<Self> {
+		self.offset((0, 0, -1))
+	}
+
+	fn offset_wrapping(self, _: dir::MinusZ) -> Self {
+		self.offset_wrapping((0, 0, -1))
 	}
 }

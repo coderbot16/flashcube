@@ -1,5 +1,9 @@
 pub trait Offset<D>: Sized {
+	/// Offsets this position by the coordinates.
+	/// Returns None if the result would be out of bounds.
 	fn offset(self, dir: D) -> Option<Self>;
+	/// Offsets this position by the coordinates.
+	/// Wraps around if the result would be out of bounds.
 	fn offset_wrapping(self, dir: D) -> Self;
 }
 
@@ -90,81 +94,85 @@ pub trait StaticAxis {
 	type Minus: StaticDirection;
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct Up;
-impl StaticDirection for Up {
-	type Opposite = Down;
-	type Axis = Y;
-}
+pub mod dir {
+	use super::{Dir, StaticDirection, X, Y, Z};
 
-impl From<Up> for Dir {
-	fn from(_: Up) -> Dir {
-		Dir::Up
+	#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+	pub struct Up;
+	impl StaticDirection for Up {
+		type Opposite = Down;
+		type Axis = Y;
 	}
-}
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct Down;
-impl StaticDirection for Down {
-	type Opposite = Up;
-	type Axis = Y;
-}
-
-impl From<Down> for Dir {
-	fn from(_: Down) -> Dir {
-		Dir::Down
+	impl From<Up> for Dir {
+		fn from(_: Up) -> Dir {
+			Dir::Up
+		}
 	}
-}
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct PlusX;
-impl StaticDirection for PlusX {
-	type Opposite = MinusX;
-	type Axis = X;
-}
-
-impl From<PlusX> for Dir {
-	fn from(_: PlusX) -> Dir {
-		Dir::PlusX
+	#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+	pub struct Down;
+	impl StaticDirection for Down {
+		type Opposite = Up;
+		type Axis = Y;
 	}
-}
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct MinusX;
-impl StaticDirection for MinusX {
-	type Opposite = PlusX;
-	type Axis = X;
-}
-
-impl From<MinusX> for Dir {
-	fn from(_: MinusX) -> Dir {
-		Dir::MinusX
+	impl From<Down> for Dir {
+		fn from(_: Down) -> Dir {
+			Dir::Down
+		}
 	}
-}
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct PlusZ;
-impl StaticDirection for PlusZ {
-	type Opposite = MinusZ;
-	type Axis = Z;
-}
-
-impl From<PlusZ> for Dir {
-	fn from(_: PlusZ) -> Dir {
-		Dir::PlusZ
+	#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+	pub struct PlusX;
+	impl StaticDirection for PlusX {
+		type Opposite = MinusX;
+		type Axis = X;
 	}
-}
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct MinusZ;
-impl StaticDirection for MinusZ {
-	type Opposite = PlusZ;
-	type Axis = Z;
-}
+	impl From<PlusX> for Dir {
+		fn from(_: PlusX) -> Dir {
+			Dir::PlusX
+		}
+	}
 
-impl From<MinusZ> for Dir {
-	fn from(_: MinusZ) -> Dir {
-		Dir::MinusZ
+	#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+	pub struct MinusX;
+	impl StaticDirection for MinusX {
+		type Opposite = PlusX;
+		type Axis = X;
+	}
+
+	impl From<MinusX> for Dir {
+		fn from(_: MinusX) -> Dir {
+			Dir::MinusX
+		}
+	}
+
+	#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+	pub struct PlusZ;
+	impl StaticDirection for PlusZ {
+		type Opposite = MinusZ;
+		type Axis = Z;
+	}
+
+	impl From<PlusZ> for Dir {
+		fn from(_: PlusZ) -> Dir {
+			Dir::PlusZ
+		}
+	}
+
+	#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+	pub struct MinusZ;
+	impl StaticDirection for MinusZ {
+		type Opposite = PlusZ;
+		type Axis = Z;
+	}
+
+	impl From<MinusZ> for Dir {
+		fn from(_: MinusZ) -> Dir {
+			Dir::MinusZ
+		}
 	}
 }
 
@@ -173,20 +181,20 @@ impl From<MinusZ> for Dir {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct X;
 impl StaticAxis for X {
-	type Plus = PlusX;
-	type Minus = MinusX;
+	type Plus = dir::PlusX;
+	type Minus = dir::MinusX;
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Y;
 impl StaticAxis for Y {
-	type Plus = Up;
-	type Minus = Down;
+	type Plus = dir::Up;
+	type Minus = dir::Down;
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Z;
 impl StaticAxis for Z {
-	type Plus = PlusZ;
-	type Minus = MinusZ;
+	type Plus = dir::PlusZ;
+	type Minus = dir::MinusZ;
 }

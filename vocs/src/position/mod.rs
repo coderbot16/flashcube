@@ -15,5 +15,5 @@ pub use self::chunk::ChunkPosition;
 pub use self::layer::LayerPosition;
 pub use self::column::ColumnPosition;
 pub use self::quad::QuadPosition;
-pub use self::direction::{Offset, Dir, Axis, StaticAxis, StaticDirection, Up, Down, PlusX, MinusX, PlusZ, MinusZ};
+pub use self::direction::{Offset, Dir, Axis, StaticAxis, StaticDirection, dir};
 pub use self::global::{GlobalPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};

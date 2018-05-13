@@ -1,5 +1,5 @@
 use position::ChunkPosition;
-use position::LayerPosition;
+use position::{LayerPosition, Offset, dir};
 use std::fmt::{Debug, Formatter, Result};
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -26,8 +26,7 @@ impl ColumnPosition {
 	}
 	
 	/// Creates a new ColumnPosition from a YZX index.
-	/// ### Out of bounds behavior
-	/// If the index is out of bounds, it is truncated.
+	/// Out of bounds is not possible with this function.
 	pub fn from_yzx(yzx: u16) -> Self {
 		ColumnPosition(yzx)
 	}
@@ -123,40 +122,30 @@ impl ColumnPosition {
 		let raw = self.chunk_yzx();
 		((raw >> 1) as usize, (raw & 1) as i8 * 4)
 	}
-	
-	pub fn minus_x(&self) -> Option<ColumnPosition> {
-		if self.x() != 0 {
-			Some(ColumnPosition(self.0 - 0x0001))
+}
+
+impl Debug for ColumnPosition {
+	fn fmt(&self, f: &mut Formatter) -> Result {
+		write!(f, "ColumnPosition {{ x: {}, y: {}, z: {}, yzx: {} }}", self.x(), self.y(), self.z(), self.yzx())
+	}
+}
+
+impl Offset<dir::Up> for ColumnPosition {
+	fn offset(self, _: dir::Up) -> Option<Self> {
+		if self.y() < 255 {
+			Some(ColumnPosition(self.0 + 0x0100))
 		} else {
 			None
 		}
 	}
-	
-	pub fn plus_x(&self) -> Option<ColumnPosition> {
-		if self.x() != 15 {
-			Some(ColumnPosition(self.0 + 0x0001))
-		} else {
-			None
-		}
+
+	fn offset_wrapping(self, _: dir::Up) -> Self {
+		ColumnPosition::from_yzx(self.0.wrapping_add(0x0100))
 	}
-	
-	pub fn minus_z(&self) -> Option<ColumnPosition> {
-		if self.z() != 0 {
-			Some(ColumnPosition(self.0 - 0x0010))
-		} else {
-			None
-		}
-	}
-	
-	pub fn plus_z(&self) -> Option<ColumnPosition> {
-		if self.z() != 15 {
-			Some(ColumnPosition(self.0 + 0x0010))
-		} else {
-			None
-		}
-	}
-	
-	pub fn minus_y(&self) -> Option<ColumnPosition> {
+}
+
+impl Offset<dir::Down> for ColumnPosition {
+	fn offset(self, _: dir::Down) -> Option<Self> {
 		if self.y() > 0 {
 			Some(ColumnPosition(self.0 - 0x0100))
 		} else {
@@ -164,17 +153,75 @@ impl ColumnPosition {
 		}
 	}
 
-	pub fn plus_y(&self) -> Option<ColumnPosition> {
-		if self.y() != 255 {
-			Some(ColumnPosition(self.0 + 0x0100))
+	fn offset_wrapping(self, _: dir::Down) -> Self {
+		ColumnPosition::from_yzx(self.0.wrapping_sub(0x0100))
+	}
+}
+
+impl Offset<dir::PlusX> for ColumnPosition {
+	fn offset(self, _: dir::PlusX) -> Option<Self> {
+		if self.x() != 15 {
+			Some(ColumnPosition(self.0 + 0x0001))
 		} else {
 			None
 		}
 	}
+
+	fn offset_wrapping(self, _: dir::PlusX) -> Self {
+		let base = self.0 & 0xFFF0;
+		let add = ((self.x() + 1) & 15) as u16;
+
+		ColumnPosition(base | add)
+	}
 }
 
-impl Debug for ColumnPosition {
-	fn fmt(&self, f: &mut Formatter) -> Result {
-		write!(f, "ColumnPosition {{ x: {}, y: {}, z: {}, yzx: {} }}", self.x(), self.y(), self.z(), self.yzx())
+impl Offset<dir::MinusX> for ColumnPosition {
+	fn offset(self, _: dir::MinusX) -> Option<Self> {
+		if self.x() != 0 {
+			Some(ColumnPosition(self.0 - 0x0001))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: dir::MinusX) -> Self {
+		let base = self.0 & 0xFFF0;
+		let add = ((self.x().wrapping_sub(1)) & 15) as u16;
+
+		ColumnPosition(base | add)
+	}
+}
+
+impl Offset<dir::PlusZ> for ColumnPosition {
+	fn offset(self, _: dir::PlusZ) -> Option<Self> {
+		if self.z() != 15 {
+			Some(ColumnPosition(self.0 + 0x0010))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: dir::PlusZ) -> Self {
+		let base = self.0 & 0xFF0F;
+		let add = ((self.z() + 1) & 15) as u16;
+
+		ColumnPosition(base | (add << 4))
+	}
+}
+
+impl Offset<dir::MinusZ> for ColumnPosition {
+	fn offset(self, _: dir::MinusZ) -> Option<Self> {
+		if self.z() != 0 {
+			Some(ColumnPosition(self.0 - 0x0010))
+		} else {
+			None
+		}
+	}
+
+	fn offset_wrapping(self, _: dir::MinusZ) -> Self {
+		let base = self.0 & 0xFF0F;
+		let add = ((self.z().wrapping_sub(1)) & 15) as u16;
+
+		ColumnPosition(base | (add << 4))
 	}
 }

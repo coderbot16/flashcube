@@ -12,8 +12,7 @@ impl LayerPosition {
 	}
 
 	/// Creates a new LayerPosition from a ZX index.
-	/// ### Out of bounds behavior
-	/// If the index is out of bounds, it is truncated.
+	/// Out of bounds is not possible with this function.
 	pub fn from_zx(zx: u8) -> Self {
 		LayerPosition(zx)
 	}

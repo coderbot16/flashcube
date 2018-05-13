@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Display, Result, Formatter};
-use position::{LayerPosition, Offset, Up, Down, PlusX, MinusX, PlusZ, MinusZ};
+use position::{LayerPosition, Offset, dir};
 use packed::PackedIndex;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -142,8 +142,8 @@ impl Debug for ChunkPosition {
 	}
 }
 
-impl Offset<Up> for ChunkPosition {
-	fn offset(self, _: Up) -> Option<Self> {
+impl Offset<dir::Up> for ChunkPosition {
+	fn offset(self, _: dir::Up) -> Option<Self> {
 		if self.y() < 15 {
 			Some(ChunkPosition(self.0 + 0x0100))
 		} else {
@@ -151,13 +151,13 @@ impl Offset<Up> for ChunkPosition {
 		}
 	}
 
-	fn offset_wrapping(self, _: Up) -> Self {
+	fn offset_wrapping(self, _: dir::Up) -> Self {
 		ChunkPosition::from_yzx(self.0 + 0x0100)
 	}
 }
 
-impl Offset<Down> for ChunkPosition {
-	fn offset(self, _: Down) -> Option<Self> {
+impl Offset<dir::Down> for ChunkPosition {
+	fn offset(self, _: dir::Down) -> Option<Self> {
 		if self.y() > 0 {
 			Some(ChunkPosition(self.0 - 0x0100))
 		} else {
@@ -165,13 +165,13 @@ impl Offset<Down> for ChunkPosition {
 		}
 	}
 
-	fn offset_wrapping(self, _: Down) -> Self {
+	fn offset_wrapping(self, _: dir::Down) -> Self {
 		ChunkPosition::from_yzx(self.0.wrapping_sub(0x0100))
 	}
 }
 
-impl Offset<PlusX> for ChunkPosition {
-	fn offset(self, _: PlusX) -> Option<Self> {
+impl Offset<dir::PlusX> for ChunkPosition {
+	fn offset(self, _: dir::PlusX) -> Option<Self> {
 		if self.x() != 15 {
 			Some(ChunkPosition(self.0 + 0x0001))
 		} else {
@@ -179,7 +179,7 @@ impl Offset<PlusX> for ChunkPosition {
 		}
 	}
 
-	fn offset_wrapping(self, _: PlusX) -> Self {
+	fn offset_wrapping(self, _: dir::PlusX) -> Self {
 		let base = self.0 & 0x0FF0;
 		let add = ((self.x() + 1) & 15) as u16;
 
@@ -187,8 +187,8 @@ impl Offset<PlusX> for ChunkPosition {
 	}
 }
 
-impl Offset<MinusX> for ChunkPosition {
-	fn offset(self, _: MinusX) -> Option<Self> {
+impl Offset<dir::MinusX> for ChunkPosition {
+	fn offset(self, _: dir::MinusX) -> Option<Self> {
 		if self.x() != 0 {
 			Some(ChunkPosition(self.0 - 0x0001))
 		} else {
@@ -196,7 +196,7 @@ impl Offset<MinusX> for ChunkPosition {
 		}
 	}
 
-	fn offset_wrapping(self, _: MinusX) -> Self {
+	fn offset_wrapping(self, _: dir::MinusX) -> Self {
 		let base = self.0 & 0x0FF0;
 		let add = ((self.x().wrapping_sub(1)) & 15) as u16;
 
@@ -204,8 +204,8 @@ impl Offset<MinusX> for ChunkPosition {
 	}
 }
 
-impl Offset<PlusZ> for ChunkPosition {
-	fn offset(self, _: PlusZ) -> Option<Self> {
+impl Offset<dir::PlusZ> for ChunkPosition {
+	fn offset(self, _: dir::PlusZ) -> Option<Self> {
 		if self.z() != 15 {
 			Some(ChunkPosition(self.0 + 0x0010))
 		} else {
@@ -213,7 +213,7 @@ impl Offset<PlusZ> for ChunkPosition {
 		}
 	}
 
-	fn offset_wrapping(self, _: PlusZ) -> Self {
+	fn offset_wrapping(self, _: dir::PlusZ) -> Self {
 		let base = self.0 & 0x0F0F;
 		let add = ((self.z() + 1) & 15) as u16;
 
@@ -221,8 +221,8 @@ impl Offset<PlusZ> for ChunkPosition {
 	}
 }
 
-impl Offset<MinusZ> for ChunkPosition {
-	fn offset(self, _: MinusZ) -> Option<Self> {
+impl Offset<dir::MinusZ> for ChunkPosition {
+	fn offset(self, _: dir::MinusZ) -> Option<Self> {
 		if self.z() != 0 {
 			Some(ChunkPosition(self.0 - 0x0010))
 		} else {
@@ -230,7 +230,7 @@ impl Offset<MinusZ> for ChunkPosition {
 		}
 	}
 
-	fn offset_wrapping(self, _: MinusZ) -> Self {
+	fn offset_wrapping(self, _: dir::MinusZ) -> Self {
 		let base = self.0 & 0x0F0F;
 		let add = ((self.z().wrapping_sub(1)) & 15) as u16;
 
