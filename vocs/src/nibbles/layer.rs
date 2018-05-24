@@ -3,14 +3,25 @@ use position::LayerPosition;
 use super::{u4, u4x2, nibble_index};
 use component::LayerStorage;
 
+/// A 16x16 collection of nibbles (`u4`s).
+/// Indexed with LayerPosition.
 pub struct LayerNibbles([u4x2; 128]);
 impl LayerNibbles {
+	/// Sets a value, without clearing what was there previously.
+	/// This uses the `u4x2::replace_or` function internally, and shares the same semantics.
+	/// This can be used as an optimization to avoid clearing an already cleared value when operating
+	/// on a fresh buffer.
 	pub fn set_uncleared(&mut self, at: LayerPosition, value: u4) {
 		let (index, shift) = nibble_index(at.zx() as usize);
 
 		self.0[index] = self.0[index].replace_or(shift, value);
 	}
 
+	/// Returns a reference to the raw array of `u4x2`s.
+	/// `a` is the even element, `b` is the odd element.
+	/// For example:
+	/// (x:0,z:0) is index 0, element `a`.
+	/// (x:15,z:15) is index 127, element `b`.
 	pub fn raw(&self) -> &[u4x2; 128] {
 		&self.0
 	}
