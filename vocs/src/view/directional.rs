@@ -1,4 +1,5 @@
-use position::Dir;
+use position::{Dir, dir};
+use std::ops::{Index, IndexMut};
 
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct SplitDirectional<T> {
@@ -10,7 +11,7 @@ pub struct SplitDirectional<T> {
 	pub minus_z: T
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Directional<T>([T; 6]);
 
 impl<T> Directional<T> {
@@ -24,26 +25,119 @@ impl<T> Directional<T> {
 			split.minus_z
 		])
 	}
-
-	pub fn new(plus_x: T, minus_x: T, up: T, down: T, plus_z: T, minus_z: T) -> Self {
-		Directional([up, down, plus_x, minus_x, plus_z, minus_z])
-	}
-	
-	pub fn get(&self, direction: Dir) -> &T {
-		&self.0[direction as usize]
-	}
-	
-	pub fn get_mut(&mut self, direction: Dir) -> &mut T {
-		&mut self.0[direction as usize]
-	}
 	
 	pub fn split(self) -> SplitDirectional<T> {
-		// TODO: Update to 1.26 for slice patterns
-		/*match self.0 {
-			[up, down, plus_x, minus_x, plus_z, minus_z] => unimplemented!()
+		/*let [plus_x, minus_x, up, down, plus_z, minus_z] = self.0;
+
+		SplitDirectional {
+			plus_x,
+			minus_x,
+			up,
+			down,
+			plus_z,
+			minus_z
 		}*/
 
+		// TODO: doesn't compile for some reason?
 		unimplemented!()
+	}
+}
+
+impl<T> Index<Dir> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, direction: Dir) -> &T {
+		&self.0[direction as usize]
+	}
+}
+
+impl<T> IndexMut<Dir> for Directional<T> {
+	fn index_mut(&mut self, direction: Dir) -> &mut T {
+		&mut self.0[direction as usize]
+	}
+}
+
+impl<T> Index<dir::Up> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, _: dir::Up) -> &T {
+		&self.0[Dir::Up as usize]
+	}
+}
+
+impl<T> IndexMut<dir::Up> for Directional<T> {
+	fn index_mut(&mut self, _: dir::Up) -> &mut T {
+		&mut self.0[Dir::Up as usize]
+	}
+}
+
+impl<T> Index<dir::Down> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, _: dir::Down) -> &T {
+		&self.0[Dir::Down as usize]
+	}
+}
+
+impl<T> IndexMut<dir::Down> for Directional<T> {
+	fn index_mut(&mut self, _: dir::Down) -> &mut T {
+		&mut self.0[Dir::Down as usize]
+	}
+}
+
+impl<T> Index<dir::PlusX> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, _: dir::PlusX) -> &T {
+		&self.0[Dir::PlusX as usize]
+	}
+}
+
+impl<T> IndexMut<dir::PlusX> for Directional<T> {
+	fn index_mut(&mut self, _: dir::PlusX) -> &mut T {
+		&mut self.0[Dir::PlusX as usize]
+	}
+}
+
+impl<T> Index<dir::MinusX> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, _: dir::MinusX) -> &T {
+		&self.0[Dir::MinusX as usize]
+	}
+}
+
+impl<T> IndexMut<dir::MinusX> for Directional<T> {
+	fn index_mut(&mut self, _: dir::MinusX) -> &mut T {
+		&mut self.0[Dir::MinusX as usize]
+	}
+}
+
+impl<T> Index<dir::PlusZ> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, _: dir::PlusZ) -> &T {
+		&self.0[Dir::PlusZ as usize]
+	}
+}
+
+impl<T> IndexMut<dir::PlusZ> for Directional<T> {
+	fn index_mut(&mut self, _: dir::PlusZ) -> &mut T {
+		&mut self.0[Dir::PlusZ as usize]
+	}
+}
+
+impl<T> Index<dir::MinusZ> for Directional<T> {
+	type Output = T;
+
+	fn index(&self, _: dir::MinusZ) -> &T {
+		&self.0[Dir::MinusZ as usize]
+	}
+}
+
+impl<T> IndexMut<dir::MinusZ> for Directional<T> {
+	fn index_mut(&mut self, _: dir::MinusZ) -> &mut T {
+		&mut self.0[Dir::MinusZ as usize]
 	}
 }
 

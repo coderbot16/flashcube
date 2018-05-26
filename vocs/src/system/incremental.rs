@@ -1,5 +1,5 @@
 use mask::{ChunkMask, LayerMask};
-use view::SpillChunkMask;
+use view::SpillChunk;
 use world::world::World;
 use parking_lot::Mutex;
 
@@ -32,5 +32,5 @@ impl<I, S> IncrementalDispatcher<I, S> where I: Incremental<SystemData=S> {
 trait Incremental {
 	type SystemData;
 
-	fn run(&self, data: Self::SystemData, current: &mut ChunkMask, future: &mut SpillChunkMask);
+	fn run(&self, data: Self::SystemData, current: &mut ChunkMask, future: &mut SpillChunk<bool>);
 }

@@ -8,12 +8,9 @@ pub mod chunk;
 pub use self::layer::*;
 pub use self::chunk::*;
 
-use component::{Component, ChunkStorage, LayerStorage};
+use component::Component;
 
-use bit_vec::BitVec;
-use position::{ChunkPosition, LayerPosition, Offset, dir};
 use std::ops::Index;
-use std::u64;
 use std::marker::PhantomData;
 
 // TODO: SparseIncoming mask: Like SparseMask, but ChunkMask is replaced with IncomingChunkMask.

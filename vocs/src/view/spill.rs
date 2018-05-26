@@ -1,108 +1,52 @@
-use position::{ChunkPosition, Offset, dir};
-use mask::{Mask, LayerMask, ChunkMask};
-use view::SplitDirectional;
+use position::{ChunkPosition, Offset};
+use mask::{Mask, LayerMask};
+use view::Directional;
+use std::ops::IndexMut;
+use component::{Component, ChunkStorage, LayerStorage};
 
-pub type Spills = SplitDirectional<LayerMask>;
+pub trait MaskOffset<P, D> {
+	fn set_offset_true(&mut self, position: P, offset: D);
+	fn set_offset_false(&mut self, position: P, offset: D);
+}
 
-pub trait MaskOffset<T> {
-	fn set_offset_true(&mut self, offset: T);
-	fn set_offset_false(&mut self, offset: T);
+pub trait StorageOffset<P, D, C: Component> {
+	fn set_offset(&mut self, position: P, offset: D, value: C);
 }
 
 #[derive(Default, Clone)]
-pub struct SpillChunkMask {
-	pub mask: ChunkMask,
-	pub spills: Spills
+pub struct SpillChunk<C: Component> {
+	pub primary: C::Chunk,
+	pub spills: Directional<C::Layer>
 }
 
-impl SpillChunkMask {
-	// Y
+impl<D, C> StorageOffset<ChunkPosition, D, C> for SpillChunk<C>
+	where Directional<C::Layer>: IndexMut<D, Output=C::Layer>,
+		  ChunkPosition: Offset<D>,
+		  D: Copy,
+		  C: Component {
+	fn set_offset(&mut self, position: ChunkPosition, d: D, value: C) {
+		match position.offset(d) {
+			Some(position) => self.primary.set(position, value),
+			None => self.spills[d].set(position.layer(), value)
+		}
+	}
+}
 
-	pub fn set_up_true(&mut self, position: ChunkPosition) {
-		match position.offset(dir::Up) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.up.set_true(position.layer())
+impl<D> MaskOffset<ChunkPosition, D> for SpillChunk<bool>
+	where Directional<LayerMask>: IndexMut<D, Output=LayerMask>,
+		  ChunkPosition: Offset<D>,
+		  D: Copy {
+	fn set_offset_true(&mut self, position: ChunkPosition, d: D) {
+		match position.offset(d) {
+			Some(position) => self.primary.set_true(position),
+			None => self.spills[d].set_true(position.layer())
 		}
 	}
 
-	pub fn set_up_false(&mut self, position: ChunkPosition) {
-		match position.offset(dir::Up) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.up.set_false(position.layer())
-		}
-	}
-
-	pub fn set_down_true(&mut self, position: ChunkPosition) {
-		match position.offset(dir::Down) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.down.set_true(position.layer())
-		}
-	}
-
-	pub fn set_down_false(&mut self, position: ChunkPosition) {
-		match position.offset(dir::Down) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.down.set_false(position.layer())
-		}
-	}
-
-	// X
-
-	pub fn set_plus_x_true(&mut self, position: ChunkPosition) {
-		match position.offset(dir::PlusX) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.plus_x.set_true(position.layer_yz())
-		}
-	}
-
-	pub fn set_plus_x_false(&mut self, position: ChunkPosition) {
-		match position.offset(dir::PlusX) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.plus_x.set_false(position.layer_yz())
-		}
-	}
-
-	pub fn set_minus_x_true(&mut self, position: ChunkPosition) {
-		match position.offset(dir::MinusX) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.minus_x.set_true(position.layer_yz())
-		}
-	}
-
-	pub fn set_minus_x_false(&mut self, position: ChunkPosition) {
-		match position.offset(dir::MinusX) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.minus_x.set_false(position.layer_yz())
-		}
-	}
-
-	// Z
-
-	pub fn set_plus_z_true(&mut self, position: ChunkPosition) {
-		match position.offset(dir::PlusZ) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.plus_z.set_true(position.layer_yx())
-		}
-	}
-
-	pub fn set_plus_z_false(&mut self, position: ChunkPosition) {
-		match position.offset(dir::PlusZ) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.plus_z.set_false(position.layer_yx())
-		}
-	}
-
-	pub fn set_minus_z_true(&mut self, position: ChunkPosition) {
-		match position.offset(dir::MinusZ) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.minus_z.set_true(position.layer_yx())
-		}
-	}
-
-	pub fn set_minus_z_false(&mut self, position: ChunkPosition) {
-		match position.offset(dir::MinusZ) {
-			Some(position) => self.mask.set_true(position),
-			None => self.spills.minus_z.set_false(position.layer_yx())
+	fn set_offset_false(&mut self, position: ChunkPosition, d: D) {
+		match position.offset(d) {
+			Some(position) => self.primary.set_true(position),
+			None => self.spills[d].set_false(position.layer())
 		}
 	}
 }

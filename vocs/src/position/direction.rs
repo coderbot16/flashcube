@@ -30,11 +30,11 @@ impl Dir {
 	}
 
 	pub fn horizontal(self) -> bool {
-		self as u8 >= 2
+		(self as u8) & 2 != 2
 	}
 
 	pub fn vertical(self) -> bool {
-		(self as u8) < 2
+		(self as u8) & 2 == 2
 	}
 
 	pub fn plus(self) -> bool {
