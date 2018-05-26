@@ -9,10 +9,10 @@ pub trait Offset<D>: Sized {
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Dir {
-	Up,
-	Down,
 	PlusX,
 	MinusX,
+	Up,
+	Down,
 	PlusZ,
 	MinusZ
 }
@@ -30,11 +30,15 @@ impl Dir {
 	}
 
 	pub fn horizontal(self) -> bool {
-		!self.vertical()
+		self as u8 >= 2
 	}
 
 	pub fn vertical(self) -> bool {
-		self == Dir::Up || self == Dir::Down
+		(self as u8) < 2
+	}
+
+	pub fn plus(self) -> bool {
+		(self as u8) & 1 == 0
 	}
 
 	pub fn axis(self) -> Axis {
@@ -51,8 +55,8 @@ impl Dir {
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Axis {
-	Y,
 	X,
+	Y,
 	Z
 }
 
@@ -78,6 +82,17 @@ impl Axis {
 			Axis::Y => Dir::Down,
 			Axis::X => Dir::MinusX,
 			Axis::Z => Dir::MinusZ
+		}
+	}
+
+	pub fn to_dir(self, plus: bool) -> Dir {
+		match (self, plus) {
+			(Axis::X, false) => Dir::MinusX,
+			(Axis::X, true ) => Dir::PlusX,
+			(Axis::Y, false) => Dir::Down,
+			(Axis::Y, true ) => Dir::Up,
+			(Axis::Z, false) => Dir::MinusX,
+			(Axis::Z, true ) => Dir::PlusX
 		}
 	}
 }

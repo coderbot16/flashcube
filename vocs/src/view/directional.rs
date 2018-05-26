@@ -2,10 +2,10 @@ use position::Dir;
 
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct SplitDirectional<T> {
-	pub up:      T,
-	pub down:    T,
 	pub plus_x:  T,
 	pub minus_x: T,
+	pub up:      T,
+	pub down:    T,
 	pub plus_z:  T,
 	pub minus_z: T
 }
@@ -16,16 +16,16 @@ pub struct Directional<T>([T; 6]);
 impl<T> Directional<T> {
 	pub fn combine(split: SplitDirectional<T>) -> Self {
 		Directional ([
-			split.up,
-			split.down,
 			split.plus_x,
 			split.minus_x,
+			split.up,
+			split.down,
 			split.plus_z,
 			split.minus_z
 		])
 	}
 
-	pub fn new(up: T, down: T, plus_x: T, minus_x: T, plus_z: T, minus_z: T) -> Self {
+	pub fn new(plus_x: T, minus_x: T, up: T, down: T, plus_z: T, minus_z: T) -> Self {
 		Directional([up, down, plus_x, minus_x, plus_z, minus_z])
 	}
 	
@@ -46,3 +46,5 @@ impl<T> Directional<T> {
 		unimplemented!()
 	}
 }
+
+// TODO: Axial
