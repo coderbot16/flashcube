@@ -4,6 +4,11 @@ use view::SplitDirectional;
 
 pub type Spills = SplitDirectional<LayerMask>;
 
+pub trait MaskOffset<T> {
+	fn set_offset_true(&mut self, offset: T);
+	fn set_offset_false(&mut self, offset: T);
+}
+
 #[derive(Default, Clone)]
 pub struct SpillChunkMask {
 	pub mask: ChunkMask,

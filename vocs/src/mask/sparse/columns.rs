@@ -1,7 +1,5 @@
 use position::{GlobalSectorPosition, GlobalColumnPosition};
-use mask::{Mask, LayerMask};
-use mask::scan::Scan;
-use mask::scan_clear::ScanClear;
+use mask::{Mask, LayerMask, Scan, ScanClear};
 use std::collections::HashMap;
 use std::collections::hash_map::{Entry, Iter, IterMut};
 use std::ops::Index;
