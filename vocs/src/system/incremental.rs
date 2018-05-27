@@ -2,18 +2,11 @@ use mask::{ChunkMask, LayerMask};
 use view::SpillChunk;
 use world::world::World;
 use parking_lot::Mutex;
+use view::Directional;
 
 // TODO: Incremental dispatcher.
 
-#[derive(Clone)]
-struct IncomingChunkMask {
-	pub up:      Option<LayerMask>,
-	pub down:    Option<LayerMask>,
-	pub plus_x:  Option<LayerMask>,
-	pub minus_x: Option<LayerMask>,
-	pub plus_z:  Option<LayerMask>,
-	pub minus_z: Option<LayerMask>
-}
+type IncomingChunkMask = Directional<Option<LayerMask>>;
 
 struct WorldQueue {
 	queue: World<Box<Mutex<IncomingChunkMask>>>
