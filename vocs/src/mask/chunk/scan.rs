@@ -1,4 +1,4 @@
-use mask::{Mask, ChunkMask, Scan, ScanClear};
+use mask::{Mask, ChunkMask, Scan, ScanClear, u1x64};
 use position::ChunkPosition;
 use std::cmp;
 
@@ -13,7 +13,7 @@ impl<'a> IntoIterator for Scan<'a, ChunkMask, ChunkPosition> {
 
 pub struct ChunkScan<'a> {
 	mask: &'a ChunkMask,
-	keep: u64,
+	keep: u1x64,
 	skip: u8,
 	done: bool
 }
@@ -22,7 +22,7 @@ impl<'a> ChunkScan<'a> {
 	pub fn new(mask: &'a ChunkMask) -> Self {
 		let mut scan = ChunkScan {
 			mask,
-			keep: u64::max_value(),
+			keep: u1x64::splat(true),
 			skip: 0,
 			done: false
 		};
@@ -33,13 +33,13 @@ impl<'a> ChunkScan<'a> {
 	}
 
 	fn fast_forward(&mut self) {
-		if self.mask.blocks()[self.skip as usize] & self.keep != 0 {
+		if !(self.mask.blocks()[self.skip as usize] & self.keep).empty() {
 			return;
 		}
 
 		for (index, block) in (&self.mask.blocks()[self.skip as usize + 1..]).iter().enumerate() {
-			if *block != 0 {
-				self.keep = u64::max_value();
+			if !block.empty() {
+				self.keep = u1x64::splat(true);
 				self.skip += 1 + index as u8;
 
 				return;
@@ -59,11 +59,11 @@ impl<'a> Iterator for ChunkScan<'a> {
 		}
 
 		let block = self.mask.blocks()[self.skip as usize] & self.keep;
-		let index = block.trailing_zeros() as u16;
+		let index = block.first_bit() as u16;
 
-		self.keep = u64::max_value() << cmp::min(index + 1, 63);
+		self.keep = u1x64::from_bits(u64::max_value() << cmp::min(index + 1, 63));
 		if index == 63 {
-			self.keep = 0;
+			self.keep = u1x64::splat(false);
 		}
 
 		let index = ((self.skip as u16) * 64) | index;
@@ -104,7 +104,7 @@ impl<'a> ChunkScanClear<'a> {
 
 	fn fast_forward(&mut self) {
 		for (index, block) in (&self.mask.blocks()[self.skip as usize..]).iter().enumerate() {
-			if *block != 0 {
+			if !block.empty() {
 				self.skip += index as u8;
 				return;
 			}
@@ -123,7 +123,7 @@ impl<'a> Iterator for ChunkScanClear<'a> {
 		}
 
 		let block = self.mask.blocks()[self.skip as usize];
-		let index = ((self.skip as u16) * 64) | (block.trailing_zeros() as u16);
+		let index = ((self.skip as u16) * 64) | (block.first_bit() as u16);
 
 		let position = ChunkPosition::from_yzx(index);
 
@@ -156,6 +156,8 @@ mod tests {
 
 			let mut expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
 			let mut created_vec = mask.scan().into_iter().collect::<Vec<ChunkPosition>>();
+
+			assert_eq!(expected_vec, created_vec);
 		}
 	}
 }

@@ -1,4 +1,4 @@
-use mask::Mask;
+use mask::{Mask, u1x64};
 use component::ChunkStorage;
 use position::{ChunkPosition, dir, Offset};
 use std::ops::Index;
@@ -12,8 +12,8 @@ const FALSE_REF: &bool = &false;
 const TRUE_REF:  &bool = &true;
 
 pub struct ChunkMask {
-	blocks: Box<[u64; 64]>,
-	inhabited: u64
+	blocks: Box<[u1x64; 64]>,
+	inhabited: u1x64
 }
 
 impl ChunkMask {
@@ -34,7 +34,7 @@ impl ChunkMask {
 		position.offset(dir::Up    ).map(|at| self.set_true(at));
 	}
 
-	pub fn blocks(&self) -> &[u64; 64] {
+	pub fn blocks(&self) -> &[u1x64; 64] {
 		&self.blocks
 	}
 }
@@ -49,7 +49,7 @@ impl ChunkStorage<bool> for ChunkMask {
 	}
 
 	fn fill(&mut self, value: bool) {
-		let fill = if value { u64::max_value() } else { 0 };
+		let fill = u1x64::splat(value);
 
 		for value in self.blocks.iter_mut() {
 			*value = fill;
@@ -64,41 +64,37 @@ impl Mask<ChunkPosition> for ChunkMask {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
-		self.inhabited |= 1 << block_index;
-		self.blocks[block_index] |= 1 << sub_index;
+		self.blocks[block_index] = self.blocks[block_index].set(sub_index as u8);
+		self.inhabited = self.inhabited.set(block_index as u8);
 	}
 
 	fn set_false(&mut self, position: ChunkPosition) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
-		let cleared = self.blocks[block_index] & !(1 << sub_index);
-		self.blocks[block_index] = cleared;
+		let cleared = self.blocks[block_index].clear(sub_index as u8);
 
-		let cleared_inhabited = self.inhabited & !(1 << block_index);
-		self.inhabited = cleared_inhabited | (((cleared != 0) as u64) << block_index);
+		self.blocks[block_index] = cleared;
+		self.inhabited = self.inhabited.replace(block_index as u8, !cleared.empty());
+
 	}
 
 	fn set_or(&mut self, position: ChunkPosition, value: bool) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
-		self.inhabited |= (value as u64) << block_index;
-		self.blocks[block_index] |= (value as u64) << sub_index;
+		self.blocks[block_index] = self.blocks[block_index].replace_or(sub_index as u8, value);
+		self.inhabited = self.inhabited.replace_or(block_index as u8, value);
 	}
 
 	fn set(&mut self, position: ChunkPosition, value: bool) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
-		let cleared = self.blocks[block_index] & !(1 << sub_index);
-		let block = cleared | ((value as u64) << sub_index);
-
-		// Update inhabited, using a similar method to updating the bitfield.
-		let cleared_inhabited = self.inhabited & !(1 << block_index);
-		self.inhabited = cleared_inhabited | (((block != 0) as u64) << block_index);
+		let block = self.blocks[block_index].replace(sub_index as u8, value);
 
 		self.blocks[block_index] = block;
+		self.inhabited = self.inhabited.replace(block_index as u8, !block.empty());
 	}
 
 	fn count_ones(&self) -> u32 {
@@ -115,8 +111,9 @@ impl Index<ChunkPosition> for ChunkMask {
 
 	fn index(&self, position: ChunkPosition) -> &bool {
 		let index = position.yzx() as usize;
+		let (block_index, sub_index) = (index / 64, index % 64);
 
-		if (self.blocks[index / 64] >> (index % 64))&1 == 1 { TRUE_REF } else { FALSE_REF }
+		if self.blocks[block_index].extract(sub_index as u8) { TRUE_REF } else { FALSE_REF }
 	}
 }
 
@@ -140,8 +137,8 @@ impl Clone for ChunkMask {
 impl Default for ChunkMask {
 	fn default() -> Self {
 		ChunkMask {
-			blocks: Box::new([0; 64]),
-			inhabited: 0
+			blocks: Box::new([u1x64::splat(false); 64]),
+			inhabited: u1x64::splat(false)
 		}
 	}
 }

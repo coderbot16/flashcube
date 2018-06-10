@@ -34,7 +34,9 @@ impl u4 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4::new(15).raw(), 15u8)
+	/// # use vocs::nibbles::u4;
+	///
+	/// assert_eq!(u4::new(15).raw(), 15u8);
 	/// ```
 	pub fn raw(self) -> u8 {
 		self.0
@@ -44,8 +46,10 @@ impl u4 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4::new(15).saturating_add(u4::new(7)), u4::new(15))
-	/// assert_eq!(u4::new(7).saturating_add(u4::new(3)), u4::new(10))
+	/// # use vocs::nibbles::u4;
+	///
+	/// assert_eq!(u4::new(15).saturating_add(u4::new(7)), u4::new(15));
+	/// assert_eq!(u4::new(7).saturating_add(u4::new(3)), u4::new(10));
 	/// ```
 	pub fn saturating_add(self, rhs: Self) -> Self {
 		u4(::std::cmp::min(self.0 + rhs.0, 15))
@@ -55,8 +59,10 @@ impl u4 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4::new(15).saturating_sub(u4::new(7)), u4::new(8))
-	/// assert_eq!(u4::new(7).saturating_sub(u4::new(3)), u4::new(4))
+	/// # use vocs::nibbles::u4;
+	///
+	/// assert_eq!(u4::new(15).saturating_sub(u4::new(7)), u4::new(8));
+	/// assert_eq!(u4::new(7).saturating_sub(u4::new(3)), u4::new(4));
 	/// ```
 	pub fn saturating_sub(self, rhs: Self) -> Self {
 		u4(self.0.saturating_sub(rhs.0))
@@ -64,15 +70,17 @@ impl u4 {
 }
 
 /// A vector of 2 u4s. This is implemented as a single u8, but emulates operations on true SIMD types.
-/// One thing to note is that no operations on this type take a mutable reference. This meants that
+/// One thing to note is that no operations on this type take a mutable reference. This means that
 /// the following situation is completely valid:
 ///
 /// ```
-/// let mut pair = u4x2::new(1, 4);
+/// # use vocs::nibbles::{u4, u4x2};
 ///
-/// pair.replace(false as u8, 2); // creates a new u4x2, then throws it away
+/// let mut pair = u4x2::new(u4::new(1), u4::new(4));
 ///
-/// assert_eq!(pair, u4x2::new(1, 4));
+/// pair.replace(false as u8, u4::new(2)); // creates a new u4x2, then throws it away
+///
+/// assert_eq!(pair, u4x2::new(u4::new(1), u4::new(4)));
 /// ```
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Default)]
@@ -83,9 +91,11 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
 	/// let pair = u4x2::from_ba(15*16 + 5 /*or, 245*/);
-	/// assert_eq!(pair.a(), 5);
-	/// assert_eq!(pair.b(), 15);
+	/// assert_eq!(pair.a(), u4::new(5));
+	/// assert_eq!(pair.b(), u4::new(15));
 	/// ```
 	pub fn from_ba(ba: u8) -> Self {
 		u4x2(ba)
@@ -96,9 +106,11 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// let pair = u4x2::splat(1);
-	/// assert_eq!(pair.a(), 1);
-	/// assert_eq!(pair.b(), 1);
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// let pair = u4x2::splat(u4::new(1));
+	/// assert_eq!(pair.a(), u4::new(1));
+	/// assert_eq!(pair.b(), u4::new(1));
 	/// ```
 	pub fn splat(v: u4) -> Self {
 		u4x2((v.0 << 4) | v.0)
@@ -109,9 +121,11 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// let pair = u4x2::new(1, 4);
-	/// assert_eq!(pair.a(), 1);
-	/// assert_eq!(pair.b(), 4);
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// let pair = u4x2::new(u4::new(1), u4::new(4));
+	/// assert_eq!(pair.a(), u4::new(1));
+	/// assert_eq!(pair.b(), u4::new(4));
 	/// ```
 	pub fn new(a: u4, b: u4) -> Self {
 		u4x2(a.0 | (b.0 << 4))
@@ -123,10 +137,12 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::new(1, 4).extract(false as u8), u4x2::new(1, 4).a())
-	/// assert_eq!(u4x2::new(1, 4).extract(true as u8), u4x2::new(1, 4).b())
-	/// assert_eq!(u4x2::new(1, 4).extract(false as u8), 1)
-	/// assert_eq!(u4x2::new(1, 4).extract(true as u8), 4)
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).extract(false as u8), u4x2::new(u4::new(1), u4::new(4)).a());
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).extract(true as u8), u4x2::new(u4::new(1), u4::new(4)).b());
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).extract(false as u8), u4::new(1));
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).extract(true as u8), u4::new(4));
 	/// ```
 	pub fn extract(self, d: u8) -> u4 {
 		let shift = ((d != 0) as u8)  * 4;
@@ -141,8 +157,10 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::new(1, 4).clear(false as u8), u4x2::new(0, 4))
-	/// assert_eq!(u4x2::new(1, 4).clear(false as u8), u4x2::new(1, 4).replace(false as u8, 0))
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).clear(false as u8), u4x2::new(u4::new(0), u4::new(4)));
+	/// assert_eq!(u4x2::new(u4::new(0), u4::new(4)).clear(false as u8), u4x2::new(u4::new(1), u4::new(4)).replace(false as u8, u4::new(0)));
 	/// ```
 	pub fn clear(self, d: u8) -> Self {
 		let shift = ((d != 0) as u8)  * 4;
@@ -157,7 +175,9 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::new(1, 4).replace_or(false as u8, 2), u4x2::new(2, 4))
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).replace(false as u8, u4::new(2)), u4x2::new(u4::new(2), u4::new(4)));
 	/// ```
 	pub fn replace(self, d: u8, v: u4) -> Self {
 		let shift = ((d != 0) as u8)  * 4;
@@ -175,7 +195,9 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::new(1, 4).replace_or(false as u8, 2), u4x2::new(3, 4))
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).replace_or(false as u8, u4::new(2)), u4x2::new(u4::new(3), u4::new(4)));
 	/// ```
 	pub fn replace_or(self, d: u8, v: u4) -> Self {
 		let shift = ((d != 0) as u8)  * 4;
@@ -188,7 +210,9 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::new(3, 4).b(), 3)
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// assert_eq!(u4x2::new(u4::new(3), u4::new(4)).a(), u4::new(3));
 	/// ```
 	pub fn a(self) -> u4 {
 		u4(self.0 & 0xF)
@@ -199,7 +223,9 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::new(3, 4).b(), 4)
+	/// # use vocs::nibbles::{u4, u4x2};
+	/// 
+	/// assert_eq!(u4x2::new(u4::new(3), u4::new(4)).b(), u4::new(4));
 	/// ```
 	pub fn b(self) -> u4 {
 		u4(self.0 >> 4)
@@ -211,7 +237,9 @@ impl u4x2 {
 	/// # Examples
 	///
 	/// ```
-	/// assert_eq!(u4x2::from_ba(242).ba(), 242)
+	/// # use vocs::nibbles::u4x2;
+	/// 
+	/// assert_eq!(u4x2::from_ba(242).ba(), 242);
 	/// ```
 	pub fn ba(self) -> u8 {
 		self.0
