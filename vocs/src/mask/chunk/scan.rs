@@ -1,4 +1,4 @@
-use mask::{Mask, ChunkMask, Scan, ScanClear, u1x64};
+use mask::{ChunkMask, Scan, ScanClear, u1x64};
 use position::ChunkPosition;
 use std::cmp;
 

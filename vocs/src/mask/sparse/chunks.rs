@@ -17,7 +17,7 @@ const FALSE_REF: &bool = &false;
 /// While it may appear that this is another false world abstraction,
 /// it is actually appropriate as a sparse mask.
 pub struct ChunksMask {
-	sectors: HashMap<GlobalSectorPosition, (ChunkMask, u16)>,
+	sectors: HashMap<GlobalSectorPosition, ChunkMask>,
 	cache: AllocCache<ChunkMask>
 }
 
@@ -29,17 +29,17 @@ impl ChunksMask {
 		}
 	}
 
-	pub fn sectors(&self) -> Keys<GlobalSectorPosition, (ChunkMask, u16)> {
+	pub fn sectors(&self) -> Keys<GlobalSectorPosition, ChunkMask> {
 		self.sectors.keys()
 	}
 
 	pub fn sector(&self, coordinates: GlobalSectorPosition) -> Option<&ChunkMask> {
-		self.sectors.get(&coordinates).map(|v| &v.0)
+		self.sectors.get(&coordinates)
 	}
 
-	fn require_sector(&mut self, sector: GlobalSectorPosition) -> &mut (ChunkMask, u16) {
+	fn require_sector(&mut self, sector: GlobalSectorPosition) -> &mut ChunkMask {
 		let cache = &mut self.cache;
-		self.sectors.entry(sector).or_insert_with(|| (cache.create(), 0))
+		self.sectors.entry(sector).or_insert_with(|| cache.create())
 	}
 
 	/*pub fn set_neighbors(&mut self, coords: GlobalChunkPosition) {
@@ -71,12 +71,7 @@ impl Mask<GlobalChunkPosition> for ChunksMask {
 	fn set_true(&mut self, chunk: GlobalChunkPosition) {
 		let (sector, inner) = (chunk.global_sector(), chunk.local_chunk());
 
-		let (ref mut mask, ref mut count) = *self.require_sector(sector);
-
-		*count += (!mask[inner]) as u16;
-		mask.set_true(inner);
-
-		debug_assert_eq!(mask.count_ones() as u16, *count, "Mask count tracking and true mask count out of sync!");
+		self.require_sector(sector).set_true(inner);
 	}
 
 	fn set_false(&mut self, chunk: GlobalChunkPosition) {
@@ -85,19 +80,16 @@ impl Mask<GlobalChunkPosition> for ChunksMask {
 		match self.sectors.entry(sector) {
 			Entry::Occupied(mut entry) => {
 				{
-					let (ref mut mask, ref mut count) = *entry.get_mut();
+					let mask = entry.get_mut();
 
-					*count -= mask[inner] as u16;
 					mask.set_false(inner);
 
-					debug_assert_eq!(mask.count_ones() as u16, *count, "Mask count tracking and true mask count out of sync!");
-
-					if *count > 0 {
+					if !mask.empty() {
 						return;
 					}
 				}
 
-				self.cache.destroy((entry.remove_entry().1).0)
+				self.cache.destroy(entry.remove_entry().1)
 			},
 			Entry::Vacant(_) => return
 		}
@@ -106,12 +98,11 @@ impl Mask<GlobalChunkPosition> for ChunksMask {
 	fn set_or(&mut self, chunk: GlobalChunkPosition, value: bool) {
 		let (sector, inner) = (chunk.global_sector(), chunk.local_chunk());
 
-		let (ref mut mask, ref mut count) = *self.require_sector(sector);
+		self.require_sector(sector).set_or(inner, value);
 
-		*count += ((!mask[inner]) & value) as u16;
-		mask.set_or(inner, value);
-
-		debug_assert_eq!(mask.count_ones() as u16, *count, "Mask count tracking and true mask count out of sync!");
+		// We don't need to check to see if the mask is empty here.
+		// ChunkMask::set_or can either (1) not change the mask, or (2) add another bit.
+		// Since the mask can't lose a bit, we don't need to check.
 	}
 
 	fn scan(&self) -> Scan<Self, GlobalChunkPosition> {
@@ -125,11 +116,11 @@ impl Mask<GlobalChunkPosition> for ChunksMask {
 	}
 
 	fn count_ones(&self) -> u32 {
-		self.sectors.values().fold(0, |state, value| state + value.1 as u32)
+		self.sectors.values().fold(0, |state, value| state + value.count_ones() as u32)
 	}
 
 	fn count_zeros(&self) -> u32 {
-		self.sectors.values().fold(0, |state, value| state + (512 - value.1 as u32))
+		self.sectors.values().fold(0, |state, value| state + value.count_zeros() as u32)
 	}
 }
 
@@ -139,6 +130,6 @@ impl Index<GlobalChunkPosition> for ChunksMask {
 	fn index(&self, chunk: GlobalChunkPosition) -> &bool {
 		let (sector, inner) = (chunk.global_sector(), chunk.local_chunk());
 
-		self.sectors.get(&sector).map(|&(ref mask, _)| &mask[inner]).unwrap_or(FALSE_REF)
+		self.sectors.get(&sector).map(|mask| &mask[inner]).unwrap_or(FALSE_REF)
 	}
 }

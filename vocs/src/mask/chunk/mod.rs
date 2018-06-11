@@ -60,7 +60,7 @@ impl ChunkMask {
 	}
 
 	pub fn empty(&self) -> bool {
-		self.inhabited == 0
+		self.inhabited.empty()
 	}
 }
 
