@@ -83,34 +83,11 @@ impl<'a> IntoIterator for ScanClear<'a, ChunkMask, ChunkPosition> {
 	}
 }
 
-pub struct ChunkScanClear<'a> {
-	mask: &'a mut ChunkMask,
-	skip: u8,
-	done: bool
-}
+pub struct ChunkScanClear<'a>(&'a mut ChunkMask);
 
 impl<'a> ChunkScanClear<'a> {
 	pub fn new(mask: &'a mut ChunkMask) -> Self {
-		let mut scan_clear = ChunkScanClear {
-			mask,
-			skip: 0,
-			done: false
-		};
-
-		scan_clear.fast_forward();
-
-		scan_clear
-	}
-
-	fn fast_forward(&mut self) {
-		for (index, block) in (&self.mask.blocks()[self.skip as usize..]).iter().enumerate() {
-			if !block.empty() {
-				self.skip += index as u8;
-				return;
-			}
-		}
-
-		self.done = true;
+		ChunkScanClear(mask)
 	}
 }
 
@@ -118,19 +95,7 @@ impl<'a> Iterator for ChunkScanClear<'a> {
 	type Item = ChunkPosition;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.done {
-			return None;
-		}
-
-		let block = self.mask.blocks()[self.skip as usize];
-		let index = ((self.skip as u16) * 64) | (block.first_bit() as u16);
-
-		let position = ChunkPosition::from_yzx(index);
-
-		self.mask.set_false(position);
-		self.fast_forward();
-
-		Some(position)
+		self.0.pop_first()
 	}
 }
 
@@ -158,6 +123,31 @@ mod tests {
 			let mut created_vec = mask.scan().into_iter().collect::<Vec<ChunkPosition>>();
 
 			assert_eq!(expected_vec, created_vec);
+		}
+	}
+
+	#[test]
+	fn test_chunk_scan_clear() {
+		for scram in 0..128u32 {
+			let mut mask = ChunkMask::default();
+			let mut positions = BTreeSet::new();
+
+			for index in 0..64u32 {
+				let pos = scram * 529 + index*507;
+				let position = ChunkPosition::from_yzx((pos as u16) & 4095);
+
+				positions.insert(position);
+				mask.set_true(position);
+			}
+
+			let mut expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
+			let mut created_vec = mask.scan_clear().into_iter().collect::<Vec<ChunkPosition>>();
+
+			assert_eq!(expected_vec, created_vec);
+
+			if mask != ChunkMask::default() {
+				panic!("ChunkMask::scan_clear did not clear the mask!");
+			}
 		}
 	}
 }

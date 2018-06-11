@@ -2,6 +2,7 @@ use mask::{Mask, u1x64};
 use component::ChunkStorage;
 use position::{ChunkPosition, dir, Offset};
 use std::ops::Index;
+use std::cmp::PartialEq;
 
 mod scan;
 
@@ -34,8 +35,32 @@ impl ChunkMask {
 		position.offset(dir::Up    ).map(|at| self.set_true(at));
 	}
 
+	pub fn pop_first(&mut self) -> Option<ChunkPosition> {
+		let block_index = self.inhabited.first_bit();
+
+		if block_index > 63 {
+			return None;
+		}
+
+		let first = &mut self.blocks[block_index as usize];
+
+		let sub_index = first.first_bit();
+		*first = first.clear(sub_index);
+
+		self.inhabited = self.inhabited.replace(block_index, !first.empty());
+
+		Some(ChunkPosition::from_yzx(
+			((block_index as u16) * 64) |
+				  (  sub_index as u16)
+		))
+	}
+
 	pub fn blocks(&self) -> &[u1x64; 64] {
 		&self.blocks
+	}
+
+	pub fn empty(&self) -> bool {
+		self.inhabited == 0
 	}
 }
 
@@ -133,6 +158,18 @@ impl Clone for ChunkMask {
 		}
 	}
 }
+
+impl PartialEq for ChunkMask {
+	fn eq(&self, other: &Self) -> bool {
+		if self.inhabited != other.inhabited {
+			 return false;
+		}
+
+		(&self.blocks[..]) == (&other.blocks[..])
+	}
+}
+
+impl Eq for ChunkMask {}
 
 impl Default for ChunkMask {
 	fn default() -> Self {
