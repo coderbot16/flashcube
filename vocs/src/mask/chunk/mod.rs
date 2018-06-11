@@ -27,12 +27,16 @@ impl ChunkMask {
 	}
 
 	pub fn set_neighbors(&mut self, position: ChunkPosition) {
+		self.set_h_neighbors(position);
+		position.offset(dir::Down  ).map(|at| self.set_true(at));
+		position.offset(dir::Up    ).map(|at| self.set_true(at));
+	}
+
+	pub fn set_h_neighbors(&mut self, position: ChunkPosition) {
 		position.offset(dir::MinusX).map(|at| self.set_true(at));
 		position.offset(dir::PlusX ).map(|at| self.set_true(at));
 		position.offset(dir::MinusZ).map(|at| self.set_true(at));
 		position.offset(dir::PlusZ ).map(|at| self.set_true(at));
-		position.offset(dir::Down  ).map(|at| self.set_true(at));
-		position.offset(dir::Up    ).map(|at| self.set_true(at));
 	}
 
 	pub fn pop_first(&mut self) -> Option<ChunkPosition> {
