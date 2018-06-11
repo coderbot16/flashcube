@@ -25,6 +25,7 @@ impl Component for u4 {
 pub struct u4(u8);
 impl u4 {
 	/// Casts a u8 to a u4, truncating the value in the process.
+	#[inline]
 	pub fn new(x: u8) -> Self {
 		u4(x & 0xF)
 	}
@@ -38,6 +39,7 @@ impl u4 {
 	///
 	/// assert_eq!(u4::new(15).raw(), 15u8);
 	/// ```
+	#[inline]
 	pub fn raw(self) -> u8 {
 		self.0
 	}
@@ -51,6 +53,7 @@ impl u4 {
 	/// assert_eq!(u4::new(15).saturating_add(u4::new(7)), u4::new(15));
 	/// assert_eq!(u4::new(7).saturating_add(u4::new(3)), u4::new(10));
 	/// ```
+	#[inline]
 	pub fn saturating_add(self, rhs: Self) -> Self {
 		u4(::std::cmp::min(self.0 + rhs.0, 15))
 	}
@@ -64,6 +67,7 @@ impl u4 {
 	/// assert_eq!(u4::new(15).saturating_sub(u4::new(7)), u4::new(8));
 	/// assert_eq!(u4::new(7).saturating_sub(u4::new(3)), u4::new(4));
 	/// ```
+	#[inline]
 	pub fn saturating_sub(self, rhs: Self) -> Self {
 		u4(self.0.saturating_sub(rhs.0))
 	}
@@ -97,6 +101,7 @@ impl u4x2 {
 	/// assert_eq!(pair.a(), u4::new(5));
 	/// assert_eq!(pair.b(), u4::new(15));
 	/// ```
+	#[inline]
 	pub fn from_ba(ba: u8) -> Self {
 		u4x2(ba)
 	}
@@ -112,6 +117,7 @@ impl u4x2 {
 	/// assert_eq!(pair.a(), u4::new(1));
 	/// assert_eq!(pair.b(), u4::new(1));
 	/// ```
+	#[inline]
 	pub fn splat(v: u4) -> Self {
 		u4x2((v.0 << 4) | v.0)
 	}
@@ -127,6 +133,7 @@ impl u4x2 {
 	/// assert_eq!(pair.a(), u4::new(1));
 	/// assert_eq!(pair.b(), u4::new(4));
 	/// ```
+	#[inline]
 	pub fn new(a: u4, b: u4) -> Self {
 		u4x2(a.0 | (b.0 << 4))
 	}
@@ -144,6 +151,7 @@ impl u4x2 {
 	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).extract(false as u8), u4::new(1));
 	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).extract(true as u8), u4::new(4));
 	/// ```
+	#[inline]
 	pub fn extract(self, d: u8) -> u4 {
 		let shift = ((d != 0) as u8)  * 4;
 		let single = self.0 & (0xF << shift);
@@ -162,6 +170,7 @@ impl u4x2 {
 	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).clear(false as u8), u4x2::new(u4::new(0), u4::new(4)));
 	/// assert_eq!(u4x2::new(u4::new(0), u4::new(4)).clear(false as u8), u4x2::new(u4::new(1), u4::new(4)).replace(false as u8, u4::new(0)));
 	/// ```
+	#[inline]
 	pub fn clear(self, d: u8) -> Self {
 		let shift = ((d != 0) as u8)  * 4;
 
@@ -179,6 +188,7 @@ impl u4x2 {
 	/// 
 	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).replace(false as u8, u4::new(2)), u4x2::new(u4::new(2), u4::new(4)));
 	/// ```
+	#[inline]
 	pub fn replace(self, d: u8, v: u4) -> Self {
 		let shift = ((d != 0) as u8)  * 4;
 
@@ -199,6 +209,7 @@ impl u4x2 {
 	/// 
 	/// assert_eq!(u4x2::new(u4::new(1), u4::new(4)).replace_or(false as u8, u4::new(2)), u4x2::new(u4::new(3), u4::new(4)));
 	/// ```
+	#[inline]
 	pub fn replace_or(self, d: u8, v: u4) -> Self {
 		let shift = ((d != 0) as u8)  * 4;
 
@@ -214,6 +225,7 @@ impl u4x2 {
 	/// 
 	/// assert_eq!(u4x2::new(u4::new(3), u4::new(4)).a(), u4::new(3));
 	/// ```
+	#[inline]
 	pub fn a(self) -> u4 {
 		u4(self.0 & 0xF)
 	}
@@ -227,6 +239,7 @@ impl u4x2 {
 	/// 
 	/// assert_eq!(u4x2::new(u4::new(3), u4::new(4)).b(), u4::new(4));
 	/// ```
+	#[inline]
 	pub fn b(self) -> u4 {
 		u4(self.0 >> 4)
 	}
@@ -241,6 +254,7 @@ impl u4x2 {
 	/// 
 	/// assert_eq!(u4x2::from_ba(242).ba(), 242);
 	/// ```
+	#[inline]
 	pub fn ba(self) -> u8 {
 		self.0
 	}
