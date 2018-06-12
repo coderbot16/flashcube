@@ -1,5 +1,5 @@
 use position::{ColumnPosition, Offset, dir};
-use std::fmt::{Debug, Formatter, Result};
+use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct QuadPosition(ColumnPosition, u8);
@@ -54,13 +54,15 @@ impl QuadPosition {
 	}
 }
 
-impl Debug for QuadPosition {
-	fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Debug for QuadPosition {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "QuadPosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
 	}
 }
 
 impl Offset<(i8, i8, i8)> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, (x, y, z): (i8, i8, i8)) -> Option<Self> {
 		let x = (self.x() as i16) + (x as i16);
 		let y = (self.y() as i16) + (y as i16);
@@ -86,9 +88,15 @@ impl Offset<(i8, i8, i8)> for QuadPosition {
 
 		QuadPosition::new(x, y, z)
 	}
+
+	fn offset_spilling(self, offs: (i8, i8, i8)) -> Result<Self, ()> {
+		self.offset(offs).ok_or(())
+	}
 }
 
 impl Offset<dir::Up> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, _: dir::Up) -> Option<Self> {
 		self.0.offset(dir::Up).map(|c| QuadPosition(c, self.1))
 	}
@@ -98,9 +106,15 @@ impl Offset<dir::Up> for QuadPosition {
 
 		QuadPosition(c, self.1)
 	}
+
+	fn offset_spilling(self, _: dir::Up) -> Result<Self, ()> {
+		self.offset(dir::Up).ok_or(())
+	}
 }
 
 impl Offset<dir::Down> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, _: dir::Down) -> Option<Self> {
 		self.0.offset(dir::Down).map(|c| QuadPosition(c, self.1))
 	}
@@ -110,11 +124,17 @@ impl Offset<dir::Down> for QuadPosition {
 
 		QuadPosition(c, self.1)
 	}
+
+	fn offset_spilling(self, _: dir::Down) -> Result<Self, ()> {
+		self.offset(dir::Down).ok_or(())
+	}
 }
 
 // TODO: Is there a more efficient way to implement these?
 
 impl Offset<dir::PlusX> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, _: dir::PlusX) -> Option<Self> {
 		self.offset((1, 0 , 0))
 	}
@@ -122,9 +142,15 @@ impl Offset<dir::PlusX> for QuadPosition {
 	fn offset_wrapping(self, _: dir::PlusX) -> Self {
 		self.offset_wrapping((1, 0, 0))
 	}
+
+	fn offset_spilling(self, _: dir::PlusX) -> Result<Self, ()> {
+		self.offset_spilling((1, 0 , 0))
+	}
 }
 
 impl Offset<dir::MinusX> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, _: dir::MinusX) -> Option<Self> {
 		self.offset((-1, 0, 0))
 	}
@@ -132,9 +158,15 @@ impl Offset<dir::MinusX> for QuadPosition {
 	fn offset_wrapping(self, _: dir::MinusX) -> Self {
 		self.offset_wrapping((-1, 0, 0))
 	}
+
+	fn offset_spilling(self, _: dir::MinusX) -> Result<Self, ()> {
+		self.offset_spilling((-1, 0 , 0))
+	}
 }
 
 impl Offset<dir::PlusZ> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, _: dir::PlusZ) -> Option<Self> {
 		self.offset((0, 0, 1))
 	}
@@ -142,14 +174,24 @@ impl Offset<dir::PlusZ> for QuadPosition {
 	fn offset_wrapping(self, _: dir::PlusZ) -> Self {
 		self.offset_wrapping((0, 0, 1))
 	}
+
+	fn offset_spilling(self, _: dir::PlusZ) -> Result<Self, ()> {
+		self.offset_spilling((0, 0, 1))
+	}
 }
 
 impl Offset<dir::MinusZ> for QuadPosition {
+	type Spill = ();
+
 	fn offset(self, _: dir::MinusZ) -> Option<Self> {
 		self.offset((0, 0, -1))
 	}
 
 	fn offset_wrapping(self, _: dir::MinusZ) -> Self {
 		self.offset_wrapping((0, 0, -1))
+	}
+
+	fn offset_spilling(self, _: dir::MinusZ) -> Result<Self, ()> {
+		self.offset_spilling((0, 0, -1))
 	}
 }

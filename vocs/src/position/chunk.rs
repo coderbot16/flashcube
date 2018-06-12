@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Result, Formatter};
+use std::fmt;
 use position::{LayerPosition, Offset, dir};
 use packed::PackedIndex;
 
@@ -61,19 +61,25 @@ impl ChunkPosition {
 
 	// Swizzle functions
 
-	/// Returns the Y and Z components, represented as `(Y<<4) | Z`.
-	pub fn yz(&self) -> u8 {
-		(self.0 >> 4) as u8
+	/// Returns the Y and Z components, represented as `(Z<<4) | Z`.
+	pub fn zy(&self) -> u8 {
+		(
+			 (self.0 & 0x0F0) |     // Z component, not shifted
+			((self.0 & 0xF00) >> 8) // Y component, shifted to the other side
+		) as u8
 	}
 
 	/// Returns the index represented as `(Z<<4) | X`.
 	pub fn zx(&self) -> u8 {
-		(self.0 & 255) as u8
+		(self.0 & 0x0FF) as u8
 	}
 
 	/// Returns the Y and X components, represented as `(Y<<4) | X`.
 	pub fn yx(&self) -> u8 {
-		(self.y() << 4) | (self.x())
+		(
+			((self.0 & 0xF00) >> 4) | // Y component, shifted by one space
+			 (self.0 & 0x00F)         // X component, not shifted
+		) as u8
 	}
 
 	// Layer swizzle functions
@@ -84,13 +90,13 @@ impl ChunkPosition {
 	}
 
 	/// Returns the layer position on the PlusX / MinusX face.
-	/// This is equivalent to `LayerPosition::from_zx(position.chunk_yz())`.
-	pub fn layer_yz(&self) -> LayerPosition {
-		LayerPosition::from_zx(self.yz())
+	/// This is equivalent to `LayerPosition::from_zx(position.zy())`.
+	pub fn layer_zy(&self) -> LayerPosition {
+		LayerPosition::from_zx(self.zy())
 	}
 
 	/// Returns the layer position on the PlusZ / MinusZ face.
-	/// This is equivalent to `LayerPosition::from_zx(position.chunk_yx())`.
+	/// This is equivalent to `LayerPosition::from_zx(position.yx())`.
 	pub fn layer_yx(&self) -> LayerPosition {
 		LayerPosition::from_zx(self.yx())
 	}
@@ -104,7 +110,7 @@ impl ChunkPosition {
 
 	/// Returns the index represented as `(X<<8) | (Y<<4) | Z`.
 	pub fn xyz(&self) -> u16 {
-		((self.x() as u16) << 8) | ((self.yz() as u16) & 255)
+		((self.x() as u16) << 8) | ((self.y() as u16) << 4) |(self.z() as u16)
 	}
 
 	/// Returns the chunk_yzx index into a nibble array. Returns in the form (index, shift).
@@ -130,19 +136,21 @@ impl PackedIndex for ChunkPosition {
 	}
 }
 
-impl Display for ChunkPosition {
-	fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Display for ChunkPosition {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "({}, {}, {})", self.x(), self.y(), self.z())
 	}
 }
 
-impl Debug for ChunkPosition {
-	fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Debug for ChunkPosition {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "ChunkPosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
 	}
 }
 
 impl Offset<dir::Up> for ChunkPosition {
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::Up) -> Option<Self> {
 		if self.y() < 15 {
 			Some(ChunkPosition(self.0 + 0x0100))
@@ -154,9 +162,19 @@ impl Offset<dir::Up> for ChunkPosition {
 	fn offset_wrapping(self, _: dir::Up) -> Self {
 		ChunkPosition::from_yzx(self.0 + 0x0100)
 	}
+
+	fn offset_spilling(self, _: dir::Up) -> Result<Self, LayerPosition> {
+		if self.y() < 15 {
+			Ok(ChunkPosition(self.0 + 0x0100))
+		} else {
+			Err(self.layer())
+		}
+	}
 }
 
 impl Offset<dir::Down> for ChunkPosition {
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::Down) -> Option<Self> {
 		if self.y() > 0 {
 			Some(ChunkPosition(self.0 - 0x0100))
@@ -168,9 +186,20 @@ impl Offset<dir::Down> for ChunkPosition {
 	fn offset_wrapping(self, _: dir::Down) -> Self {
 		ChunkPosition::from_yzx(self.0.wrapping_sub(0x0100))
 	}
+
+	fn offset_spilling(self, _: dir::Down) -> Result<Self, LayerPosition> {
+		if self.y() > 0 {
+			Ok(ChunkPosition(self.0 - 0x0100))
+		} else {
+			Err(self.layer())
+		}
+	}
 }
 
 impl Offset<dir::PlusX> for ChunkPosition {
+	// X coordinate is erased, leaving the zy coordinates.
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::PlusX) -> Option<Self> {
 		if self.x() != 15 {
 			Some(ChunkPosition(self.0 + 0x0001))
@@ -185,9 +214,20 @@ impl Offset<dir::PlusX> for ChunkPosition {
 
 		ChunkPosition(base | add)
 	}
+
+	fn offset_spilling(self, _: dir::PlusX) -> Result<Self, LayerPosition> {
+		if self.x() != 15 {
+			Ok(ChunkPosition(self.0 + 0x0001))
+		} else {
+			Err(self.layer_zy())
+		}
+	}
 }
 
 impl Offset<dir::MinusX> for ChunkPosition {
+	// X coordinate is erased, leaving the zy coordinates.
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::MinusX) -> Option<Self> {
 		if self.x() != 0 {
 			Some(ChunkPosition(self.0 - 0x0001))
@@ -202,9 +242,20 @@ impl Offset<dir::MinusX> for ChunkPosition {
 
 		ChunkPosition(base | add)
 	}
+
+	fn offset_spilling(self, _: dir::MinusX) -> Result<Self, LayerPosition> {
+		if self.x() != 0 {
+			Ok(ChunkPosition(self.0 - 0x0001))
+		} else {
+			Err(self.layer_zy())
+		}
+	}
 }
 
 impl Offset<dir::PlusZ> for ChunkPosition {
+	// Z coordinate is erased, leaving the yx coordinates.
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::PlusZ) -> Option<Self> {
 		if self.z() != 15 {
 			Some(ChunkPosition(self.0 + 0x0010))
@@ -219,9 +270,20 @@ impl Offset<dir::PlusZ> for ChunkPosition {
 
 		ChunkPosition(base | (add << 4))
 	}
+
+	fn offset_spilling(self, _: dir::PlusZ) -> Result<Self, LayerPosition> {
+		if self.z() != 15 {
+			Ok(ChunkPosition(self.0 + 0x0010))
+		} else {
+			Err(self.layer_yx())
+		}
+	}
 }
 
 impl Offset<dir::MinusZ> for ChunkPosition {
+	// Z coordinate is erased, leaving the yx coordinates.
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::MinusZ) -> Option<Self> {
 		if self.z() != 0 {
 			Some(ChunkPosition(self.0 - 0x0010))
@@ -235,5 +297,13 @@ impl Offset<dir::MinusZ> for ChunkPosition {
 		let add = ((self.z().wrapping_sub(1)) & 15) as u16;
 
 		ChunkPosition(base | (add << 4))
+	}
+
+	fn offset_spilling(self, _: dir::MinusZ) -> Result<Self, LayerPosition> {
+		if self.z() != 0 {
+			Ok(ChunkPosition(self.0 - 0x0010))
+		} else {
+			Err(self.layer_yx())
+		}
 	}
 }

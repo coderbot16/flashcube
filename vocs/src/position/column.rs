@@ -1,6 +1,6 @@
 use position::ChunkPosition;
 use position::{LayerPosition, Offset, dir};
-use std::fmt::{Debug, Formatter, Result};
+use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ColumnPosition(u16);
@@ -124,13 +124,15 @@ impl ColumnPosition {
 	}
 }
 
-impl Debug for ColumnPosition {
-	fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Debug for ColumnPosition {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "ColumnPosition {{ x: {}, y: {}, z: {}, yzx: {} }}", self.x(), self.y(), self.z(), self.yzx())
 	}
 }
 
 impl Offset<dir::Up> for ColumnPosition {
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::Up) -> Option<Self> {
 		if self.y() < 255 {
 			Some(ColumnPosition(self.0 + 0x0100))
@@ -142,9 +144,19 @@ impl Offset<dir::Up> for ColumnPosition {
 	fn offset_wrapping(self, _: dir::Up) -> Self {
 		ColumnPosition::from_yzx(self.0.wrapping_add(0x0100))
 	}
+
+	fn offset_spilling(self, _: dir::Up) -> Result<Self, LayerPosition> {
+		if self.y() < 255 {
+			Ok(ColumnPosition(self.0 + 0x0100))
+		} else {
+			Err(self.layer())
+		}
+	}
 }
 
 impl Offset<dir::Down> for ColumnPosition {
+	type Spill = LayerPosition;
+
 	fn offset(self, _: dir::Down) -> Option<Self> {
 		if self.y() > 0 {
 			Some(ColumnPosition(self.0 - 0x0100))
@@ -156,9 +168,19 @@ impl Offset<dir::Down> for ColumnPosition {
 	fn offset_wrapping(self, _: dir::Down) -> Self {
 		ColumnPosition::from_yzx(self.0.wrapping_sub(0x0100))
 	}
+
+	fn offset_spilling(self, _: dir::Down) -> Result<Self, LayerPosition> {
+		if self.y() > 0 {
+			Ok(ColumnPosition(self.0 - 0x0100))
+		} else {
+			Err(self.layer())
+		}
+	}
 }
 
 impl Offset<dir::PlusX> for ColumnPosition {
+	type Spill = (); // No proper coordinate type for a 256x16 surface.
+
 	fn offset(self, _: dir::PlusX) -> Option<Self> {
 		if self.x() != 15 {
 			Some(ColumnPosition(self.0 + 0x0001))
@@ -173,9 +195,15 @@ impl Offset<dir::PlusX> for ColumnPosition {
 
 		ColumnPosition(base | add)
 	}
+
+	fn offset_spilling(self, _: dir::PlusX) -> Result<Self, ()> {
+		self.offset(dir::PlusX).ok_or(())
+	}
 }
 
 impl Offset<dir::MinusX> for ColumnPosition {
+	type Spill = (); // No proper coordinate type for a 256x16 surface.
+
 	fn offset(self, _: dir::MinusX) -> Option<Self> {
 		if self.x() != 0 {
 			Some(ColumnPosition(self.0 - 0x0001))
@@ -190,9 +218,15 @@ impl Offset<dir::MinusX> for ColumnPosition {
 
 		ColumnPosition(base | add)
 	}
+
+	fn offset_spilling(self, _: dir::MinusX) -> Result<Self, ()> {
+		self.offset(dir::MinusX).ok_or(())
+	}
 }
 
 impl Offset<dir::PlusZ> for ColumnPosition {
+	type Spill = (); // No proper coordinate type for a 256x16 surface.
+
 	fn offset(self, _: dir::PlusZ) -> Option<Self> {
 		if self.z() != 15 {
 			Some(ColumnPosition(self.0 + 0x0010))
@@ -207,9 +241,15 @@ impl Offset<dir::PlusZ> for ColumnPosition {
 
 		ColumnPosition(base | (add << 4))
 	}
+
+	fn offset_spilling(self, _: dir::PlusZ) -> Result<Self, ()> {
+		self.offset(dir::PlusZ).ok_or(())
+	}
 }
 
 impl Offset<dir::MinusZ> for ColumnPosition {
+	type Spill = (); // No proper coordinate type for a 256x16 surface.
+
 	fn offset(self, _: dir::MinusZ) -> Option<Self> {
 		if self.z() != 0 {
 			Some(ColumnPosition(self.0 - 0x0010))
@@ -223,5 +263,9 @@ impl Offset<dir::MinusZ> for ColumnPosition {
 		let add = ((self.z().wrapping_sub(1)) & 15) as u16;
 
 		ColumnPosition(base | (add << 4))
+	}
+
+	fn offset_spilling(self, _: dir::MinusZ) -> Result<Self, ()> {
+		self.offset(dir::MinusZ).ok_or(())
 	}
 }

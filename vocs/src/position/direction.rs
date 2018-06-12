@@ -1,10 +1,15 @@
 pub trait Offset<D>: Sized {
+	type Spill;
+
 	/// Offsets this position by the coordinates.
 	/// Returns None if the result would be out of bounds.
 	fn offset(self, dir: D) -> Option<Self>;
 	/// Offsets this position by the coordinates.
 	/// Wraps around if the result would be out of bounds.
 	fn offset_wrapping(self, dir: D) -> Self;
+	/// Offsets this position by the coordinates.
+	/// Spills into a different coordinate system on error.
+	fn offset_spilling(self, dir: D) -> Result<Self, Self::Spill>;
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
