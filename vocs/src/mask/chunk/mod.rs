@@ -26,12 +26,14 @@ impl ChunkMask {
 		self.inhabited |= other.inhabited;
 	}
 
+	#[inline]
 	pub fn set_neighbors(&mut self, position: ChunkPosition) {
 		self.set_h_neighbors(position);
 		position.offset(dir::Down  ).map(|at| self.set_true(at));
 		position.offset(dir::Up    ).map(|at| self.set_true(at));
 	}
 
+	#[inline]
 	pub fn set_h_neighbors(&mut self, position: ChunkPosition) {
 		position.offset(dir::MinusX).map(|at| self.set_true(at));
 		position.offset(dir::PlusX ).map(|at| self.set_true(at));
@@ -74,7 +76,13 @@ impl ChunkStorage<bool> for ChunkMask {
 	}
 
 	fn set(&mut self, position: ChunkPosition, value: bool) {
-		<Self as Mask<ChunkPosition>>::set(self, position, value);
+		let index = position.yzx() as usize;
+		let (block_index, sub_index) = (index / 64, index % 64);
+
+		let block = self.blocks[block_index].replace(sub_index as u8, value);
+
+		self.blocks[block_index] = block;
+		self.inhabited = self.inhabited.replace(block_index as u8, !block.empty());
 	}
 
 	fn fill(&mut self, value: bool) {
@@ -114,16 +122,6 @@ impl Mask<ChunkPosition> for ChunkMask {
 
 		self.blocks[block_index] = self.blocks[block_index].replace_or(sub_index as u8, value);
 		self.inhabited = self.inhabited.replace_or(block_index as u8, value);
-	}
-
-	fn set(&mut self, position: ChunkPosition, value: bool) {
-		let index = position.yzx() as usize;
-		let (block_index, sub_index) = (index / 64, index % 64);
-
-		let block = self.blocks[block_index].replace(sub_index as u8, value);
-
-		self.blocks[block_index] = block;
-		self.inhabited = self.inhabited.replace(block_index as u8, !block.empty());
 	}
 
 	fn count_ones(&self) -> u32 {

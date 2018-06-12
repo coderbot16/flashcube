@@ -35,7 +35,13 @@ impl LayerStorage<bool> for LayerMask {
 	}
 
 	fn set(&mut self, position: LayerPosition, value: bool) {
-		<Self as Mask<LayerPosition>>::set(self, position, value);
+		let index = position.zx() as usize;
+
+		let array_index = index / 64;
+		let shift = index % 64;
+
+		let cleared = self.0[array_index] & !(1 << shift);
+		self.0[array_index] = cleared | ((value as u64) << shift)
 	}
 
 	fn fill(&mut self, value: bool) {
@@ -70,16 +76,6 @@ impl Mask<LayerPosition> for LayerMask {
 		let index = position.zx() as usize;
 
 		self.0[index / 64] |= (value as u64) << (index % 64);
-	}
-
-	fn set(&mut self, position: LayerPosition, value: bool) {
-		let index = position.zx() as usize;
-
-		let array_index = index / 64;
-		let shift = index % 64;
-
-		let cleared = self.0[array_index] & !(1 << shift);
-		self.0[array_index] = cleared | ((value as u64) << shift)
 	}
 
 	fn count_ones(&self) -> u32 {

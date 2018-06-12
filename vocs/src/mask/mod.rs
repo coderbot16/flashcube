@@ -26,13 +26,6 @@ pub trait Mask<P>: Index<P, Output=bool> {
 	fn set_false(&mut self, index: P);
 
 	fn set_or(&mut self, index: P, value: bool);
-	fn set(&mut self, index: P, value: bool) {
-		if value {
-			self.set_true(index)
-		} else {
-			self.set_false(index)
-		}
-	}
 
 	fn scan(&self) -> Scan<Self, P> {
 		Scan(self, ::std::marker::PhantomData)
