@@ -94,6 +94,10 @@ impl GlobalChunkPosition {
 		)
 	}
 
+	pub fn from_column(column: GlobalColumnPosition, y: u8) -> Self {
+		Self::new(column.x(), y, column.z())
+	}
+
 	pub fn x(&self) -> i32 {
 		let unsigned = (self.0 & MAX_U28) as i32;
 		(unsigned << 4) >> 4
@@ -225,6 +229,13 @@ impl GlobalColumnPosition {
 
 		GlobalColumnPosition(
 			(z << 28) | x
+		)
+	}
+
+	pub fn combine(global: GlobalSectorPosition, local: LayerPosition) -> Self {
+		Self::new (
+			(global.x() << 16) | (local.x() as i32),
+			(global.z() << 16) | (local.z() as i32)
 		)
 	}
 

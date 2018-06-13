@@ -1,4 +1,4 @@
-use position::{ChunkPosition, LayerPosition};
+use position::{GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 use world::sector::Sector;
 use std::collections::hash_map::{HashMap, Entry, Iter, IterMut};
 use indexed::{Target, ChunkIndexed};
@@ -6,7 +6,7 @@ use view::{QuadMut, ColumnMut};
 use splitmut::SplitMut;
 
 pub struct World<T> {
-	sectors: HashMap<(i32, i32), Sector<T>>
+	sectors: HashMap<GlobalSectorPosition, Sector<T>>
 }
 
 impl<T> World<T> {
@@ -16,21 +16,23 @@ impl<T> World<T> {
 		}
 	}
 	
-	pub fn set(&mut self, coords: (i32, u8, i32), chunk: T) {
-		let (sector, inner) = Self::split_coords(coords);
+	pub fn set(&mut self, position: GlobalChunkPosition, chunk: T) {
+		let sector = position.global_sector();
+		let inner = position.local_chunk();
 		
 		self.sectors.entry(sector).or_insert(Sector::new()).set(inner, chunk);
 	}
 
-	pub fn set_column(&mut self, coords: (i32, i32), column: [T; 16]) {
-		let sector = (coords.0 >> 4, coords.1 >> 4);
-		let inner = LayerPosition::new((coords.0 & 15) as u8, (coords.1 & 15) as u8);
+	pub fn set_column(&mut self, position: GlobalColumnPosition, column: [T; 16]) {
+		let sector = position.global_sector();
+		let inner = position.local_layer();
 
 		self.sectors.entry(sector).or_insert(Sector::new()).set_column(inner, column);
 	}
 
-	pub fn remove(&mut self, coords: (i32, u8, i32)) -> Option<T> {
-		let (sector, inner) = Self::split_coords(coords);
+	pub fn remove(&mut self, position: GlobalChunkPosition) -> Option<T> {
+		let sector = position.global_sector();
+		let inner = position.local_chunk();
 		
 		if let Entry::Occupied(mut occupied) = self.sectors.entry(sector) {
 			let value = occupied.get_mut().remove(inner);
@@ -45,56 +47,53 @@ impl<T> World<T> {
 		}
 	}
 	
-	pub fn get(&self, coords: (i32, u8, i32)) -> Option<&T> {
-		let (sector, inner) = Self::split_coords(coords);
-		
+	pub fn get(&self, position: GlobalChunkPosition) -> Option<&T> {
+		let sector = position.global_sector();
+		let inner = position.local_chunk();
+
 		self.sectors.get(&sector).and_then(|sector| sector[inner].as_ref())
 	}
-	
-	pub fn get_mut(&mut self, coords: (i32, u8, i32)) -> Option<&mut T> {
-		let (sector, inner) = Self::split_coords(coords);
-		
+
+	pub fn get_mut(&mut self, position: GlobalChunkPosition) -> Option<&mut T> {
+		let sector = position.global_sector();
+		let inner = position.local_chunk();
+
 		self.sectors.get_mut(&sector).and_then(|sector| sector.get_mut(inner))
 	}
 
-	pub fn get_column_mut(&mut self, coords: (i32, i32)) -> Option<[&mut T; 16]> {
-		let sector = (coords.0 >> 4, coords.1 >> 4);
-		let inner = LayerPosition::new((coords.0 & 15) as u8, (coords.1 & 15) as u8);
+	pub fn get_column_mut(&mut self, position: GlobalColumnPosition) -> Option<[&mut T; 16]> {
+		let sector = position.global_sector();
+		let inner = position.local_layer();
 
 		self.sectors.get_mut(&sector).and_then(|sector| sector.get_column_mut(inner))
 	}
 
-	pub fn sectors(&self) -> Iter<(i32, i32), Sector<T>> {
+	pub fn sectors(&self) -> Iter<GlobalSectorPosition, Sector<T>> {
 		self.sectors.iter()
 	}
 
-	pub fn sectors_mut(&mut self) -> IterMut<(i32, i32), Sector<T>> {
+	pub fn sectors_mut(&mut self) -> IterMut<GlobalSectorPosition, Sector<T>> {
 		self.sectors.iter_mut()
 	}
 
-	pub fn into_sectors(self) -> HashMap<(i32, i32), Sector<T>> {
+	pub fn into_sectors(self) -> HashMap<GlobalSectorPosition, Sector<T>> {
 		self.sectors
-	}
-	
-	fn split_coords(coords: (i32, u8, i32)) -> ((i32, i32), ChunkPosition) {
-		let sector = (coords.0 >> 4, coords.2 >> 4);
-		let inner = ChunkPosition::new((coords.0 & 15) as u8, coords.1, (coords.2 & 15) as u8);
-		
-		(sector, inner)
 	}
 }
 
 impl<B> World<ChunkIndexed<B>> where B: Target {
-	pub fn get_quad_mut(&mut self, coords: (i32, i32)) -> Option<QuadMut<B>> {
-		let sector = (coords.0 >> 4, coords.1 >> 4);
-		let inner = LayerPosition::new((coords.0 & 15) as u8, (coords.1 & 15) as u8);
+	pub fn get_quad_mut(&mut self, position: GlobalColumnPosition) -> Option<QuadMut<B>> {
+		let sector = position.global_sector();
+		let inner = position.local_layer();
+
+		// TODO: Overflow checking for the edge case
 
 		match (inner.x() == 15, inner.z() == 15) {
 			(false, false) => return self.sectors.get_mut(&sector).and_then(|sector| sector.get_quad_mut(inner)),
 			(true, false) => {
 				let (primary, plus_x) = self.sectors.get2_mut(
 					&sector,
-					&(sector.0 + 1, sector.1),
+					&GlobalSectorPosition::new(sector.x() + 1, sector.z()),
 				);
 
 				let (primary, plus_x) = match (primary, plus_x) {
@@ -110,7 +109,7 @@ impl<B> World<ChunkIndexed<B>> where B: Target {
 			(false, true) => {
 				let (primary, plus_z) = self.sectors.get2_mut(
 					&sector,
-					&(sector.0, sector.1 + 1),
+					&GlobalSectorPosition::new(sector.x(), sector.z() + 1)
 				);
 
 				let (primary, plus_z) = match (primary, plus_z) {
@@ -126,9 +125,9 @@ impl<B> World<ChunkIndexed<B>> where B: Target {
 			(true, true) => {
 				let (primary, plus_x, plus_z, plus_xz) = self.sectors.get4_mut(
 					&sector,
-					&(sector.0 + 1, sector.1),
-					&(sector.0, sector.1 + 1),
-					&(sector.0 + 1, sector.1 + 1)
+					&GlobalSectorPosition::new(sector.x() + 1, sector.z()),
+					&GlobalSectorPosition::new(sector.x(), sector.z() + 1),
+					&GlobalSectorPosition::new(sector.x() + 1, sector.z() + 1)
 				);
 
 				let (primary, plus_x, plus_z, plus_xz) = match (primary, plus_x, plus_z, plus_xz) {
