@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 //! # `vocs`: Voxel Component System
 //!
 //! An application of ECS to a voxel world.

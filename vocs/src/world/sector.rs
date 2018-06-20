@@ -7,8 +7,7 @@ use std::ops::Index;
 
 pub struct Sector<T> {
 	chunks: Box<[Option<T>]>,
-	present: ChunkMask,
-	count: usize
+	present: ChunkMask
 }
 
 impl<T> Sector<T> {
@@ -19,7 +18,7 @@ impl<T> Sector<T> {
 			chunks.push(None);
 		}
 
-		Sector { chunks: chunks.into_boxed_slice(), present: ChunkMask::default(), count: 0 }
+		Sector { chunks: chunks.into_boxed_slice(), present: ChunkMask::default() }
 	}
 
 	pub fn set(&mut self, position: ChunkPosition, chunk: T) {
@@ -27,7 +26,6 @@ impl<T> Sector<T> {
 
 		if target.is_none() {
 			self.present.set_true(position);
-			self.count += 1;
 		}
 
 		*target = Some(chunk);
@@ -40,7 +38,7 @@ impl<T> Sector<T> {
 		let mut chunks = (Box::new(column) as Box<[_]>).into_vec();
 
 		for (index, chunk) in chunks.drain(..).enumerate() {
-			let position = ChunkPosition::new(position.x(), index as u8, position.z());
+			let position = ChunkPosition::from_layer(index as u8, position);
 
 			self.set(position, chunk);
 		}
@@ -51,7 +49,6 @@ impl<T> Sector<T> {
 
 		if value.is_some() {
 			self.present.set_false(position);
-			self.count -= 1;
 		}
 
 		value
@@ -80,7 +77,7 @@ impl<T> Sector<T> {
 	}
 
 	/// Gets a mutable reference to an individual element of the sector,
-	/// This is not implemented as IndexMut because it would cause the internal present counter to get out of sync.
+	/// This is not implemented as IndexMut because it would cause the internal present mask to get out of sync.
 	pub fn get_mut(&mut self, position: ChunkPosition) -> Option<&mut T> {
 		self.chunks[position.yzx() as usize].as_mut()
 	}
@@ -97,13 +94,13 @@ impl<T> Sector<T> {
 		self.chunks.iter()
 	}
 
-	// TODO: This can result in the present counter getting out of sync.
+	// TODO: This can result in the present mask getting out of sync.
 	pub fn iter_mut(&mut self) -> slice::IterMut<Option<T>> {
 		self.chunks.iter_mut()
 	}
 
 	pub fn is_empty(&self) -> bool {
-		self.count == 0
+		self.present.empty()
 	}
 
 	pub fn columns(&self) -> SectorColumns<T> {
