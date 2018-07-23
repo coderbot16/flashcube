@@ -5,8 +5,10 @@ use std::ops::Index;
 use std::cmp::PartialEq;
 
 mod scan;
+mod layer_view;
 
 pub use self::scan::*;
+pub use self::layer_view::*;
 
 // Hackish constants for implementing Index on bit packed structures.
 const FALSE_REF: &bool = &false;
@@ -67,6 +69,13 @@ impl ChunkMask {
 
 	pub fn empty(&self) -> bool {
 		self.inhabited.empty()
+	}
+
+	pub fn layer_zx_mut(&mut self, y: u8) -> LayerZxMut {
+		let y = y & 15;
+		let start = (y as usize) * 4;
+
+		LayerZxMut::from_slice(&mut self.blocks[start..start+4])
 	}
 }
 

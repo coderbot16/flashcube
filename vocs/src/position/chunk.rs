@@ -61,7 +61,7 @@ impl ChunkPosition {
 
 	// Swizzle functions
 
-	/// Returns the Y and Z components, represented as `(Z<<4) | Z`.
+	/// Returns the Y and Z components, represented as `(Z<<4) | Y`.
 	pub fn zy(&self) -> u8 {
 		(
 			 (self.0 & 0x0F0) |     // Z component, not shifted
