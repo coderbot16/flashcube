@@ -75,7 +75,15 @@ impl ChunkMask {
 		let y = y & 15;
 		let start = (y as usize) * 4;
 
-		LayerZxMut::from_slice(&mut self.blocks[start..start+4])
+		LayerZxMut::from_slice(&mut self.blocks[start..start+4], &mut self.inhabited, y * 4)
+	}
+
+	pub fn layer_zy_mut(&mut self, x: u8) -> LayerZyMut {
+		LayerZyMut::from_mask(self, x)
+	}
+
+	pub fn layer_yx_mut(&mut self, z: u8) -> LayerYxMut {
+		LayerYxMut::from_mask(self, z)
 	}
 }
 

@@ -10,7 +10,7 @@ pub use self::chunk::*;
 
 use component::Component;
 
-use std::ops::{Index, BitOrAssign, BitOr, BitAndAssign, BitAnd};
+use std::ops::{Index, BitOrAssign, BitOr, BitAndAssign, BitAnd, Not};
 use std::marker::PhantomData;
 
 // TODO: SparseIncoming mask: Like SparseMask, but ChunkMask is replaced with IncomingChunkMask.
@@ -158,5 +158,14 @@ impl BitAnd for u1x64 {
 	#[inline]
 	fn bitand(self, rhs: Self) -> Self::Output {
 		u1x64(self.0 & rhs.0)
+	}
+}
+
+impl Not for u1x64 {
+	type Output = Self;
+
+	#[inline]
+	fn not(self) -> Self::Output {
+		u1x64(!self.0)
 	}
 }
