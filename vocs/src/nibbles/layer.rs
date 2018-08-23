@@ -82,3 +82,11 @@ impl Clone for LayerNibbles {
 		LayerNibbles(other)
 	}
 }
+
+impl PartialEq for LayerNibbles {
+	fn eq(&self, other: &LayerNibbles) -> bool {
+		&self.0[..] == &other.0[..]
+	}
+}
+
+impl Eq for LayerNibbles {}

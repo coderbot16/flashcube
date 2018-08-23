@@ -11,7 +11,7 @@ pub use self::scan::*;
 const FALSE_REF: &bool = &false;
 const TRUE_REF:  &bool = &true;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct LayerMask([u64; 4]);
 impl LayerMask {
 	pub fn blocks(&self) -> &[u64; 4] {

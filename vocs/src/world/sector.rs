@@ -31,6 +31,10 @@ impl<T> Sector<T> {
 		*target = Some(chunk);
 	}
 
+	pub fn pop_first(&mut self) -> Option<(ChunkPosition, T)> {
+		self.present.pop_first().and_then(|position| self.chunks[position.yzx() as usize].take().map(|chunk| (position, chunk)))
+	}
+
 	pub fn set_column(&mut self, position: LayerPosition, column: [T; 16]) {
 		// TODO: This is hackish, and needs a heap allocation. Find a better way!
 		// Or, wait for slice patterns.
@@ -236,6 +240,12 @@ impl<T> Sector<T> {
 			[c0c, c1c, c2c, c3c, c4c, c5c, c6c, c7c, c8c, c9c, c10c, c11c, c12c, c13c, c14c, c15c],
 			[c0d, c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d, c9d, c10d, c11d, c12d, c13d, c14d, c15d]
 		))
+	}
+}
+
+impl<T> Sector<T> where T: Default {
+	pub fn get_or_create_mut(&mut self, position: ChunkPosition) -> &mut T {
+		self.chunks[position.yzx() as usize].get_or_insert_with(T::default)
 	}
 }
 

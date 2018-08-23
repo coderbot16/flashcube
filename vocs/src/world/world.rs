@@ -20,14 +20,14 @@ impl<T> World<T> {
 		let sector = position.global_sector();
 		let inner = position.local_chunk();
 		
-		self.sectors.entry(sector).or_insert(Sector::new()).set(inner, chunk);
+		self.sectors.entry(sector).or_insert_with(Sector::new).set(inner, chunk);
 	}
 
 	pub fn set_column(&mut self, position: GlobalColumnPosition, column: [T; 16]) {
 		let sector = position.global_sector();
 		let inner = position.local_layer();
 
-		self.sectors.entry(sector).or_insert(Sector::new()).set_column(inner, column);
+		self.sectors.entry(sector).or_insert_with(Sector::new).set_column(inner, column);
 	}
 
 	pub fn remove(&mut self, position: GlobalChunkPosition) -> Option<T> {
@@ -61,6 +61,15 @@ impl<T> World<T> {
 		self.sectors.get_mut(&sector).and_then(|sector| sector.get_mut(inner))
 	}
 
+	pub fn get_sector(&self, position: GlobalSectorPosition) -> Option<&Sector<T>> {
+		self.sectors.get(&position)
+	}
+
+	// TODO: Leak
+	pub fn get_sector_mut(&mut self, position: GlobalSectorPosition) -> Option<&mut Sector<T>> {
+		self.sectors.get_mut(&position)
+	}
+
 	pub fn get_column_mut(&mut self, position: GlobalColumnPosition) -> Option<[&mut T; 16]> {
 		let sector = position.global_sector();
 		let inner = position.local_layer();
@@ -78,6 +87,15 @@ impl<T> World<T> {
 
 	pub fn into_sectors(self) -> HashMap<GlobalSectorPosition, Sector<T>> {
 		self.sectors
+	}
+}
+
+impl<T> World<T> where T: Default {
+	pub fn get_or_create_mut(&mut self, position: GlobalChunkPosition) -> &mut T {
+		let sector = position.global_sector();
+		let inner = position.local_chunk();
+
+		self.sectors.entry(sector).or_insert_with(Sector::new).get_or_create_mut(inner)
 	}
 }
 
