@@ -44,7 +44,7 @@ impl<B> Palette<B> where B: Target {
 	/// Tries to shrink the palette without remapping any elements.
 	pub fn try_shrink(&mut self) -> Option<(Box<[Option<B>]>, u8)> {
 		let mut half_size = self.entries.len() / 2;
-		let mut bits = 0;
+		let mut removed_bits = 0;
 
 		'outer:
 		while half_size > 0 {
@@ -54,16 +54,23 @@ impl<B> Palette<B> where B: Target {
 				}
 			}
 
-			bits += 1;
+			removed_bits += 1;
 			half_size /= 2;
 		}
 
-		if bits == 0 {
+		if removed_bits == 0 {
 			None
 		} else {
+			let new_size = self.entries.len() >> removed_bits;
+			let mut new_storage = vec![None; new_size].into_boxed_slice();
 
+			for (index, slot) in new_storage.iter_mut().enumerate() {
+				*slot = self.entries[index].take();
+			}
 
-			Some((unimplemented!(), bits))
+			let old_storage = mem::replace(&mut self.entries, new_storage);
+
+			Some((old_storage, removed_bits))
 		}
 	}
 

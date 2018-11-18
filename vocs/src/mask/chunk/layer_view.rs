@@ -197,7 +197,7 @@ impl<'l> LayerYxMut<'l> {
 		for y in 0..16 {
 			// Fetch the relevant 16 bits from the source mask.
 			let mut source = other.blocks()[(y as usize)/4];
-			source >>= (16 * (y % 4));
+			source >>= 16 * (y % 4);
 			source &= 0xFFFF;
 
 			let index = y*4 + block_offset;

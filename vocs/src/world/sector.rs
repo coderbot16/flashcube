@@ -367,13 +367,14 @@ impl<'a, T> Iterator for SectorColumnsMut<'a, T> where T: 'a  {
 	}
 }
 
+// TODO: Enumerate iterators
 pub struct SectorEnumeratePresent<'a, T> where T: 'a {
-	sector: &'a Sector<T>,
+	_sector: &'a Sector<T>,
 	// TODO: ChunkMask iter
 }
 
 pub struct SectorEnumeratePresentMut<'a, T> where T: 'a {
-	sector: &'a mut Sector<T>,
+	_sector: &'a mut Sector<T>,
 	// TODO: ChunkMask iter_mut
 }
 

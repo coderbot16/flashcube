@@ -3,7 +3,8 @@ pub trait Recycler<T> where T: Default {
 	fn destroy(&mut self, value: T);
 }
 
-/// Stub recycler. Never retains any storage.
+// TODO: Unused
+/*/// Stub recycler. Never retains any storage.
 pub struct Trash;
 impl<T> Recycler<T> for Trash where T: Default {
 	fn create(&mut self) -> T {
@@ -14,7 +15,7 @@ impl<T> Recycler<T> for Trash where T: Default {
 		// Explicit
 		::std::mem::drop(value)
 	}
-}
+}*/
 
 /// Retains a maximum number of elements at a time.
 pub struct AllocCache<T> where T: Default {
@@ -30,9 +31,10 @@ impl<T> AllocCache<T> where T: Default {
 		}
 	}
 
-	pub fn remaining_capacity(&self) -> usize {
+	// TODO: Unused
+	/*pub fn remaining_capacity(&self) -> usize {
 		self.max - self.available.len()
-	}
+	}*/
 }
 
 impl<T> Recycler<T> for AllocCache<T> where T: Default {
