@@ -31,6 +31,18 @@ impl LayerPosition {
 	pub fn zx(&self) -> u8 {
 		self.0
 	}
+
+	// Individual component setting
+
+	/// Replaces the X component with the specified value, leaving Y the same.
+	pub fn with_x(&self, x: u8) -> Self {
+		LayerPosition((self.0 & 0xF0) | (x & 0x0F))
+	}
+
+	/// Replaces the Z component with the specified value, leaving X the same.
+	pub fn with_z(&self, y: u8) -> Self {
+		LayerPosition((self.0 & 0x0F) | ((y & 0x0F) << 4))
+	}
 }
 
 impl PackedIndex for LayerPosition {

@@ -2,12 +2,12 @@
 <project version="4">
   <component name="CargoProjects">
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
-    <cargoProject FILE="$PROJECT_DIR$/freon/Cargo.toml" />
   </component>
   <component name="ProjectRootManager">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="RustProjectSettings">
-    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+    <option name="explicitPathToStdlib" value="/usr/lib/rustlib/src/rust/src" />
+    <option name="toolchainHomeDirectory" value="/usr/bin" />
   </component>
 </project>

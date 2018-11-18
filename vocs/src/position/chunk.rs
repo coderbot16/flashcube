@@ -118,6 +118,29 @@ impl ChunkPosition {
 		let raw = self.yzx();
 		((raw >> 1) as usize, (raw & 1) as u8 * 4)
 	}
+
+	// Individual component setting
+
+	/// Replaces the X component with the specified value, leaving Y and Z the same.
+	pub fn with_x(&self, x: u8) -> Self {
+		let x = x as u16;
+
+		ChunkPosition((self.0 & 0x0FF0) | (x & 0x000F))
+	}
+
+	/// Replaces the Y component with the specified value, leaving X and Z the same.
+	pub fn with_y(&self, y: u8) -> Self {
+		let y = y as u16;
+
+		ChunkPosition((self.0 & 0x0F0F) | ((y & 0x000F) << 4))
+	}
+
+	/// Replaces the Z component with the specified value, leaving X and Y the same.
+	pub fn with_z(&self, z: u8) -> Self {
+		let z = z as u16;
+
+		ChunkPosition((self.0 & 0x00FF) | ((z & 0x000F) << 8))
+	}
 }
 
 impl PackedIndex for ChunkPosition {
