@@ -70,6 +70,10 @@ impl<T> World<T> {
 		self.sectors.get_mut(&position)
 	}
 
+	pub fn get_or_create_sector_mut(&mut self, position: GlobalSectorPosition) -> &mut Sector<T> {
+		self.sectors.entry(position).or_insert_with(Sector::new)
+	}
+
 	pub fn get_column_mut(&mut self, position: GlobalColumnPosition) -> Option<[&mut T; 16]> {
 		let sector = position.global_sector();
 		let inner = position.local_layer();
