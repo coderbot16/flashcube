@@ -141,6 +141,12 @@ impl ChunkPosition {
 
 		ChunkPosition((self.0 & 0x00FF) | ((z & 0x000F) << 8))
 	}
+
+	// Iteration
+
+	pub fn enumerate() -> Enumerate {
+		Enumerate { index: 0 }
+	}
 }
 
 impl PackedIndex for ChunkPosition {
@@ -327,6 +333,26 @@ impl Offset<dir::MinusZ> for ChunkPosition {
 			Ok(ChunkPosition(self.0 - 0x0010))
 		} else {
 			Err(self.layer_yx())
+		}
+	}
+}
+
+pub struct Enumerate {
+	index: u16
+}
+
+impl Iterator for Enumerate {
+	type Item = ChunkPosition;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.index < 4096 {
+			let position = ChunkPosition::from_yzx(self.index);
+
+			self.index += 1;
+
+			Some(position)
+		} else {
+			None
 		}
 	}
 }
