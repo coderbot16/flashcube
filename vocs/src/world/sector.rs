@@ -107,6 +107,10 @@ impl<T> Sector<T> {
 		self.present.empty()
 	}
 
+	pub fn count_sectors(&self) -> u32 {
+		self.present.count_ones()
+	}
+
 	pub fn columns(&self) -> SectorColumns<T> {
 		SectorColumns {
 			sector: &self,
@@ -245,7 +249,8 @@ impl<T> Sector<T> {
 
 impl<T> Sector<T> where T: Default {
 	pub fn get_or_create_mut(&mut self, position: ChunkPosition) -> &mut T {
-		self.chunks[position.yzx() as usize].get_or_insert_with(T::default)
+		let present = &mut self.present;
+		self.chunks[position.yzx() as usize].get_or_insert_with(|| { present.set_true(position); T::default() })
 	}
 }
 
@@ -265,7 +270,6 @@ impl<B> Sector<ChunkIndexed<B>> where B: Target {
 			ChunkPosition::new(x % 16, y % 16, z % 16)
 		);
 
-		// TODO: Better error handling.
 		self[chunk].as_ref().map(|chunk| chunk.get(block))
 	}
 

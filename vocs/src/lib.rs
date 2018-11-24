@@ -48,11 +48,8 @@
 // Variable length bit collections
 extern crate bit_vec;
 
-// Execution dispatcher
-extern crate shred;
-
-// Efficient and fine-grained locks
-extern crate parking_lot;
+// Efficient and fine-grained spin locks
+extern crate spin;
 
 // Fast hash map
 extern crate fxhash;
