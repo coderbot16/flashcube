@@ -234,8 +234,8 @@ impl GlobalColumnPosition {
 
 	pub fn combine(global: GlobalSectorPosition, local: LayerPosition) -> Self {
 		Self::new (
-			(global.x() << 16) | (local.x() as i32),
-			(global.z() << 16) | (local.z() as i32)
+			(global.x() << 4) + (local.x() as i32),
+			(global.z() << 4) + (local.z() as i32)
 		)
 	}
 
