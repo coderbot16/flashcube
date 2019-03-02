@@ -15,7 +15,7 @@ bit-vec = "0.4.4"
 nom = "3.2.1"
 rs25 = { path = "../rs25" }
 vocs = { path = "../vocs" }
-java-rand = "0.1.0"
+java-rand = "0.2.0"
 
 [profile.dev]
 opt-level = 3
