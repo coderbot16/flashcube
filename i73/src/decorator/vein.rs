@@ -2,10 +2,9 @@ use vocs::indexed::Target;
 use matcher::BlockMatcher;
 use vocs::position::{QuadPosition, Offset};
 use vocs::view::QuadMut;
-use super::{Decorator, DecoratorFactory, Result};
+use super::{Decorator, Result};
 use java_rand::Random;
 use trig;
-use serde_json;
 
 // TODO: Is this really 3.141593?
 /// For when you don't have the time to type out all the digits of π or Math.PI.
@@ -15,22 +14,6 @@ const NOTCHIAN_PI: f32 = 3.1415927;
 const RADIUS_DIVISOR: f64 = 16.0;
 /// The length is `size/LENGTH_DIVISOR`
 const LENGTH_DIVISOR: f32 = 8.0;
-
-#[derive(Default)]
-pub struct VeinDecoratorFactory<B>(::std::marker::PhantomData<B>);
-impl<B> DecoratorFactory<B> for VeinDecoratorFactory<B> where B: 'static + Target + ::serde::Deserialize {
-	fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>> {
-		Ok(Box::new(serde_json::from_value::<VeinDecorator<B>>(config)?))
-	}
-}
-
-#[derive(Default)]
-pub struct SeasideVeinDecoratorFactory<B>(::std::marker::PhantomData<B>);
-impl<B> DecoratorFactory<B> for SeasideVeinDecoratorFactory<B> where B: 'static + Target + ::serde::Deserialize {
-	fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>> {
-		Ok(Box::new(serde_json::from_value::<SeasideVeinDecorator<B>>(config)?))
-	}
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SeasideVeinDecorator<B> where B: Target {

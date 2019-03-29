@@ -4,7 +4,8 @@ use distribution::{Chance, Baseline};
 use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::borrow::Cow;
-use decorator::{Dispatcher, DecoratorFactory};
+use decorator::Dispatcher;
+use config::decorator::DecoratorFactory;
 
 #[derive(Debug)]
 pub enum Error {

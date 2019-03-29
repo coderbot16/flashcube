@@ -3,7 +3,6 @@ use vocs::view::QuadMut;
 use vocs::position::{ColumnPosition, QuadPosition};
 use vocs::indexed::Target;
 use distribution::Distribution;
-use serde_json;
 
 pub mod dungeon;
 pub mod vein;
@@ -43,8 +42,4 @@ impl<H, R, B> Dispatcher<H, R, B> where H: Distribution, R: Distribution, B: Tar
 
 pub trait Decorator<B> where B: Target {
 	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result;
-}
-
-pub trait DecoratorFactory<B> where B: Target {
-	fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>>;
 }

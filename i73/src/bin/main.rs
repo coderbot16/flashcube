@@ -75,9 +75,10 @@ fn main() {
 	let biomes_config = serde_json::from_reader::<File, BiomesConfig>(File::open(profile.join("biomes.json")).unwrap()).unwrap();
 	let grid = biomes_config.to_grid().unwrap();
 
-	let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::decorator::DecoratorFactory<u16>>> = ::std::collections::HashMap::new();
-	decorator_registry.insert("vein".into(), Box::new(::i73::decorator::vein::VeinDecoratorFactory::default()));
-	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::decorator::vein::SeasideVeinDecoratorFactory::default()));
+	let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory<u16>>> = ::std::collections::HashMap::new();
+	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
+	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::config::decorator::vein::SeasideVeinDecoratorFactory::default()));
+	decorator_registry.insert("lake".into(), Box::new(::i73::config::decorator::lake::LakeDecoratorFactory::default()));
 
 	let gravel_config = DecoratorConfig {
 		decorator: "vein".into(),
@@ -111,12 +112,22 @@ fn main() {
 
 	let mut decorators: Vec<::i73::decorator::Dispatcher<i73::distribution::Chance<i73::distribution::Baseline>, i73::distribution::Chance<i73::distribution::Baseline>, u16>> = Vec::new();
 
+	for (name, decorator_set) in biomes_config.decorator_sets {
+		println!("Configuring decorator set {}", name);
+
+		for decorator_config in decorator_set {
+			println!("Config: {:?}", decorator_config);
+
+			decorators.push(decorator_config.into_dispatcher(&decorator_registry).unwrap());
+		}
+	}
+
 	decorators.push (::i73::decorator::Dispatcher {
 		decorator: Box::new(::i73::decorator::lake::LakeDecorator {
 			blocks: ::i73::decorator::lake::LakeBlocks {
 				is_liquid:  BlockMatcher::include([8*16, 9*16, 10*16, 11*16].iter()),
 				is_solid:   BlockMatcher::exclude([0*16, 8*16, 9*16, 10*16, 11*16].iter()), // TODO: All nonsolid blocks
-				replacable: BlockMatcher::none(), // TODO
+				replaceable: BlockMatcher::none(), // TODO
 				liquid:     9*16,
 				carve:      0*16,
 				solidify:   None
@@ -318,6 +329,7 @@ fn main() {
 			decoration_rng = ::java_rand::Random::new((x_part.wrapping_add(z_part)) ^ 8399452073110208023);
 
 			let mut quad = world.get_quad_mut(GlobalColumnPosition::new(x as i32, z as i32)).unwrap();
+			// TODO: Biomes paint.biomes()
 
 			for dispatcher in &decorators {
 				dispatcher.generate(&mut quad, &mut decoration_rng).unwrap();

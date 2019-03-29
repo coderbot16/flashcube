@@ -247,6 +247,10 @@ pub struct PaintPass<B> where B: Target {
 }
 
 impl<B> PaintPass<B> where B: Target {
+	pub fn biomes(&self) -> &BiomeSource<B> {
+		&self.biomes
+	}
+
 	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<B>, associations: &PaintAssociations, x: u8, z: u8, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
 		let reset_remaining = match thickness {
 			-1          => None,

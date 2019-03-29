@@ -9,8 +9,10 @@ use super::{Decorator, Result};
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LakeDecorator<B> where B: Target {
 	pub blocks: LakeBlocks<B>,
+	#[serde(default)]
 	pub settings: LakeSettings
 }
 
@@ -44,10 +46,11 @@ impl<B> Decorator<B> for LakeDecorator<B> where B: Target {
 	}
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LakeBlocks<B> where B: Target {
 	pub is_liquid:  BlockMatcher<B>,
 	pub is_solid:   BlockMatcher<B>,
-	pub replacable: BlockMatcher<B>,
+	pub replaceable: BlockMatcher<B>,
 	pub liquid:     B,
 	pub carve:      B,
 	pub solidify:   Option<B>
@@ -113,6 +116,7 @@ impl<B> LakeBlocks<B> where B: Target {
 	// TODO: grow_grass, solidify_border
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LakeSettings {
 	pub surface: u8,
 	pub min_blobs: u32,
