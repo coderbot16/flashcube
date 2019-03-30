@@ -1,23 +1,23 @@
 use java_rand::Random;
-use vocs::indexed::Target;
 use i73_base::matcher::BlockMatcher;
 use vocs::position::{ChunkPosition, ColumnPosition, QuadPosition};
 use vocs::view::QuadMut;
 use vocs::mask::ChunkMask;
 use vocs::component::*;
 use super::{Decorator, Result};
+use i73_base::Block;
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LakeDecorator<B> where B: Target {
-	pub blocks: LakeBlocks<B>,
+pub struct LakeDecorator {
+	pub blocks: LakeBlocks,
 	#[serde(default)]
 	pub settings: LakeSettings
 }
 
-impl<B> Decorator<B> for LakeDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for LakeDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		let mut lower = position.to_centered().unwrap();
 
 		while lower.y() > 0 && quad.get(QuadPosition::new(lower.x(), lower.y(), lower.z())) == &self.blocks.carve {
@@ -47,17 +47,17 @@ impl<B> Decorator<B> for LakeDecorator<B> where B: Target {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LakeBlocks<B> where B: Target {
-	pub is_liquid:  BlockMatcher<B>,
-	pub is_solid:   BlockMatcher<B>,
-	pub replaceable: BlockMatcher<B>,
-	pub liquid:     B,
-	pub carve:      B,
-	pub solidify:   Option<B>
+pub struct LakeBlocks {
+	pub is_liquid:  BlockMatcher,
+	pub is_solid:   BlockMatcher,
+	pub replaceable: BlockMatcher,
+	pub liquid:     Block,
+	pub carve:      Block,
+	pub solidify:   Option<Block>
 }
 
-impl<B> LakeBlocks<B> where B: Target {
-	pub fn check_border(&self, lake: &Lake, quad: &mut QuadMut<B>, lower: ColumnPosition) -> bool {
+impl LakeBlocks {
+	pub fn check_border(&self, lake: &Lake, quad: &mut QuadMut<Block>, lower: ColumnPosition) -> bool {
 		
 		for x in 0..16 {
 			for z in 0..16 {
@@ -83,7 +83,7 @@ impl<B> LakeBlocks<B> where B: Target {
 		return true;
 	}
 	
-	pub fn fill_and_carve(&self, lake: &Lake, quad: &mut QuadMut<B>, lower: ColumnPosition) {
+	pub fn fill_and_carve(&self, lake: &Lake, quad: &mut QuadMut<Block>, lower: ColumnPosition) {
 		quad.ensure_available(self.liquid.clone());
 		quad.ensure_available(self.carve.clone());
 		

@@ -1,21 +1,21 @@
 use cgmath::{Point2, Vector2};
 use vocs::position::{LayerPosition, GlobalColumnPosition};
-use vocs::indexed::{LayerIndexed, Target};
+use vocs::indexed::LayerIndexed;
 use {Biome, Lookup};
 use climate::{Climate, ClimateSource};
 use i73_noise::sample::Sample;
 
-pub struct BiomeSource<B> where B: Target {
+pub struct BiomeSource {
 	climate: ClimateSource,
-	lookup:  Lookup<B>
+	lookup:  Lookup
 }
 
-impl<B> BiomeSource<B> where B: Target {
-	pub fn new(climate: ClimateSource, lookup: Lookup<B>) -> Self {
+impl BiomeSource {
+	pub fn new(climate: ClimateSource, lookup: Lookup) -> Self {
 		BiomeSource { climate, lookup }
 	}
 	
-	pub fn layer(&self, chunk: GlobalColumnPosition) -> LayerIndexed<Biome<B>> {
+	pub fn layer(&self, chunk: GlobalColumnPosition) -> LayerIndexed<Biome> {
 		let block = Point2::new (
 			(chunk.x() * 16) as f64,
 			(chunk.z() * 16) as f64

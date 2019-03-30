@@ -1,9 +1,8 @@
 use serde_json;
 use i73_decorator::Decorator;
-use vocs::indexed::Target;
 
-pub trait DecoratorFactory<B> where B: Target {
-	fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>>;
+pub trait DecoratorFactory {
+	fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator>>;
 }
 
 /// Vein decorator factories
@@ -12,18 +11,18 @@ pub mod vein {
 	use i73_decorator::vein::{VeinDecorator, SeasideVeinDecorator};
 
 	#[derive(Default)]
-	pub struct VeinDecoratorFactory<B>(::std::marker::PhantomData<B>);
-	impl<B> DecoratorFactory<B> for VeinDecoratorFactory<B> where B: 'static + Target + ::serde::Deserialize {
-		fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>> {
-			Ok(Box::new(serde_json::from_value::<VeinDecorator<B>>(config)?))
+	pub struct VeinDecoratorFactory;
+	impl DecoratorFactory for VeinDecoratorFactory {
+		fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator>> {
+			Ok(Box::new(serde_json::from_value::<VeinDecorator>(config)?))
 		}
 	}
 
 	#[derive(Default)]
-	pub struct SeasideVeinDecoratorFactory<B>(::std::marker::PhantomData<B>);
-	impl<B> DecoratorFactory<B> for SeasideVeinDecoratorFactory<B> where B: 'static + Target + ::serde::Deserialize {
-		fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>> {
-			Ok(Box::new(serde_json::from_value::<SeasideVeinDecorator<B>>(config)?))
+	pub struct SeasideVeinDecoratorFactory;
+	impl DecoratorFactory for SeasideVeinDecoratorFactory {
+		fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator>> {
+			Ok(Box::new(serde_json::from_value::<SeasideVeinDecorator>(config)?))
 		}
 	}
 }
@@ -34,10 +33,10 @@ pub mod lake {
 	use i73_decorator::lake::{LakeDecorator};
 
 	#[derive(Default)]
-	pub struct LakeDecoratorFactory<B>(::std::marker::PhantomData<B>);
-	impl<B> DecoratorFactory<B> for LakeDecoratorFactory<B> where B: 'static + Target + ::serde::Deserialize {
-		fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator<B>>> {
-			Ok(Box::new(serde_json::from_value::<LakeDecorator<B>>(config)?))
+	pub struct LakeDecoratorFactory;
+	impl DecoratorFactory for LakeDecoratorFactory {
+		fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<Decorator>> {
+			Ok(Box::new(serde_json::from_value::<LakeDecorator>(config)?))
 		}
 	}
 }

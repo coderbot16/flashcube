@@ -15,7 +15,7 @@ use std::fs::File;
 use std::cmp::min;
 
 use i73::config::settings::customized::{Customized, Parts};
-use i73_base::Pass;
+use i73_base::{Pass, Block};
 use i73_terrain::overworld_173::{self, Settings};
 use i73::config::biomes::{BiomesConfig, DecoratorConfig};
 use i73_biome::Lookup;
@@ -29,6 +29,7 @@ use vocs::position::{GlobalColumnPosition, GlobalChunkPosition};
 use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
 use rs25::level::region::RegionWriter;
 use rs25::level::anvil::ColumnRoot;
+use std::collections::HashMap;
 
 fn main() {
 	let profile_name = match ::std::env::args().skip(1).next() {
@@ -63,13 +64,13 @@ fn main() {
 	
 	// TODO: Biome Settings
 	
-	let sea_block = if parts.ocean.top > 0 {
+	let sea_block = Block::from_anvil_id(if parts.ocean.top > 0 {
 		settings.sea_coord = min(parts.ocean.top - 1, 255) as u8;
 		
 		if parts.ocean.lava { 11*16 } else { 9*16 }
 	} else {
 		0*16
-	};
+	});
 	
 	settings.shape_blocks.ocean = sea_block;
 	settings.paint_blocks.ocean = sea_block;
@@ -79,7 +80,7 @@ fn main() {
 	let biomes_config = serde_json::from_reader::<File, BiomesConfig>(File::open(profile.join("biomes.json")).unwrap()).unwrap();
 	let grid = biomes_config.to_grid().unwrap();
 
-	let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory<u16>>> = ::std::collections::HashMap::new();
+	/*let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
 	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
 	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::config::decorator::vein::SeasideVeinDecoratorFactory::default()));
 	decorator_registry.insert("lake".into(), Box::new(::i73::config::decorator::lake::LakeDecoratorFactory::default()));
@@ -114,7 +115,7 @@ fn main() {
 		}
 	};
 
-	let mut decorators: Vec<::i73_decorator::Dispatcher<i73_base::distribution::Chance<i73_base::distribution::Baseline>, i73_base::distribution::Chance<i73_base::distribution::Baseline>, u16>> = Vec::new();
+	let mut decorators: Vec<::i73_decorator::Dispatcher<i73_base::distribution::Chance<i73_base::distribution::Baseline>, i73_base::distribution::Chance<i73_base::distribution::Baseline>>> = Vec::new();
 
 	for (name, decorator_set) in biomes_config.decorator_sets {
 		println!("Configuring decorator set {}", name);
@@ -129,11 +130,22 @@ fn main() {
 	decorators.push (::i73_decorator::Dispatcher {
 		decorator: Box::new(::i73_decorator::lake::LakeDecorator {
 			blocks: ::i73_decorator::lake::LakeBlocks {
-				is_liquid:  BlockMatcher::include([8*16, 9*16, 10*16, 11*16].iter()),
-				is_solid:   BlockMatcher::exclude([0*16, 8*16, 9*16, 10*16, 11*16].iter()), // TODO: All nonsolid blocks
+				is_liquid:  BlockMatcher::include([
+					Block::from_anvil_id(8*16),
+					Block::from_anvil_id(9*16),
+					Block::from_anvil_id(10*16),
+					Block::from_anvil_id(11*16)
+				].iter()),
+				is_solid:   BlockMatcher::exclude([
+					Block::air(),
+					Block::from_anvil_id(8*16),
+					Block::from_anvil_id(9*16),
+					Block::from_anvil_id(10*16),
+					Block::from_anvil_id(11*16)
+				].iter()), // TODO: All nonsolid blocks
 				replaceable: BlockMatcher::none(), // TODO
-				liquid:     9*16,
-				carve:      0*16,
+				liquid:     Block::from_anvil_id(9*16),
+				carve:      Block::air(),
 				solidify:   None
 			},
 			settings: ::i73_decorator::lake::LakeSettings::default()
@@ -157,12 +169,12 @@ fn main() {
 		decorator: Box::new(::i73_decorator::vein::SeasideVeinDecorator {
 			vein: ::i73_decorator::vein::VeinDecorator {
 				blocks: ::i73_decorator::vein::VeinBlocks {
-					replace: BlockMatcher::is(12*16),
-					block: 82*16
+					replace: BlockMatcher::is(Block::from_anvil_id(12*16)),
+					block: Block::from_anvil_id(82*16)
 				},
 				size: 32
 			},
-			ocean: BlockMatcher::include([8*16, 9*16].iter())
+			ocean: BlockMatcher::include([Block::from_anvil_id(8*16), Block::from_anvil_id(9*16)].iter())
 		}),
 		height_distribution: ::i73_base::distribution::Chance {
 			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
@@ -190,11 +202,10 @@ fn main() {
 			horizontal: 8,
 			vertical: 4,
 			decorator: ::i73_decorator::clump::plant::PlantDecorator {
-				block: 31*16 + 1,
-				base: BlockMatcher::include([2*16, 3*16, 60*16].into_iter()),
-				replace: BlockMatcher::is(0*16)
-			},
-			phantom: ::std::marker::PhantomData::<u16>
+				block: Block::from_anvil_id(31*16 + 1),
+				base: BlockMatcher::include([Block::from_anvil_id(2*16), Block::from_anvil_id(3*16), Block::from_anvil_id(60*16)].into_iter()),
+				replace: BlockMatcher::is(Block::air())
+			}
 		}),
 		height_distribution: ::i73_base::distribution::Chance {
 			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
@@ -240,13 +251,13 @@ fn main() {
 	let (shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
 	
 	let caves_generator = i73_structure::caves::CavesGenerator {
-		carve: 0*16,
-		lower: 10*16,
-		surface_block: 2*16,
-		ocean: BlockMatcher::include([8*16, 9*16].iter()),
-		carvable: BlockMatcher::include([1*16, 2*16, 3*16].iter()),
-		surface_top: BlockMatcher::is(2*16),
-		surface_fill: BlockMatcher::is(3*16),
+		carve: Block::air(),
+		lower: Block::from_anvil_id(10*16),
+		surface_block: Block::from_anvil_id(2*16),
+		ocean: BlockMatcher::include([Block::from_anvil_id(8*16), Block::from_anvil_id(9*16)].iter()),
+		carvable: BlockMatcher::include([Block::from_anvil_id(1*16), Block::from_anvil_id(2*16), Block::from_anvil_id(3*16)].iter()),
+		surface_top: BlockMatcher::is(Block::from_anvil_id(2*16)),
+		surface_fill: BlockMatcher::is(Block::from_anvil_id(3*16)),
 		blob_size_multiplier: 1.0,
 		vertical_multiplier: 1.0,
 		lower_surface: 10
@@ -265,7 +276,7 @@ fn main() {
 	
 	let (_, paint) = overworld_173::passes(-160654125608861039, fake_settings);*/
 	
-	let mut world = World::<ChunkIndexed<u16>>::new();
+	let mut world = World::<ChunkIndexed<Block>>::new();
 
 	println!("Generating region (0, 0)");
 	let gen_start = ::std::time::Instant::now();
@@ -276,26 +287,26 @@ fn main() {
 			let column_position = GlobalColumnPosition::new(x, z);
 
 			let mut column_chunks = [
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0),
-				ChunkIndexed::<u16>::new(4, 0)
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air())
 			];
 
 			{
-				let mut column: ColumnMut<u16> = ColumnMut::from_array(&mut column_chunks);
+				let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
 
 				shape.apply(&mut column, column_position);
 				paint.apply(&mut column, column_position);
@@ -353,7 +364,6 @@ fn main() {
 
 	use vocs::nibbles::{u4, ChunkNibbles, BulkNibbles};
 	use vocs::mask::ChunkMask;
-	use vocs::sparse::SparseStorage;
 	use vocs::mask::LayerMask;
 	use vocs::component::*;
 	use vocs::view::{SplitDirectional, Directional};
@@ -367,10 +377,10 @@ fn main() {
 	let mut incomplete = World::<ChunkMask>::new();
 	let mut heightmaps = ::std::collections::HashMap::<(i32, i32), Vec<u32>>::new(); // TODO: Better vocs integration.
 
-	let mut lighting_info = SparseStorage::<u4>::with_default(u4::new(15));
-	lighting_info.set( 0 * 16, u4::new(0));
-	lighting_info.set( 8 * 16, u4::new(2));
-	lighting_info.set( 9 * 16, u4::new(2));
+	let mut lighting_info = HashMap::new()/*SparseStorage::<u4>::with_default(u4::new(15))*/;
+	lighting_info.insert(Block::air(), u4::new(0));
+	lighting_info.insert(Block::from_anvil_id( 8 * 16), u4::new(2));
+	lighting_info.insert(Block::from_anvil_id( 9 * 16), u4::new(2));
 
 	let empty_lighting = ChunkNibbles::default();
 
@@ -434,7 +444,7 @@ fn main() {
 				let mut opacity = BulkNibbles::new(palette.len());
 
 				for (index, value) in palette.iter().enumerate() {
-					opacity.set(index, value.map(|entry| lighting_info.get(entry as usize)).unwrap_or(lighting_info.default_value()));
+					opacity.set(index, value.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity)).unwrap_or(u4::new(15)));
 				}
 
 				let sources = SkyLightSources::build(blocks, &opacity, mask);
@@ -518,7 +528,7 @@ fn main() {
 				let mut opacity = BulkNibbles::new(palette.len());
 
 				for (index, value) in palette.iter().enumerate() {
-					opacity.set(index, value.map(|entry| lighting_info.get(entry as usize)).unwrap_or(lighting_info.default_value()));
+					opacity.set(index, value.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity)).unwrap_or(u4::new(15)));
 				}
 
 				let column_pos = GlobalColumnPosition::combine(sector_position, position.layer());
@@ -602,9 +612,9 @@ fn main() {
 
 				let chunk = world.get(chunk_position).unwrap();
 
-				if chunk.anvil_empty() {
+				/*if chunk.anvil_empty() {
 					continue;
-				}
+				}*/
 
 				let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
 
@@ -631,5 +641,6 @@ fn main() {
 		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
 		println!("Writing done in {}us ({}us per column)", us, us / 1024);
-	}
+		println!();
+	}*/
 }

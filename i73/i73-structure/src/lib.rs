@@ -8,21 +8,18 @@ pub mod caves;
 
 use java_rand::Random;
 use vocs::view::ColumnMut;
-use vocs::indexed::Target;
 use vocs::position::GlobalColumnPosition;
-use std::marker::PhantomData;
-use i73_base::Pass;
+use i73_base::{Pass, Block};
 
-pub struct StructureGenerateNearby<T, B> where T: StructureGenerator<B>, B: Target {
+pub struct StructureGenerateNearby<T> where T: StructureGenerator {
 	seed_coefficients: (i64, i64),
 	radius: u32,
 	diameter: u32,
 	world_seed: u64,
-	generator: T,
-	phantom: PhantomData<B>
+	generator: T
 }
 
-impl<T, B> StructureGenerateNearby<T, B> where T: StructureGenerator<B>, B: Target {
+impl<T> StructureGenerateNearby<T> where T: StructureGenerator {
 	pub fn new(world_seed: u64, radius: u32, generator: T) -> Self {
 		let mut rng = Random::new(world_seed);
 		
@@ -34,14 +31,13 @@ impl<T, B> StructureGenerateNearby<T, B> where T: StructureGenerator<B>, B: Targ
 			radius,
 			diameter: radius * 2,
 			world_seed,
-			generator,
-			phantom: PhantomData
+			generator
 		}
 	}
 }
 
-impl<T, B> Pass<B> for StructureGenerateNearby<T, B> where T: StructureGenerator<B>, B: Target {
-	fn apply(&self, target: &mut ColumnMut<B>, chunk: GlobalColumnPosition) {
+impl<T> Pass for StructureGenerateNearby<T> where T: StructureGenerator {
+	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
 		let radius = self.radius as i32;
 
 		for x in     (0..self.diameter).map(|x| chunk.x() + (x as i32) - radius) {
@@ -58,6 +54,6 @@ impl<T, B> Pass<B> for StructureGenerateNearby<T, B> where T: StructureGenerator
 	}
 }
 
-pub trait StructureGenerator<B> where B: Target {
-	fn generate(&self, random: Random, column: &mut ColumnMut<B>, chunk_pos: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32);
+pub trait StructureGenerator {
+	fn generate(&self, random: Random, column: &mut ColumnMut<Block>, chunk_pos: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32);
 }

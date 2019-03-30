@@ -2,18 +2,17 @@
 //! TODO: Replace with sparse bit array in `vocs`.
 //! Generic types are not configurable and are a band aid.
 //! A component-based solution, in comparison, would be much more configurable.
-
-use vocs::indexed::Target;
 use std::collections::HashSet;
 use std::iter::{IntoIterator, FromIterator, Iterator};
+use Block;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct BlockMatcher<B> where B: Target {
-	pub blocks: HashSet<B>,
+pub struct BlockMatcher {
+	pub blocks: HashSet<Block>,
 	pub blacklist: bool
 }
 
-impl<B> BlockMatcher<B> where B: Target {
+impl BlockMatcher where {
 	pub fn all() -> Self {
 		BlockMatcher {
 			blocks: HashSet::new(),
@@ -28,7 +27,7 @@ impl<B> BlockMatcher<B> where B: Target {
 		}
 	}
 
-	pub fn is(block: B) -> Self {
+	pub fn is(block: Block) -> Self {
 		let mut blocks = HashSet::with_capacity(1);
 		blocks.insert(block);
 
@@ -38,7 +37,7 @@ impl<B> BlockMatcher<B> where B: Target {
 		}
 	}
 
-	pub fn is_not(block: B) -> Self {
+	pub fn is_not(block: Block) -> Self {
 		let mut blocks = HashSet::with_capacity(1);
 		blocks.insert(block);
 
@@ -48,21 +47,21 @@ impl<B> BlockMatcher<B> where B: Target {
 		}
 	}
 
-	pub fn include<'a, I>(blocks: I) -> Self where I: IntoIterator<Item=&'a B>, B: 'a {
+	pub fn include<'a, I>(blocks: I) -> Self where I: IntoIterator<Item=&'a Block> {
 		BlockMatcher {
 			blocks: HashSet::from_iter(blocks.into_iter().map(|x| x.clone())),
 			blacklist: false
 		}
 	}
 
-	pub fn exclude<'a, I>(blocks: I) -> Self where I: IntoIterator<Item=&'a B>, B: 'a{
+	pub fn exclude<'a, I>(blocks: I) -> Self where I: IntoIterator<Item=&'a Block> {
 		BlockMatcher {
 			blocks: HashSet::from_iter(blocks.into_iter().map(|x| x.clone())),
 			blacklist: true
 		}
 	}
 
-	pub fn matches(&self, block: &B) -> bool {
+	pub fn matches(&self, block: &Block) -> bool {
 		// NotPresent, Whitelist => 0 ^ 0 => 0
 		// NotPresent, Blacklist => 0 ^ 1 => 1
 		// Contains, Whitelist => 1 ^ 0 => 1

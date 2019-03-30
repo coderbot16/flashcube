@@ -1,17 +1,17 @@
 use vocs::position::{QuadPosition, Offset, dir};
 use vocs::view::QuadMut;
-use vocs::indexed::Target;
 use i73_base::matcher::BlockMatcher;
 use {Decorator, Result};
 use java_rand::Random;
+use i73_base::Block;
 
-pub struct CactusDecorator<B> where B: Target {
-	pub blocks: CactusBlocks<B>,
+pub struct CactusDecorator {
+	pub blocks: CactusBlocks,
 	pub settings: CactusSettings
 }
 
-impl<B> Decorator<B> for CactusDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for CactusDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		if !self.blocks.replace.matches(quad.get(position)) {
 			return Ok(());
 		}
@@ -36,15 +36,15 @@ impl<B> Decorator<B> for CactusDecorator<B> where B: Target {
 	}
 }
 
-pub struct CactusBlocks<B> where B: Target {
-	pub replace: BlockMatcher<B>, // Air
-	pub base: BlockMatcher<B>, // Cactus / Sand
-	pub solid: BlockMatcher<B>, // any solid block
-	pub block: B // Cactus
+pub struct CactusBlocks {
+	pub replace: BlockMatcher, // Air
+	pub base: BlockMatcher, // Cactus / Sand
+	pub solid: BlockMatcher, // any solid block
+	pub block: Block // Cactus
 }
 
-impl<B> CactusBlocks<B> where B: Target {
-	pub fn check(&self, quad: &mut QuadMut<B>, position: QuadPosition) -> bool {
+impl CactusBlocks {
+	pub fn check(&self, quad: &mut QuadMut<Block>, position: QuadPosition) -> bool {
 		if !self.replace.matches(quad.get(position)) {
 			return false
 		}

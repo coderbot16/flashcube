@@ -1,21 +1,21 @@
 use java_rand::Random;
-use vocs::indexed::Target;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};
 use {Decorator, Result};
 use i73_base::matcher::BlockMatcher;
+use i73_base::Block;
 
-pub struct SugarCaneDecorator<B> where B: Target {
-	pub block: B,
-	pub base: BlockMatcher<B>,
-	pub liquid: BlockMatcher<B>,
-	pub replace: BlockMatcher<B>,
+pub struct SugarCaneDecorator {
+	pub block: Block,
+	pub base: BlockMatcher,
+	pub liquid: BlockMatcher,
+	pub replace: BlockMatcher,
 	pub base_height: u32,
 	pub add_height: u32
 }
 
-impl<B> Decorator<B> for SugarCaneDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for SugarCaneDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		if !self.replace.matches(quad.get(position)) {
 			return Ok(());
 		}

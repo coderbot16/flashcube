@@ -1,26 +1,25 @@
 use java_rand::Random;
-use vocs::indexed::Target;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset};
 use super::{Decorator, Result};
+use i73_base::Block;
 
 pub mod cactus;
 pub mod plant;
 pub mod sugar_cane;
 
 /// Clumped generation. Places a number of objects with a varying distance from the center.
-pub struct Clump<D, B> where D: Decorator<B>, B: Target {
+pub struct Clump<D> where D: Decorator {
 	pub iterations: u32,
 	/// Horizontal variance. Must be 8 or below, or else spilling will occur.
 	pub horizontal: u8,
 	/// Vertical variance.
 	pub vertical: u8,
-	pub decorator: D,
-	pub phantom: ::std::marker::PhantomData<B>
+	pub decorator: D
 }
 
-impl<D, B> Decorator<B> for Clump<D, B> where D: Decorator<B>, B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl<D> Decorator for Clump<D> where D: Decorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		for _ in 0..self.iterations {
 			let offset = (
 				rng.next_i32_bound(self.horizontal as i32) - rng.next_i32_bound(self.horizontal as i32),
@@ -50,16 +49,15 @@ impl<D, B> Decorator<B> for Clump<D, B> where D: Decorator<B>, B: Target {
 	}
 }
 
-pub struct FlatClump<D, B> where D: Decorator<B>, B: Target {
+pub struct FlatClump<D> where D: Decorator {
 	pub iterations: u32,
 	/// Horizontal variance. Must be 8 or below, or else spilling will occur.
 	pub horizontal: u8,
-	pub decorator: D,
-	pub phantom: ::std::marker::PhantomData<B>
+	pub decorator: D
 }
 
-impl<D, B> Decorator<B> for FlatClump<D, B> where D: Decorator<B>, B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl<D> Decorator for FlatClump<D> where D: Decorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		for _ in 0..self.iterations {
 			let offset = (
 				rng.next_i32_bound(self.horizontal as i32) - rng.next_i32_bound(self.horizontal as i32),

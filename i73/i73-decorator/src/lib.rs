@@ -8,8 +8,8 @@ extern crate i73_trig;
 use java_rand::Random;
 use vocs::view::QuadMut;
 use vocs::position::{ColumnPosition, QuadPosition};
-use vocs::indexed::Target;
 use i73_base::distribution::Distribution;
+use i73_base::Block;
 
 pub mod dungeon;
 pub mod vein;
@@ -25,14 +25,14 @@ pub mod exposed;
 pub struct Spilled(pub QuadPosition);
 pub type Result = ::std::result::Result<(), Spilled>;
 
-pub struct Dispatcher<H, R, B> where H: Distribution, R: Distribution, B: Target {
+pub struct Dispatcher<H, R> where H: Distribution, R: Distribution {
 	pub height_distribution: H,
 	pub rarity: R,
-	pub decorator: Box<Decorator<B>>
+	pub decorator: Box<Decorator>
 }
 
-impl<H, R, B> Dispatcher<H, R, B> where H: Distribution, R: Distribution, B: Target {
-	pub fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random) -> Result {
+impl<H, R> Dispatcher<H, R> where H: Distribution, R: Distribution {
+	pub fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random) -> Result {
 		for _ in 0..self.rarity.next(rng) {
 			let at = ColumnPosition::new(
 				rng.next_u32_bound(16) as u8,
@@ -47,6 +47,6 @@ impl<H, R, B> Dispatcher<H, R, B> where H: Distribution, R: Distribution, B: Tar
 	}
 }
 
-pub trait Decorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result;
+pub trait Decorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result;
 }

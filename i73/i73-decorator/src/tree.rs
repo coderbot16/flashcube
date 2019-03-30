@@ -1,17 +1,16 @@
 use i73_base::matcher::BlockMatcher;
-use vocs::indexed::Target;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};
 use {Decorator, Result};
 use java_rand::Random;
 
-pub struct TreeDecorator<B> where B: Target {
+pub struct TreeDecorator {
 	blocks: TreeBlocks<B>,
 	settings: TreeSettings
 }
 
-impl<B> Decorator<B> for TreeDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for TreeDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		let tree = self.settings.tree(rng, position);
 		
 		if tree.leaves_max_y > 128 {
@@ -80,11 +79,11 @@ impl Default for TreeDecorator<u16> {
 	}
 }
 
-struct TreeBlocks<B> where B: Target {
+struct TreeBlocks {
 	log:      B,
 	foliage:  B,
-	replace:  BlockMatcher<B>,
-	soil:     BlockMatcher<B>,
+	replace:  BlockMatcher,
+	soil:     BlockMatcher,
 	new_soil: B
 }
 

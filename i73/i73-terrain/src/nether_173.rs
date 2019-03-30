@@ -1,7 +1,6 @@
-use vocs::indexed::Target;
 use vocs::position::{ColumnPosition,GlobalColumnPosition};
 use vocs::view::ColumnMut;
-use i73_base::Pass;
+use i73_base::{Pass, Block};
 use i73_shape::volume::{self, TriNoiseSource, TriNoiseSettings, trilinear128};
 use cgmath::{Vector2, Vector3};
 use java_rand::Random;
@@ -20,7 +19,7 @@ pub fn default_tri_settings() -> TriNoiseSettings {
 	}
 }
 
-pub fn passes<B>(seed: u64, tri_settings: &TriNoiseSettings, blocks: ShapeBlocks<B>, sea_coord: u8) -> ShapePass<B> where B: Target {
+pub fn passes(seed: u64, tri_settings: &TriNoiseSettings, blocks: ShapeBlocks, sea_coord: u8) -> ShapePass {
 	let mut rng = Random::new(seed);
 	
 	let tri = TriNoiseSource::new(&mut rng, tri_settings);
@@ -33,31 +32,31 @@ pub fn passes<B>(seed: u64, tri_settings: &TriNoiseSettings, blocks: ShapeBlocks
 	}
 }
 
-pub struct ShapeBlocks<B> where B: Target {
-	pub solid: B,
-	pub air:   B,
-	pub ocean: B
+pub struct ShapeBlocks {
+	pub solid: Block,
+	pub air:   Block,
+	pub ocean: Block
 }
 
-impl Default for ShapeBlocks<u16> {
+impl Default for ShapeBlocks {
 	fn default() -> Self {
 		ShapeBlocks {
-			solid: 87 * 16,
-			air:    0 * 16,
-			ocean: 11 * 16
+			solid: Block::from_anvil_id(87 * 16),
+			air:   Block::air(),
+			ocean: Block::from_anvil_id(11 * 16)
 		}
 	}
 }
 
-pub struct ShapePass<B> where B: Target {
-	blocks:    ShapeBlocks<B>,
+pub struct ShapePass {
+	blocks:    ShapeBlocks,
 	tri:       TriNoiseSource,
 	reduction: Vec<f64>,
 	sea_coord: u8
 }
 
-impl<B> Pass<B> for ShapePass<B> where B: Target {
-	fn apply(&self, target: &mut ColumnMut<B>, chunk: GlobalColumnPosition) {
+impl Pass for ShapePass {
+	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
 		let offset = Vector2::new(
 			(chunk.x() as f64) * 4.0,
 			(chunk.z() as f64) * 4.0

@@ -3,10 +3,10 @@ use i73_trig as trig;
 use std::cmp::{min, max};
 use i73_base::distribution::{Distribution, Chance, Linear, Packed2, Packed3, ChanceOrdering};
 use StructureGenerator;
-use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use i73_base::matcher::BlockMatcher;
+use i73_base::Block;
 
 const NOTCH_PI: f32 = 3.141593;
 const PI_DIV_2: f32 = 1.570796;
@@ -54,21 +54,21 @@ struct CavesAssociations {
 // Overworld: CavesGenerator { carve: air, ocean: [ flowing_water, still_water ], carvable: [ stone, dirt, grass ], blob_size_multiplier: 1.0, vertical_multiplier: 1.0 }
 // Nether: CavesGenerator { carve: air, ocean: [ flowing_lava, still_lava ], carvable: [ netherrack, dirt, grass ], blob_size_multiplier: 2.0, vertical_multiplier: 0.5}
 
-pub struct CavesGenerator<B> where B: Target {
-	pub carve:  B,
-	pub lower:  B,
-	pub surface_block: B,
-	pub ocean:  BlockMatcher<B>,
-	pub surface_top: BlockMatcher<B>,
-	pub surface_fill: BlockMatcher<B>,
-	pub carvable: BlockMatcher<B>,
+pub struct CavesGenerator {
+	pub carve:  Block,
+	pub lower:  Block,
+	pub surface_block: Block,
+	pub ocean:  BlockMatcher,
+	pub surface_top: BlockMatcher,
+	pub surface_fill: BlockMatcher,
+	pub carvable: BlockMatcher,
 	pub blob_size_multiplier: f32,
 	pub vertical_multiplier: f64,
 	pub lower_surface: u8
 }
 
-impl<B> CavesGenerator<B> where B: Target {
-	fn carve_blob(&self, blob: Blob, associations: &CavesAssociations, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<B>, chunk: GlobalColumnPosition) {
+impl CavesGenerator {
+	fn carve_blob(&self, blob: Blob, associations: &CavesAssociations, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, chunk: GlobalColumnPosition) {
 		let chunk_block = ((chunk.x() * 16) as f64, (chunk.z() * 16) as f64);
 		
 		// Try to make sure that we don't carve into the ocean.
@@ -155,7 +155,7 @@ impl<B> CavesGenerator<B> where B: Target {
 		}
 	}
 	
-	fn carve_tunnel(&self, mut tunnel: Tunnel, caves: &mut Caves, associations: &CavesAssociations, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<B>, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32) {
+	fn carve_tunnel(&self, mut tunnel: Tunnel, caves: &mut Caves, associations: &CavesAssociations, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32) {
 		loop {
 			let outcome = tunnel.step(self.vertical_multiplier);
 			
@@ -178,8 +178,8 @@ impl<B> CavesGenerator<B> where B: Target {
 	}
 }
 
-impl<B> StructureGenerator<B> for CavesGenerator<B> where B: Target {
-	fn generate(&self, random: Random, column: &mut ColumnMut<B>, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32) {
+impl StructureGenerator for CavesGenerator {
+	fn generate(&self, random: Random, column: &mut ColumnMut<Block>, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32) {
 		let mut caves = Caves::for_chunk(random, chunk, from, radius, self.blob_size_multiplier);
 		
 		column.ensure_available(self.carve.clone());

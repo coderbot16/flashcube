@@ -1,10 +1,10 @@
-use vocs::indexed::Target;
 use i73_base::matcher::BlockMatcher;
 use vocs::position::{QuadPosition, Offset};
 use vocs::view::QuadMut;
 use super::{Decorator, Result};
 use java_rand::Random;
 use i73_trig as trig;
+use i73_base::Block;
 
 // TODO: Is this really 3.141593?
 /// For when you don't have the time to type out all the digits of π or Math.PI.
@@ -16,13 +16,13 @@ const RADIUS_DIVISOR: f64 = 16.0;
 const LENGTH_DIVISOR: f32 = 8.0;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SeasideVeinDecorator<B> where B: Target {
-	pub vein: VeinDecorator<B>,
-	pub ocean: BlockMatcher<B>
+pub struct SeasideVeinDecorator {
+	pub vein: VeinDecorator,
+	pub ocean: BlockMatcher
 }
 
-impl<B> Decorator<B> for SeasideVeinDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for SeasideVeinDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		if !self.ocean.matches(quad.get(position.offset((-8, 0, -8)).unwrap())) {
 			return Ok(());
 		}
@@ -32,26 +32,26 @@ impl<B> Decorator<B> for SeasideVeinDecorator<B> where B: Target {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct VeinDecorator<B> where B: Target {
-	pub blocks: VeinBlocks<B>,
+pub struct VeinDecorator {
+	pub blocks: VeinBlocks,
 	pub size: u32
 }
 
-impl<B> Decorator<B> for VeinDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, rng: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for VeinDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
 		let vein = Vein::create(self.size, (position.x() as i32, position.y() as i32, position.z() as i32), rng);
 		self.blocks.generate(&vein, quad, rng)
 	}
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct VeinBlocks<B> where B: Target {
-	pub replace: BlockMatcher<B>,
-	pub block:   B
+pub struct VeinBlocks {
+	pub replace: BlockMatcher,
+	pub block:   Block
 }
 
-impl<B> VeinBlocks<B> where B: Target {
-	pub fn generate(&self, vein: &Vein, quad: &mut QuadMut<B>, rng: &mut Random) -> Result {
+impl VeinBlocks {
+	pub fn generate(&self, vein: &Vein, quad: &mut QuadMut<Block>, rng: &mut Random) -> Result {
 		quad.ensure_available(self.block.clone());
 		
 		let (mut blocks, palette) = quad.freeze_palette();

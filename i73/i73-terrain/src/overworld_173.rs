@@ -9,14 +9,14 @@ use i73_shape::height::{HeightSettings, HeightSource};
 use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, FieldSettings, trilinear128};
 use i73_base::Pass;
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
-use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use i73_base::matcher::BlockMatcher;
+use i73_base::Block;
 use i73_shape::height::lerp_to_layer;
 
-pub struct Settings<B> where B: Target {
-	pub shape_blocks: ShapeBlocks<B>,
-	pub paint_blocks: PaintBlocks<B>,
+pub struct Settings {
+	pub shape_blocks: ShapeBlocks,
+	pub paint_blocks: PaintBlocks,
 	pub tri:          TriNoiseSettings,
 	pub height:       HeightSettings,
 	pub field:        FieldSettings,
@@ -26,7 +26,7 @@ pub struct Settings<B> where B: Target {
 	pub climate:      ClimateSettings
 }
 
-impl Default for Settings<u16> {
+impl Default for Settings {
 	fn default() -> Self {
 		Settings {
 			shape_blocks: ShapeBlocks::default(),
@@ -42,7 +42,7 @@ impl Default for Settings<u16> {
 	}
 }
 
-pub fn passes<B>(seed: u64, settings: Settings<B>, biome_lookup: Lookup<B>) -> (ShapePass<B>, PaintPass<B>) where B: Target {
+pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ShapePass, PaintPass) {
 	let mut rng = Random::new(seed);
 	
 	let tri = TriNoiseSource::new(&mut rng, &settings.tri);
@@ -81,35 +81,35 @@ pub fn passes<B>(seed: u64, settings: Settings<B>, biome_lookup: Lookup<B>) -> (
 	)
 }
 
-pub struct ShapeBlocks<B> where B: Target {
-	pub solid: B,
-	pub ocean: B,
-	pub ice:   B,
-	pub air:   B
+pub struct ShapeBlocks {
+	pub solid: Block,
+	pub ocean: Block,
+	pub ice:   Block,
+	pub air:   Block
 }
 
-impl Default for ShapeBlocks<u16> {
+impl Default for ShapeBlocks {
 	fn default() -> Self {
 		ShapeBlocks {
-			solid:  1 * 16,
-			ocean:  9 * 16,
-			ice:   79 * 16,
-			air:    0 * 16
+			solid: Block::from_anvil_id( 1 * 16),
+			ocean: Block::from_anvil_id( 9 * 16),
+			ice:   Block::from_anvil_id(79 * 16),
+			air:   Block::air()
 		}
 	}
 }
 
-pub struct ShapePass<B> where B: Target {
+pub struct ShapePass {
 	climate: ClimateSource,
-	blocks:  ShapeBlocks<B>,
+	blocks:  ShapeBlocks,
 	tri:     TriNoiseSource,
 	height:  HeightSource,
 	field:   FieldSettings,
 	sea_coord: u8
 }
 
-impl<B> Pass<B> for ShapePass<B> where B: Target {
-	fn apply(&self, target: &mut ColumnMut<B>, chunk: GlobalColumnPosition) {
+impl Pass for ShapePass {
+	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
 		let offset = Point2::new(
 			(chunk.x() as f64) * 4.0,
 			(chunk.z() as f64) * 4.0
@@ -170,30 +170,30 @@ impl<B> Pass<B> for ShapePass<B> where B: Target {
 	}
 }
 
-pub struct PaintBlocks<B> where B: Target {
-	pub reset:     BlockMatcher<B>,
-	pub ignore:    BlockMatcher<B>,
-	pub air:       B,
-	pub stone:     B,
-	pub ocean:     B,
-	pub gravel:    B,
-	pub sand:      B,
-	pub sandstone: B,
-	pub bedrock:   B
+pub struct PaintBlocks {
+	pub reset:     BlockMatcher,
+	pub ignore:    BlockMatcher,
+	pub air:       Block,
+	pub stone:     Block,
+	pub ocean:     Block,
+	pub gravel:    Block,
+	pub sand:      Block,
+	pub sandstone: Block,
+	pub bedrock:   Block
 }
 
-impl Default for PaintBlocks<u16> {
+impl Default for PaintBlocks {
 	fn default() -> Self {
 		PaintBlocks {
-			reset:     BlockMatcher::is(0 * 16),
-			ignore:    BlockMatcher::is_not(1 * 16),
-			air:        0 * 16,
-			stone:      1 * 16,
-			ocean:      9 * 16,
-			gravel:    13 * 16,
-			sand:      12 * 16,
-			sandstone: 24 * 16,
-			bedrock:    7 * 16
+			reset:     BlockMatcher::is(Block::air()),
+			ignore:    BlockMatcher::is_not(Block::from_anvil_id(1 * 16)),
+			air:       Block::air(),
+			stone:     Block::from_anvil_id( 1 * 16),
+			ocean:     Block::from_anvil_id( 9 * 16),
+			gravel:    Block::from_anvil_id(13 * 16),
+			sand:      Block::from_anvil_id(12 * 16),
+			sandstone: Block::from_anvil_id(24 * 16),
+			bedrock:   Block::from_anvil_id( 7 * 16)
 		}
 	}
 }
@@ -210,7 +210,7 @@ struct SurfaceAssociations {
 }
 
 impl SurfaceAssociations {
-	fn lookup<B>(surface: &Surface<B>, palette: &ColumnPalettes<B>) -> Self where B: Target {
+	fn lookup(surface: &Surface, palette: &ColumnPalettes<Block>) -> Self {
 		let mut chain = Vec::new();
 		
 		for followup in &surface.chain {
@@ -235,9 +235,9 @@ struct FollowupAssociation {
 	pub max_depth: u32
 }
 
-pub struct PaintPass<B> where B: Target {
-	biomes:    BiomeSource<B>,
-	blocks:    PaintBlocks<B>,
+pub struct PaintPass {
+	biomes:    BiomeSource,
+	blocks:    PaintBlocks,
 	sand:      PerlinOctaves,
 	gravel:    PerlinOctaves,
 	thickness: PerlinOctaves,
@@ -246,12 +246,12 @@ pub struct PaintPass<B> where B: Target {
 	max_bedrock_height: Option<u8>
 }
 
-impl<B> PaintPass<B> where B: Target {
-	pub fn biomes(&self) -> &BiomeSource<B> {
+impl PaintPass {
+	pub fn biomes(&self) -> &BiomeSource {
 		&self.biomes
 	}
 
-	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<B>, associations: &PaintAssociations, x: u8, z: u8, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
+	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, associations: &PaintAssociations, x: u8, z: u8, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
 		let reset_remaining = match thickness {
 			-1          => None,
 			x if x <= 0 => Some(0),
@@ -329,8 +329,8 @@ impl<B> PaintPass<B> where B: Target {
 	}
 }
 
-impl<B> Pass<B> for PaintPass<B> where B: Target {
-	fn apply(&self, target: &mut ColumnMut<B>, chunk: GlobalColumnPosition) {
+impl Pass for PaintPass {
+	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
 		let block = ((chunk.x() * 16) as f64, (chunk.z() * 16) as f64);
 		let seed = (chunk.x() as i64).wrapping_mul(341873128712).wrapping_add((chunk.z() as i64).wrapping_mul(132897987541));
 		let mut rng = Random::new(seed as u64);

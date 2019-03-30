@@ -10,3 +10,4 @@ serde = "0.9"
 serde_derive = "0.9"
 vocs = { path = "../../vocs" }
 i73-noise = { path = "../i73-noise" }
+i73-base = { path = "../i73-base" }

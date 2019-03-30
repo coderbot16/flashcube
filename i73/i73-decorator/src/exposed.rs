@@ -1,18 +1,18 @@
 use java_rand::Random;
-use vocs::indexed::Target;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};
 use {Decorator, Result};
 use i73_base::matcher::BlockMatcher;
+use i73_base::Block;
 
-pub struct ExposedDecorator<B> where B: Target {
-	pub block: B,
-	pub stone: BlockMatcher<B>,
-	pub empty: BlockMatcher<B>
+pub struct ExposedDecorator {
+	pub block: Block,
+	pub stone: BlockMatcher,
+	pub empty: BlockMatcher
 }
 
-impl<B> Decorator<B> for ExposedDecorator<B> where B: Target {
-	fn generate(&self, quad: &mut QuadMut<B>, _: &mut Random, position: QuadPosition) -> Result {
+impl Decorator for ExposedDecorator {
+	fn generate(&self, quad: &mut QuadMut<Block>, _: &mut Random, position: QuadPosition) -> Result {
 		if !self.stone.matches(quad.get(position)) {
 			return Ok(());
 		}
