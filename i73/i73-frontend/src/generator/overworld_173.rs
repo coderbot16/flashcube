@@ -7,7 +7,7 @@ use i73_biome::source::BiomeSource;
 use i73_biome::{Lookup, Surface};
 use i73_shape::height::{HeightSettings, HeightSource};
 use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, FieldSettings, trilinear128};
-use generator::Pass;
+use i73_base::Pass;
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
 use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};

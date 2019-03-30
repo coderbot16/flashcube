@@ -6,7 +6,7 @@ use vocs::view::ColumnMut;
 use vocs::indexed::Target;
 use vocs::position::GlobalColumnPosition;
 use std::marker::PhantomData;
-use generator::Pass;
+use i73_base::Pass;
 
 pub struct StructureGenerateNearby<T, B> where T: StructureGenerator<B>, B: Target {
 	seed_coefficients: (i64, i64),
