@@ -3,7 +3,7 @@ extern crate serde_derive;
 extern crate java_rand;
 extern crate cgmath;
 extern crate vocs;
-extern crate noise;
+extern crate i73_noise;
 
 pub mod climate;
 pub mod source;

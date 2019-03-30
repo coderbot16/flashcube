@@ -1,8 +1,8 @@
 use java_rand::Random;
-use noise::octaves::PerlinOctavesVertical;
 use cgmath::Vector3;
 use height::Height;
 use vocs::position::ColumnPosition;
+use i73_noise::octaves::PerlinOctavesVertical;
 
 #[derive(Debug, PartialEq)]
 pub struct TriNoiseSettings {

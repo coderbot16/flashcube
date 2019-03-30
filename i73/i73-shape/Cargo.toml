@@ -1,5 +1,5 @@
 [package]
-name = "shape"
+name = "i73-shape"
 version = "0.1.0"
 authors = ["coderbot <coderbot16@gmail.com>"]
 
@@ -7,5 +7,5 @@ authors = ["coderbot <coderbot16@gmail.com>"]
 cgmath = "0.16"
 java-rand = "0.2.0"
 vocs = { path = "../../vocs" }
-noise = { path = "../noise" }
-biome = { path = "../biome" }
+i73-noise = { path = "../i73-noise" }
+i73-biome = { path = "../i73-biome" }

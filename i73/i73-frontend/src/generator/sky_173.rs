@@ -2,7 +2,7 @@ use vocs::indexed::Target;
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
 use generator::Pass;
-use shape::volume::{self, TriNoiseSource, TriNoiseSettings};
+use i73_shape::volume::{self, TriNoiseSource, TriNoiseSettings};
 use cgmath::{Vector2, Vector3};
 use java_rand::Random;
 

@@ -4,7 +4,7 @@ extern crate frontend as i73;
 extern crate java_rand;
 #[macro_use]
 extern crate serde_json;
-extern crate biome;
+extern crate i73_biome;
 
 use std::path::PathBuf;
 use std::fs::File;
@@ -14,7 +14,7 @@ use i73::config::settings::customized::{Customized, Parts};
 use i73::generator::Pass;
 use i73::generator::overworld_173::{self, Settings};
 use i73::config::biomes::{BiomesConfig, DecoratorConfig};
-use biome::Lookup;
+use i73_biome::Lookup;
 use i73::structure;
 use i73::matcher::BlockMatcher;
 

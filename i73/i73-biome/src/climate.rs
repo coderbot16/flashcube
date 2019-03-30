@@ -1,7 +1,7 @@
 use java_rand::Random;
 use cgmath::Point2;
-use noise::octaves::SimplexOctaves;
-use noise::sample::Sample;
+use i73_noise::octaves::SimplexOctaves;
+use i73_noise::sample::Sample;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 pub struct ClimateSettings {

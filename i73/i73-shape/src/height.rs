@@ -1,9 +1,9 @@
-use noise::octaves::PerlinOctaves;
-use noise::sample::Sample;
 use cgmath::{Point2, Vector2, Vector3};
 use java_rand::Random;
-use biome::climate::Climate;
 use vocs::position::LayerPosition;
+use i73_biome::climate::Climate;
+use i73_noise::octaves::PerlinOctaves;
+use i73_noise::sample::Sample;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Height {

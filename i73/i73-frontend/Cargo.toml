@@ -17,6 +17,6 @@ rs25 = { path = "../../rs25" }
 vocs = { path = "../../vocs" }
 java-rand = "0.2.0"
 
-noise = { path = "../noise" }
-biome = { path = "../biome" }
-shape = { path = "../shape" }
+i73-noise = { path = "../i73-noise" }
+i73-biome = { path = "../i73-biome" }
+i73-shape = { path = "../i73-shape" }

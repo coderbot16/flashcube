@@ -3,7 +3,7 @@ use vocs::position::{LayerPosition, GlobalColumnPosition};
 use vocs::indexed::{LayerIndexed, Target};
 use {Biome, Lookup};
 use climate::{Climate, ClimateSource};
-use noise::sample::Sample;
+use i73_noise::sample::Sample;
 
 pub struct BiomeSource<B> where B: Target {
 	climate: ClimateSource,

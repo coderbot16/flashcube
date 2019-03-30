@@ -1,4 +1,4 @@
-use biome::{Grid, Biome, Surface, Followup};
+use i73_biome::{Grid, Biome, Surface, Followup};
 use serde_json;
 use distribution::{Chance, Baseline};
 use std::collections::HashMap;

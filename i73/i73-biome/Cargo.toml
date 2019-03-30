@@ -1,5 +1,5 @@
 [package]
-name = "biome"
+name = "i73-biome"
 version = "0.1.0"
 authors = ["coderbot <coderbot16@gmail.com>"]
 
@@ -9,4 +9,4 @@ java-rand = "0.2.0"
 serde = "0.9"
 serde_derive = "0.9"
 vocs = { path = "../../vocs" }
-noise = { path = "../noise" }
+i73-noise = { path = "../i73-noise" }
