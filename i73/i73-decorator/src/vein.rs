@@ -4,7 +4,7 @@ use vocs::view::QuadMut;
 use super::{Decorator, Result};
 use java_rand::Random;
 use i73_trig as trig;
-use i73_base::Block;
+use i73_base::{Block, math};
 
 // TODO: Is this really 3.141593?
 /// For when you don't have the time to type out all the digits of π or Math.PI.
@@ -120,9 +120,9 @@ impl Vein {
 		let index_f32 = index as f32;
 		
 		let center = (
-			lerp_fraction(index_f64, self.size_f64, self.from.0, self.to.0),
-			lerp_fraction(index_f64, self.size_f64, self.from.1, self.to.1),
-			lerp_fraction(index_f64, self.size_f64, self.from.2, self.to.2)
+			math::lerp_fraction(self.from.0, self.to.0, index_f64, self.size_f64),
+			math::lerp_fraction(self.from.1, self.to.1, index_f64, self.size_f64),
+			math::lerp_fraction(self.from.2, self.to.2, index_f64, self.size_f64)
 		);
 		
 		let radius_multiplier = rng.next_f64() * self.size_f64 / RADIUS_DIVISOR;
@@ -164,10 +164,4 @@ impl Blob {
 		
 		dist_x_sq + dist_y_sq + dist_z_sq
 	}
-}
-
-/// Preforms linear interpolation using a fraction expressed as `index/size`.
-/// Used instead of standard lerp() to preserve operation order.
-fn lerp_fraction(index: f64, size: f64, a: f64, b: f64) -> f64 {
-	a + (b - a) * index / size
 }

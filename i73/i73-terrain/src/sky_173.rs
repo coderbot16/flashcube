@@ -1,6 +1,6 @@
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
-use i73_base::{Pass, Block};
+use i73_base::{Pass, Block, math};
 use i73_shape::volume::{self, TriNoiseSource, TriNoiseSettings};
 use cgmath::{Vector2, Vector3};
 use java_rand::Random;
@@ -105,31 +105,34 @@ pub fn trilinear128(array: &[[[f64; 3]; 33]; 3], position: ColumnPosition) -> f6
 		(position.y() / 4) as usize,
 		(position.z() / 8) as usize
 	);
-	
-	lerp(inner.2, 
-		lerp(inner.0,
-			lerp(inner.1,
+
+	math::lerp(
+		math::lerp(
+			math::lerp(
 				array[indices.0    ][indices.1    ][indices.2    ],
 				array[indices.0    ][indices.1 + 1][indices.2    ],
+				inner.1
 			),
-			lerp(inner.1,
+			math::lerp(
 				array[indices.0 + 1][indices.1    ][indices.2    ],
 				array[indices.0 + 1][indices.1 + 1][indices.2    ],
-			)
+				inner.1
+			),
+			inner.0
 		),
-		lerp(inner.0,
-			lerp(inner.1,
+		math::lerp(
+			math::lerp(
 				array[indices.0    ][indices.1    ][indices.2 + 1],
 				array[indices.0    ][indices.1 + 1][indices.2 + 1],
+				inner.1
 			),
-			lerp(inner.1,
+			math::lerp(
 				array[indices.0 + 1][indices.1    ][indices.2 + 1],
 				array[indices.0 + 1][indices.1 + 1][indices.2 + 1],
-			)
-		)
+				inner.1
+			),
+			inner.0
+		),
+		inner.2
 	)
-}
-
-fn lerp(t: f64, a: f64, b: f64) -> f64 {
-	a + t * (b - a)
 }

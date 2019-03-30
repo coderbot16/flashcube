@@ -5,6 +5,8 @@ extern crate java_rand;
 
 pub mod distribution;
 pub mod matcher;
+pub mod math;
+
 use vocs::view::ColumnMut;
 use vocs::position::GlobalColumnPosition;
 

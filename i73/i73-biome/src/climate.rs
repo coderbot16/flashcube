@@ -2,6 +2,7 @@ use java_rand::Random;
 use cgmath::Point2;
 use i73_noise::octaves::SimplexOctaves;
 use i73_noise::sample::Sample;
+use i73_base::math;
 
 #[derive(Deserialize, Copy, Clone, Debug)]
 pub struct ClimateSettings {
@@ -98,8 +99,8 @@ impl Climate {
 	
 	pub fn new(temperature: f64, rainfall: f64) -> Self {
 		Climate {
-			temperature: temperature.max(0.0).min(1.0),
-			rainfall:       rainfall.max(0.0).min(1.0)
+			temperature: math::clamp(temperature, 0.0, 1.0),
+			rainfall:    math::clamp(rainfall,    0.0, 1.0)
 		}
 	}
 	

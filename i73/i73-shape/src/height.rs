@@ -4,6 +4,7 @@ use vocs::position::LayerPosition;
 use i73_biome::climate::Climate;
 use i73_noise::octaves::PerlinOctaves;
 use i73_noise::sample::Sample;
+use i73_base::math;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Height {
@@ -66,7 +67,7 @@ impl HeightSource {
 	pub fn sample(&self, point: Point2<f64>, climate: Climate) -> Height {
 		let scaled_noise = self.biome_influence.sample(point) / self.biome_influence_scale;
 		
-		let chaos = (climate.influence_factor() * (scaled_noise + 0.5)).max(0.0).min(1.0) + 0.5;
+		let chaos = math::clamp(climate.influence_factor() * (scaled_noise + 0.5), 0.0, 1.0) + 0.5;
 		
 		let mut depth = self.depth.sample(point) / self.depth_scale;
 		

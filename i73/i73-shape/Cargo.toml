@@ -9,3 +9,4 @@ java-rand = "0.2.0"
 vocs = { path = "../../vocs" }
 i73-noise = { path = "../i73-noise" }
 i73-biome = { path = "../i73-biome" }
+i73-base = { path = "../i73-base" }

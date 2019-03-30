@@ -2,6 +2,7 @@ use java_rand::Random;
 use cgmath::{Point2, Vector2, Vector3};
 use Permutations;
 use sample::Sample;
+use i73_base::math;
 
 const GRAD_TABLE: [(f64, f64, f64); 16] = [
 	( 1.0,  1.0,  0.0),
@@ -33,27 +34,8 @@ fn grad2d(t: u16, vec: Vector2<f64>) -> f64 {
 	grad(t, Vector3::new(vec.x, 0.0, vec.y))
 }
 
-/// Upper noise coordinate where farlands appear.
-const FARLANDS_UPPER: f64 = 2147483647.0;
-
-/// Lower noise coordinate where farlands appear.
-const FARLANDS_LOWER: f64 = -2147483648.0;
-
-/// Imitates a combination of floor() and Java float to integer rounding.
-/// Returns the floor of a number capped in between the lower and upper signed 32-bit integer limit. 
-/// Makes sure the farlands remain.
-// TODO: Verify farlands.
-fn floor_capped(t: f64) -> f64 {
-	t.floor().max(FARLANDS_LOWER).min(FARLANDS_UPPER)
-}
-
 fn fade(t: f64) -> f64 {
 	t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
-}
-
-/// Preforms linear interpolation between A and B using T as a factor. 0.0 = A, 1.0 = B, 0.5 = (A + B)/2.
-fn lerp(t: f64, a: f64, b: f64) -> f64 {
-	a + t * (b - a)
 }
 
 /// Perlin noise generator. Can be sampled in 2 or 3 dimensions.
@@ -83,7 +65,7 @@ impl Perlin {
 		let loc = Vector3::new(loc.x * self.scale.x, loc.y * self.scale.y, loc.z * self.scale.z) + self.p.offset;
 		
 		// TODO: Make sure we still get the far lands.
-		let floored = loc.map(floor_capped);
+		let floored = loc.map(math::floor_clamped);
 		
 		// Perform modulo before conversion to u16 because Rust currently has a bug that results in UB from out of bounds float to integer casts.
 		// TODO: This is broken for negative coords.
@@ -107,27 +89,34 @@ impl Perlin {
 		let ba = self.hash(b)       + p.z;
 		let bb = self.hash(b + 1)   + p.z;
 		
-		lerp(faded.z,
-			lerp(faded.y,
-				lerp(faded.x,
+		math::lerp(
+			math::lerp(
+				math::lerp(
 					grad(self.hash(aa    ), loc                              ),
-					grad(self.hash(ba    ), loc - Vector3::new(1.0, 0.0, 0.0))
+					grad(self.hash(ba    ), loc - Vector3::new(1.0, 0.0, 0.0)),
+					faded.x
 				),
-				lerp(faded.x,
+				math::lerp(
 					grad(self.hash(ab    ), loc - Vector3::new(0.0, 1.0, 0.0)),
-					grad(self.hash(bb    ), loc - Vector3::new(1.0, 1.0, 0.0))
-				)
-			),
-			lerp(faded.y,
-				lerp(faded.x,
-					grad(self.hash(aa + 1), loc - Vector3::new(0.0, 0.0, 1.0)),
-					grad(self.hash(ba + 1), loc - Vector3::new(1.0, 0.0, 1.0))
+					grad(self.hash(bb    ), loc - Vector3::new(1.0, 1.0, 0.0)),
+					faded.x
 				),
-				lerp(faded.x,
+				faded.y
+			),
+			math::lerp(
+				math::lerp(
+					grad(self.hash(aa + 1), loc - Vector3::new(0.0, 0.0, 1.0)),
+					grad(self.hash(ba + 1), loc - Vector3::new(1.0, 0.0, 1.0)),
+					faded.x
+				),
+				math::lerp(
 					grad(self.hash(ab + 1), loc - Vector3::new(0.0, 1.0, 1.0)),
-					grad(self.hash(bb + 1), loc - Vector3::new(1.0, 1.0, 1.0))
-				)
-			)
+					grad(self.hash(bb + 1), loc - Vector3::new(1.0, 1.0, 1.0)),
+					faded.x
+				),
+				faded.y
+			),
+			faded.z
 		) * self.amplitude
 	}
 	
@@ -135,7 +124,7 @@ impl Perlin {
 		let loc = Vector3::new(loc.x * self.scale.x, loc.y * self.scale.y, loc.z * self.scale.z) + self.p.offset;
 		
 		// TODO: Make sure we still get the far lands.
-		let floored = loc.map(floor_capped);
+		let floored = loc.map(math::floor_clamped);
 		// TODO: This is broken for negative coords.
 		let p = Vector3::new(
 			(floored.x % 256.0) as u16, 
@@ -155,28 +144,35 @@ impl Perlin {
 		let b  = self.hash(p.x + 1) + p.y;
 		let ba = self.hash(b)       + p.z;
 		let bb = self.hash(b + 1)   + p.z;
-		
-		lerp(faded.z,
-			lerp(faded.y,
-				lerp(faded.x,
-					grad(self.hash(aa + 0), loc),
-					grad(self.hash(ba + 0), loc - Vector3::new(1.0, 0.0, 0.0))
+
+		math::lerp(
+			math::lerp(
+				math::lerp(
+					grad(self.hash(aa    ), loc                              ),
+					grad(self.hash(ba    ), loc - Vector3::new(1.0, 0.0, 0.0)),
+					faded.x
 				),
-				lerp(faded.x,
-					grad(self.hash(ab + 0), loc - Vector3::new(0.0, 1.0, 0.0)),
-					grad(self.hash(bb + 0), loc - Vector3::new(1.0, 1.0, 0.0))
-				)
+				math::lerp(
+					grad(self.hash(ab    ), loc - Vector3::new(0.0, 1.0, 0.0)),
+					grad(self.hash(bb    ), loc - Vector3::new(1.0, 1.0, 0.0)),
+					faded.x
+				),
+				faded.y
 			),
-			lerp(faded.y,
-				lerp(faded.x,
+			math::lerp(
+				math::lerp(
 					grad(self.hash(aa + 1), loc - Vector3::new(0.0, 0.0, 1.0)),
-					grad(self.hash(ba + 1), loc - Vector3::new(1.0, 0.0, 1.0))
+					grad(self.hash(ba + 1), loc - Vector3::new(1.0, 0.0, 1.0)),
+					faded.x
 				),
-				lerp(faded.x,
+				math::lerp(
 					grad(self.hash(ab + 1), loc - Vector3::new(0.0, 1.0, 1.0)),
-					grad(self.hash(bb + 1), loc - Vector3::new(1.0, 1.0, 1.0))
-				)
-			)
+					grad(self.hash(bb + 1), loc - Vector3::new(1.0, 1.0, 1.0)),
+					faded.x
+				),
+				faded.y
+			),
+			faded.z
 		) * self.amplitude
 	}
 	
@@ -186,7 +182,7 @@ impl Perlin {
 		
 		for (offset, entry) in table.iter_mut().enumerate() {
 			let y = (start + (offset as f64)) * self.scale.y + self.p.offset.y;
-			let floored = floor_capped(y);
+			let floored = math::floor_clamped(y);
 			let p = (floored % 256.0) as u16;
 			let y = y - floored;
 			
@@ -208,7 +204,7 @@ impl Sample for Perlin {
 		let loc = Vector2::new(loc.x * self.scale.x, loc.y * self.scale.z) + Vector2::new(self.p.offset.x, self.p.offset.z);
 		
 		// TODO: This is broken for negative coords?
-		let floored = loc.map(floor_capped);
+		let floored = loc.map(math::floor_clamped);
 		let p = Vector2::new(
 			(floored.x % 256.0) as u16, 
 			(floored.y % 256.0) as u16
@@ -221,15 +217,18 @@ impl Sample for Perlin {
 		let aa = self.hash(self.hash(p.x    )) + p.y;
 		let ba = self.hash(self.hash(p.x + 1)) + p.y;
 		
-		lerp(faded.y,
-			lerp(faded.x,
+		math::lerp(
+			math::lerp(
 				grad2d(self.hash(aa    ), loc),
-				grad2d(self.hash(ba    ), loc - Vector2::new(1.0, 0.0))
+				grad2d(self.hash(ba    ), loc - Vector2::new(1.0, 0.0)),
+				faded.x
 			),
-			lerp(faded.x,
+			math::lerp(
 				grad2d(self.hash(aa + 1), loc - Vector2::new(0.0, 1.0)),
-				grad2d(self.hash(ba + 1), loc - Vector2::new(1.0, 1.0))
-			)
+				grad2d(self.hash(ba + 1), loc - Vector2::new(1.0, 1.0)),
+				faded.x
+			),
+			faded.y
 		) * self.amplitude
 	}
 }

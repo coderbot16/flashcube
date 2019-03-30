@@ -7,3 +7,4 @@ authors = ["coderbot <coderbot16@gmail.com>"]
 cgmath = "0.16"
 java-rand = "0.2.0"
 vocs = { path = "../../vocs" }
+i73-base = { path = "../i73-base" }

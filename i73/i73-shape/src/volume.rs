@@ -3,6 +3,7 @@ use cgmath::Vector3;
 use height::Height;
 use vocs::position::ColumnPosition;
 use i73_noise::octaves::PerlinOctavesVertical;
+use i73_base::math;
 
 #[derive(Debug, PartialEq)]
 pub struct TriNoiseSettings {
@@ -55,7 +56,7 @@ impl TriNoiseSource {
 		let upper = self.upper.generate_override(point, index) / self.upper_out_scale;
 		let main  = self. main.generate_override(point, index) / self. main_out_scale + 0.5;
 		
-		lerp(main.max(0.0).min(1.0), lower, upper)
+		math::lerp(lower, upper, math::clamp(main, 0.0, 1.0))
 	}
 }
 
@@ -101,32 +102,24 @@ impl FieldSettings {
 	}
 }
 
-fn lerp(t: f64, a: f64, b: f64) -> f64 {
-	a + t * (b - a)
-}
-
 pub fn reduce_upper(value: f64, y: f64, control: f64, min: f64, max_y: f64) -> f64 {
 	let threshold = max_y - control;
 	let divisor   = control - 1.0;
 	let factor    = (y.max(threshold) - threshold) / divisor;
-	
-	reduce(value, factor, min)
+
+	math::lerp_precise(value, -min, factor)
 }
 
 pub fn reduce_lower(value: f64, y: f64, control: f64, min: f64) -> f64 {
 	let divisor   = control - 1.0;
 	let factor    = (control - y.min(control)) / divisor;
-	
-	reduce(value, factor, min)
+
+	math::lerp_precise(value, -min, factor)
 }
 
 pub fn reduce_cubic(value: f64, distance: f64) -> f64 {
 	let factor = 4.0 - distance.min(4.0);
 	value - 10.0 * factor.powi(3)
-}
-
-pub fn reduce(value: f64, factor: f64, min: f64) -> f64 {
-	value * (1.0 - factor) - min * factor
 }
 
 pub fn trilinear128(array: &[[[f64; 5]; 17]; 5], position: ColumnPosition) -> f64 {
@@ -144,26 +137,33 @@ pub fn trilinear128(array: &[[[f64; 5]; 17]; 5], position: ColumnPosition) -> f6
 		(position.z() / 4) as usize
 	);
 	
-	lerp(inner.2, 
-		lerp(inner.0,
-			lerp(inner.1,
+	math::lerp(
+		math::lerp(
+			math::lerp(
 				array[indices.0    ][indices.1    ][indices.2    ],
 				array[indices.0    ][indices.1 + 1][indices.2    ],
+				inner.1
 			),
-			lerp(inner.1,
+			math::lerp(
 				array[indices.0 + 1][indices.1    ][indices.2    ],
 				array[indices.0 + 1][indices.1 + 1][indices.2    ],
-			)
+				inner.1
+			),
+			inner.0
 		),
-		lerp(inner.0,
-			lerp(inner.1,
+		math::lerp(
+			math::lerp(
 				array[indices.0    ][indices.1    ][indices.2 + 1],
 				array[indices.0    ][indices.1 + 1][indices.2 + 1],
+				inner.1
 			),
-			lerp(inner.1,
+			math::lerp(
 				array[indices.0 + 1][indices.1    ][indices.2 + 1],
 				array[indices.0 + 1][indices.1 + 1][indices.2 + 1],
-			)
-		)
+				inner.1
+			),
+			inner.0
+		),
+		inner.2
 	)
 }

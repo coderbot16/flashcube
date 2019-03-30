@@ -1,6 +1,7 @@
 extern crate java_rand;
 extern crate cgmath;
 extern crate vocs;
+extern crate i73_base;
 
 pub mod perlin;
 pub mod simplex;

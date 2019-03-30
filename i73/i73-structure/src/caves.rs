@@ -6,7 +6,7 @@ use StructureGenerator;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use i73_base::matcher::BlockMatcher;
-use i73_base::Block;
+use i73_base::{Block, math};
 
 const NOTCH_PI: f32 = 3.141593;
 const PI_DIV_2: f32 = 1.570796;
@@ -39,11 +39,6 @@ pub static HEIGHT_NETHER: Linear = Linear {
 	min: 0,
 	max: 127
 };
-
-/// Mimics Java rounding rules and avoids UB from float casts.
-fn floor_capped(t: f64) -> i32 {
-	t.floor().max(-2147483648.0).min(2147483647.0) as i32
-}
 
 struct CavesAssociations {
 	carve: ColumnAssociation,
@@ -516,15 +511,15 @@ impl Position {
 	
 	fn blob(&self, size: BlobSize) -> Blob {
 		let lower = (
-			floor_capped(self.block.0 - size.horizontal) - self.chunk.x() * 16 - 1,
-			floor_capped(self.block.1 - size.vertical)                         - 1,
-			floor_capped(self.block.2 - size.horizontal) - self.chunk.z() * 16 - 1
+			math::floor_clamped(self.block.0 - size.horizontal) as i32 - self.chunk.x() * 16 - 1,
+			math::floor_clamped(self.block.1 - size.vertical)   as i32                       - 1,
+			math::floor_clamped(self.block.2 - size.horizontal) as i32 - self.chunk.z() * 16 - 1
 		);
 		
 		let upper = (
-			floor_capped(self.block.0 + size.horizontal) - self.chunk.x() * 16 + 1,
-			floor_capped(self.block.1 + size.vertical)                         + 1,
-			floor_capped(self.block.2 + size.horizontal) - self.chunk.z() * 16 + 1
+			math::floor_clamped(self.block.0 + size.horizontal) as i32 - self.chunk.x() * 16 + 1,
+			math::floor_clamped(self.block.1 + size.vertical)   as i32                       + 1,
+			math::floor_clamped(self.block.2 + size.horizontal) as i32 - self.chunk.z() * 16 + 1
 		);
 		
 		Blob {
