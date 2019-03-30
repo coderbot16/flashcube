@@ -2,7 +2,7 @@ use java_rand::Random;
 use vocs::view::QuadMut;
 use vocs::position::{ColumnPosition, QuadPosition};
 use vocs::indexed::Target;
-use distribution::Distribution;
+use i73_base::distribution::Distribution;
 
 pub mod dungeon;
 pub mod vein;

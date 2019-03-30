@@ -35,12 +35,22 @@
       <sourceFolder url="file://$MODULE_DIR$/i73-frontend/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/i73-frontend/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/i73-frontend/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/biome/target" />
       <excludeFolder url="file://$MODULE_DIR$/frontend/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-base/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-biome/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-frontend/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-noise/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-shape/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-trig/target" />
       <excludeFolder url="file://$MODULE_DIR$/incr" />
       <excludeFolder url="file://$MODULE_DIR$/noise/target" />
       <excludeFolder url="file://$MODULE_DIR$/shape/target" />

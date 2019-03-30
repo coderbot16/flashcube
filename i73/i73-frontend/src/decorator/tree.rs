@@ -1,4 +1,4 @@
-use matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 use vocs::indexed::Target;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};

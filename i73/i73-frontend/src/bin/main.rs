@@ -5,6 +5,7 @@ extern crate java_rand;
 #[macro_use]
 extern crate serde_json;
 extern crate i73_biome;
+extern crate i73_base;
 
 use std::path::PathBuf;
 use std::fs::File;
@@ -16,7 +17,7 @@ use i73::generator::overworld_173::{self, Settings};
 use i73::config::biomes::{BiomesConfig, DecoratorConfig};
 use i73_biome::Lookup;
 use i73::structure;
-use i73::matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 
 use vocs::indexed::ChunkIndexed;
 use vocs::world::world::World;
@@ -93,25 +94,25 @@ fn main() {
 			},
 			"size": 32
 		}),
-		height_distribution: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		height_distribution: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 63
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		},
-		count: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		count: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 9
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		}
 	};
 
-	let mut decorators: Vec<::i73::decorator::Dispatcher<i73::distribution::Chance<i73::distribution::Baseline>, i73::distribution::Chance<i73::distribution::Baseline>, u16>> = Vec::new();
+	let mut decorators: Vec<::i73::decorator::Dispatcher<i73_base::distribution::Chance<i73_base::distribution::Baseline>, i73_base::distribution::Chance<i73_base::distribution::Baseline>, u16>> = Vec::new();
 
 	for (name, decorator_set) in biomes_config.decorator_sets {
 		println!("Configuring decorator set {}", name);
@@ -135,18 +136,18 @@ fn main() {
 			},
 			settings: ::i73::decorator::lake::LakeSettings::default()
 		}),
-		height_distribution: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		height_distribution: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 127
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		},
-		rarity: ::i73::distribution::Chance {
-			base: ::i73::distribution::Baseline::Constant { value: 1 },
+		rarity: ::i73_base::distribution::Chance {
+			base: ::i73_base::distribution::Baseline::Constant { value: 1 },
 			chance: 4,
-			ordering: ::i73::distribution::ChanceOrdering::AlwaysGeneratePayload
+			ordering: ::i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload
 		}
 	});
 
@@ -161,20 +162,20 @@ fn main() {
 			},
 			ocean: BlockMatcher::include([8*16, 9*16].iter())
 		}),
-		height_distribution: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		height_distribution: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 63
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		},
-		rarity: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		rarity: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 9
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		}
 	});
@@ -193,20 +194,20 @@ fn main() {
 			},
 			phantom: ::std::marker::PhantomData::<u16>
 		}),
-		height_distribution: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		height_distribution: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 127
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		},
-		rarity: ::i73::distribution::Chance {
-			base: i73::distribution::Baseline::Linear(i73::distribution::Linear {
+		rarity: ::i73_base::distribution::Chance {
+			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
 				max: 90
 			}),
-			ordering: i73::distribution::ChanceOrdering::AlwaysGeneratePayload,
+			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		}
 	});

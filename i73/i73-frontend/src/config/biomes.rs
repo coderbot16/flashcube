@@ -1,6 +1,6 @@
 use i73_biome::{Grid, Biome, Surface, Followup};
 use serde_json;
-use distribution::{Chance, Baseline};
+use i73_base::distribution::{Chance, Baseline};
 use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::borrow::Cow;

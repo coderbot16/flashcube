@@ -2,7 +2,6 @@
 name = "frontend"
 version = "0.1.0"
 authors = ["coderbot <coderbot16@gmail.com>"]
-build = "build.rs"
 
 [dependencies]
 cgmath = "0.16"
@@ -20,3 +19,5 @@ java-rand = "0.2.0"
 i73-noise = { path = "../i73-noise" }
 i73-biome = { path = "../i73-biome" }
 i73-shape = { path = "../i73-shape" }
+i73-trig = { path = "../i73-trig" }
+i73-base = { path = "../i73-base" }

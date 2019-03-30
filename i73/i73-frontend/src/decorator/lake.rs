@@ -1,6 +1,6 @@
 use java_rand::Random;
 use vocs::indexed::Target;
-use matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 use vocs::position::{ChunkPosition, ColumnPosition, QuadPosition};
 use vocs::view::QuadMut;
 use vocs::mask::ChunkMask;

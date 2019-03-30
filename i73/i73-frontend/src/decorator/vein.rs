@@ -1,10 +1,10 @@
 use vocs::indexed::Target;
-use matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 use vocs::position::{QuadPosition, Offset};
 use vocs::view::QuadMut;
 use super::{Decorator, Result};
 use java_rand::Random;
-use trig;
+use i73_trig as trig;
 
 // TODO: Is this really 3.141593?
 /// For when you don't have the time to type out all the digits of π or Math.PI.

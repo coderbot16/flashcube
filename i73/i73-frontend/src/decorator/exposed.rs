@@ -3,7 +3,7 @@ use vocs::indexed::Target;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};
 use decorator::{Decorator, Result};
-use matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 
 pub struct ExposedDecorator<B> where B: Target {
 	pub block: B,

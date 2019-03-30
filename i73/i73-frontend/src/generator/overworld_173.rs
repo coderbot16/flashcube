@@ -11,7 +11,7 @@ use generator::Pass;
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
 use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
-use matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 use i73_shape::height::lerp_to_layer;
 
 pub struct Settings<B> where B: Target {

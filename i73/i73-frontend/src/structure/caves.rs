@@ -1,12 +1,12 @@
 use java_rand::Random;
-use trig;
+use i73_trig as trig;
 use std::cmp::{min, max};
-use distribution::{Distribution, Chance, Linear, Packed2, Packed3, ChanceOrdering};
+use i73_base::distribution::{Distribution, Chance, Linear, Packed2, Packed3, ChanceOrdering};
 use structure::StructureGenerator;
 use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
-use matcher::BlockMatcher;
+use i73_base::matcher::BlockMatcher;
 
 const NOTCH_PI: f32 = 3.141593;
 const PI_DIV_2: f32 = 1.570796;
