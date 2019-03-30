@@ -1,6 +1,6 @@
 extern crate rs25;
 extern crate vocs;
-extern crate i73;
+extern crate frontend as i73;
 extern crate java_rand;
 #[macro_use]
 extern crate serde_json;

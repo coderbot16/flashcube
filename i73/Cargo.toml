@@ -1,0 +1,7 @@
+[workspace]
+members = [
+	"frontend"
+]
+
+[profile.dev]
+opt-level = 3
