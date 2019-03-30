@@ -20,7 +20,7 @@ impl From<ParseIntError> for Error {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct BiomesConfig {
 	#[serde(default)]
 	pub decorator_sets: HashMap<String, Vec<DecoratorConfig>>,
@@ -51,7 +51,7 @@ impl BiomesConfig {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct BiomeConfig {
 	pub debug_name: String,
 	pub surface: SurfaceConfig,
@@ -68,7 +68,7 @@ impl BiomeConfig {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct SurfaceConfig {
 	pub top: String,
 	pub fill: String,
@@ -85,7 +85,7 @@ impl SurfaceConfig {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct FollowupConfig {
 	pub block: String,
 	pub max_depth: u32
@@ -100,7 +100,7 @@ impl FollowupConfig {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct DecoratorConfig {
 	pub decorator: String,
 	pub settings: serde_json::Value,
@@ -122,7 +122,7 @@ impl DecoratorConfig {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct RectConfig {
 	pub temperature: (f64, f64),
 	pub rainfall: (f64, f64),

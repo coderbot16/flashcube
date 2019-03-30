@@ -3,7 +3,7 @@ use cgmath::Point2;
 use i73_noise::octaves::SimplexOctaves;
 use i73_noise::sample::Sample;
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
+#[derive(Deserialize, Copy, Clone, Debug)]
 pub struct ClimateSettings {
 	pub temperature_fq:    f64,
 	pub rainfall_fq:       f64,

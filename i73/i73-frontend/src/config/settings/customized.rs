@@ -2,7 +2,7 @@ use i73_shape::volume::TriNoiseSettings;
 use i73_shape::height::HeightSettings81;
 use cgmath::Vector3;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Customized {
 	#[serde(rename="coordinateScale")]			pub coordinate_scale: 			f64,
 	#[serde(rename="heightScale")]				pub height_scale: 				f64,

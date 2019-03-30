@@ -13,13 +13,13 @@ fn default_ordering() -> ChanceOrdering {
 	ChanceOrdering::AlwaysGeneratePayload
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Deserialize, Eq, PartialEq)]
 pub enum ChanceOrdering {
 	AlwaysGeneratePayload,
 	CheckChanceBeforePayload
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Chance<D> where D: Distribution {
 	/// Chance for this distribution to return its value instead of 0.
 	/// Represented as probability = 1 / chance.
@@ -59,7 +59,7 @@ impl<D> Distribution for Chance<D> where D: Distribution {
 }
 
 /// Baseline distribution. This should be general enough to fit most use cases.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(tag = "kind")]
 pub enum Baseline {
 	Constant { value: u32 },
@@ -88,7 +88,7 @@ impl Distribution for u32 {
 }
 
 /// Plain old linear distribution, with a minimum and maximum.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Linear {
 	pub min: u32,
 	pub max: u32
@@ -101,7 +101,7 @@ impl Distribution for Linear {
 }
 
 /// Distribution that packs more values to the minimum value. This is based on 2 RNG iterations.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Packed2 {
 	pub min: u32,
 	/// Minimum height passed to the second RNG call (the linear call).
@@ -119,7 +119,7 @@ impl Distribution for Packed2 {
 
 /// Distribution that packs more values to the minimum value. This is based on 3 RNG iterations, and is more extreme.
 /// The average is around `(max+1)/8 - 1`, a simplified form of `(max+1)/2³ - 1`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Packed3 {
 	pub max: u32
 }
@@ -133,7 +133,7 @@ impl Distribution for Packed3 {
 }
 
 /// Distribution centered around a certain point, with a maximum variance.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Centered {
 	pub center: u32,
 	pub radius: u32

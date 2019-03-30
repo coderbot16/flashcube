@@ -63,7 +63,7 @@ fn main() {
 	settings.field.height_stretch = parts.height_stretch;
 	
 	// TODO: Biome Settings
-	
+	println!();
 	let sea_block = Block::from_anvil_id(if parts.ocean.top > 0 {
 		settings.sea_coord = min(parts.ocean.top - 1, 255) as u8;
 		
@@ -80,7 +80,7 @@ fn main() {
 	let biomes_config = serde_json::from_reader::<File, BiomesConfig>(File::open(profile.join("biomes.json")).unwrap()).unwrap();
 	let grid = biomes_config.to_grid().unwrap();
 
-	/*let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
+	let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
 	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
 	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::config::decorator::vein::SeasideVeinDecoratorFactory::default()));
 	decorator_registry.insert("lake".into(), Box::new(::i73::config::decorator::lake::LakeDecoratorFactory::default()));
@@ -642,5 +642,5 @@ fn main() {
 
 		println!("Writing done in {}us ({}us per column)", us, us / 1024);
 		println!();
-	}*/
+	}
 }

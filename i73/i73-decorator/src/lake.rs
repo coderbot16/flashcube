@@ -9,7 +9,7 @@ use i73_base::Block;
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct LakeDecorator {
 	pub blocks: LakeBlocks,
 	#[serde(default)]
@@ -46,7 +46,7 @@ impl Decorator for LakeDecorator {
 	}
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct LakeBlocks {
 	pub is_liquid:  BlockMatcher,
 	pub is_solid:   BlockMatcher,
@@ -116,7 +116,7 @@ impl LakeBlocks {
 	// TODO: grow_grass, solidify_border
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct LakeSettings {
 	pub surface: u8,
 	pub min_blobs: u32,
