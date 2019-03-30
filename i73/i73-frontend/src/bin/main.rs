@@ -6,17 +6,19 @@ extern crate java_rand;
 extern crate serde_json;
 extern crate i73_biome;
 extern crate i73_base;
+extern crate i73_terrain;
+extern crate i73_structure;
+extern crate i73_decorator;
 
 use std::path::PathBuf;
 use std::fs::File;
 use std::cmp::min;
 
 use i73::config::settings::customized::{Customized, Parts};
-use i73::generator::Pass;
-use i73::generator::overworld_173::{self, Settings};
+use i73_base::Pass;
+use i73_terrain::overworld_173::{self, Settings};
 use i73::config::biomes::{BiomesConfig, DecoratorConfig};
 use i73_biome::Lookup;
-use i73::structure;
 use i73_base::matcher::BlockMatcher;
 
 use vocs::indexed::ChunkIndexed;
@@ -112,7 +114,7 @@ fn main() {
 		}
 	};
 
-	let mut decorators: Vec<::i73::decorator::Dispatcher<i73_base::distribution::Chance<i73_base::distribution::Baseline>, i73_base::distribution::Chance<i73_base::distribution::Baseline>, u16>> = Vec::new();
+	let mut decorators: Vec<::i73_decorator::Dispatcher<i73_base::distribution::Chance<i73_base::distribution::Baseline>, i73_base::distribution::Chance<i73_base::distribution::Baseline>, u16>> = Vec::new();
 
 	for (name, decorator_set) in biomes_config.decorator_sets {
 		println!("Configuring decorator set {}", name);
@@ -124,9 +126,9 @@ fn main() {
 		}
 	}
 
-	decorators.push (::i73::decorator::Dispatcher {
-		decorator: Box::new(::i73::decorator::lake::LakeDecorator {
-			blocks: ::i73::decorator::lake::LakeBlocks {
+	decorators.push (::i73_decorator::Dispatcher {
+		decorator: Box::new(::i73_decorator::lake::LakeDecorator {
+			blocks: ::i73_decorator::lake::LakeBlocks {
 				is_liquid:  BlockMatcher::include([8*16, 9*16, 10*16, 11*16].iter()),
 				is_solid:   BlockMatcher::exclude([0*16, 8*16, 9*16, 10*16, 11*16].iter()), // TODO: All nonsolid blocks
 				replaceable: BlockMatcher::none(), // TODO
@@ -134,7 +136,7 @@ fn main() {
 				carve:      0*16,
 				solidify:   None
 			},
-			settings: ::i73::decorator::lake::LakeSettings::default()
+			settings: ::i73_decorator::lake::LakeSettings::default()
 		}),
 		height_distribution: ::i73_base::distribution::Chance {
 			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
@@ -151,10 +153,10 @@ fn main() {
 		}
 	});
 
-	decorators.push (::i73::decorator::Dispatcher {
-		decorator: Box::new(::i73::decorator::vein::SeasideVeinDecorator {
-			vein: ::i73::decorator::vein::VeinDecorator {
-				blocks: ::i73::decorator::vein::VeinBlocks {
+	decorators.push (::i73_decorator::Dispatcher {
+		decorator: Box::new(::i73_decorator::vein::SeasideVeinDecorator {
+			vein: ::i73_decorator::vein::VeinDecorator {
+				blocks: ::i73_decorator::vein::VeinBlocks {
 					replace: BlockMatcher::is(12*16),
 					block: 82*16
 				},
@@ -182,12 +184,12 @@ fn main() {
 
 	decorators.push (gravel_config.into_dispatcher(&decorator_registry).unwrap());
 
-	decorators.push (::i73::decorator::Dispatcher {
-		decorator: Box::new(::i73::decorator::clump::Clump {
+	decorators.push (::i73_decorator::Dispatcher {
+		decorator: Box::new(::i73_decorator::clump::Clump {
 			iterations: 64,
 			horizontal: 8,
 			vertical: 4,
-			decorator: ::i73::decorator::clump::plant::PlantDecorator {
+			decorator: ::i73_decorator::clump::plant::PlantDecorator {
 				block: 31*16 + 1,
 				base: BlockMatcher::include([2*16, 3*16, 60*16].into_iter()),
 				replace: BlockMatcher::is(0*16)
@@ -212,7 +214,7 @@ fn main() {
 		}
 	});
 
-	/*use decorator::large_tree::{LargeTreeSettings, LargeTree};
+	/*use large_tree::{LargeTreeSettings, LargeTree};
 	let settings = LargeTreeSettings::default();
 	
 	for i in 0..1 {
@@ -237,7 +239,7 @@ fn main() {
 	
 	let (shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
 	
-	let caves_generator = structure::caves::CavesGenerator {
+	let caves_generator = i73_structure::caves::CavesGenerator {
 		carve: 0*16,
 		lower: 10*16,
 		surface_block: 2*16,
@@ -249,7 +251,7 @@ fn main() {
 		vertical_multiplier: 1.0,
 		lower_surface: 10
 	};
-	let caves = structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
+	let caves = i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
 	
 	/*let shape = nether_173::passes(-160654125608861039, &nether_173::default_tri_settings(), nether_173::ShapeBlocks::default(), 31);
 	

@@ -2,7 +2,7 @@ use java_rand::Random;
 use i73_trig as trig;
 use std::cmp::{min, max};
 use i73_base::distribution::{Distribution, Chance, Linear, Packed2, Packed3, ChanceOrdering};
-use structure::StructureGenerator;
+use StructureGenerator;
 use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use vocs::position::{ColumnPosition, GlobalColumnPosition};

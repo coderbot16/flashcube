@@ -1,0 +1,12 @@
+[package]
+name = "i73-decorator"
+version = "0.1.0"
+authors = ["coderbot <coderbot16@gmail.com>"]
+
+[dependencies]
+java-rand = "0.2.0"
+vocs = { path = "../../vocs" }
+serde = "0.9"
+serde_derive = "0.9"
+i73-base = { path = "../i73-base" }
+i73-trig = { path = "../i73-trig" }

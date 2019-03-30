@@ -1,5 +1,5 @@
 use serde_json;
-use decorator::Decorator;
+use i73_decorator::Decorator;
 use vocs::indexed::Target;
 
 pub trait DecoratorFactory<B> where B: Target {
@@ -9,7 +9,7 @@ pub trait DecoratorFactory<B> where B: Target {
 /// Vein decorator factories
 pub mod vein {
 	use super::*;
-	use decorator::vein::{VeinDecorator, SeasideVeinDecorator};
+	use i73_decorator::vein::{VeinDecorator, SeasideVeinDecorator};
 
 	#[derive(Default)]
 	pub struct VeinDecoratorFactory<B>(::std::marker::PhantomData<B>);
@@ -31,7 +31,7 @@ pub mod vein {
 /// Lake decorator factories
 pub mod lake {
 	use super::*;
-	use decorator::lake::{LakeDecorator};
+	use i73_decorator::lake::{LakeDecorator};
 
 	#[derive(Default)]
 	pub struct LakeDecoratorFactory<B>(::std::marker::PhantomData<B>);

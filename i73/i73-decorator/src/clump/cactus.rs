@@ -2,7 +2,7 @@ use vocs::position::{QuadPosition, Offset, dir};
 use vocs::view::QuadMut;
 use vocs::indexed::Target;
 use i73_base::matcher::BlockMatcher;
-use decorator::{Decorator, Result};
+use {Decorator, Result};
 use java_rand::Random;
 
 pub struct CactusDecorator<B> where B: Target {

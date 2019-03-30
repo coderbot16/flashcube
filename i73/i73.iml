@@ -43,13 +43,28 @@
       <sourceFolder url="file://$MODULE_DIR$/i73-base/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/i73-base/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/i73-base/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/biome/target" />
       <excludeFolder url="file://$MODULE_DIR$/frontend/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-base/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-biome/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-decorator/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-frontend/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-noise/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-shape/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-structure/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-terrain/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-trig/target" />
       <excludeFolder url="file://$MODULE_DIR$/incr" />
       <excludeFolder url="file://$MODULE_DIR$/noise/target" />

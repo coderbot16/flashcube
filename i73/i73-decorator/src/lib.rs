@@ -1,3 +1,10 @@
+#[macro_use]
+extern crate serde_derive;
+extern crate java_rand;
+extern crate vocs;
+extern crate i73_base;
+extern crate i73_trig;
+
 use java_rand::Random;
 use vocs::view::QuadMut;
 use vocs::position::{ColumnPosition, QuadPosition};
@@ -7,9 +14,9 @@ use i73_base::distribution::Distribution;
 pub mod dungeon;
 pub mod vein;
 pub mod clump;
-pub mod large_tree;
+// TODO: pub mod large_tree;
 pub mod lake;
-pub mod tree;
+// TODO: pub mod tree;
 pub mod exposed;
 
 // TODO: MultiDispatcher

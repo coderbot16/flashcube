@@ -12,13 +12,9 @@ extern crate vocs;
 extern crate cgmath;
 extern crate java_rand;
 
-extern crate i73_noise;
 extern crate i73_biome;
 extern crate i73_shape;
-extern crate i73_trig;
 extern crate i73_base;
+extern crate i73_decorator;
 
-pub mod decorator;
-pub mod structure;
-pub mod generator;
 pub mod config;

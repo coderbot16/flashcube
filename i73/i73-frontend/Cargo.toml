@@ -21,3 +21,6 @@ i73-biome = { path = "../i73-biome" }
 i73-shape = { path = "../i73-shape" }
 i73-trig = { path = "../i73-trig" }
 i73-base = { path = "../i73-base" }
+i73-terrain = { path = "../i73-terrain" }
+i73-structure = { path = "../i73-structure" }
+i73-decorator = { path = "../i73-decorator" }
