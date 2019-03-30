@@ -2,24 +2,26 @@ extern crate rs25;
 extern crate vocs;
 extern crate frontend as i73;
 extern crate java_rand;
-#[macro_use]
-extern crate serde_json;
 extern crate i73_biome;
 extern crate i73_base;
 extern crate i73_terrain;
 extern crate i73_structure;
 extern crate i73_decorator;
+extern crate cgmath;
+extern crate i73_shape;
 
 use std::path::PathBuf;
 use std::fs::File;
 use std::cmp::min;
 
-use i73::config::settings::customized::{Customized, Parts};
+use i73::config::settings::customized::{Parts, BiomeSettings, Ocean, Structures, Decorators, VeinSettingsCentered, VeinSettings};
 use i73_base::{Pass, Block};
 use i73_terrain::overworld_173::{self, Settings};
-use i73::config::biomes::{BiomesConfig, DecoratorConfig};
+use i73::config::biomes::{BiomesConfig, BiomeConfig, SurfaceConfig, RectConfig, FollowupConfig};
 use i73_biome::Lookup;
 use i73_base::matcher::BlockMatcher;
+
+use cgmath::Vector3;
 
 use vocs::indexed::ChunkIndexed;
 use vocs::world::world::World;
@@ -30,6 +32,8 @@ use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
 use rs25::level::region::RegionWriter;
 use rs25::level::anvil::ColumnRoot;
 use std::collections::HashMap;
+use i73_shape::volume::TriNoiseSettings;
+use i73_shape::height::HeightSettings81;
 
 fn main() {
 	let profile_name = match ::std::env::args().skip(1).next() {
@@ -45,10 +49,35 @@ fn main() {
 	profile.push(&profile_name);
 	
 	println!("Using profile {}: {}", profile_name, profile.to_string_lossy());
-	
-	let customized = serde_json::from_reader::<File, Customized>(File::open(profile.join("customized.json")).unwrap()).unwrap();
-	let parts = Parts::from(customized);
-	
+
+	// TODO: Better JSON parser; uncommenting this adds 9 seconds to the compile time
+	/*let customized = serde_json::from_reader::<File, Customized>(File::open(profile.join("customized.json")).unwrap()).unwrap();
+	let parts = Parts::from(customized);*/
+
+	let parts = Parts {
+		tri:            TriNoiseSettings { main_out_scale: 20.0, upper_out_scale: 512.0, lower_out_scale: 512.0, lower_scale: Vector3 { x: 684.412, y: 684.412, z: 684.412 }, upper_scale: Vector3 { x: 684.412, y: 684.412, z: 684.412 }, main_scale: Vector3 { x: 8.55515, y: 4.277575, z: 8.55515 }, y_size: 17 },
+		height_stretch: 12.0,
+		height:         HeightSettings81 { coord_scale: Vector3 { x: 200.0, y: 0.0, z: 200.0 }, out_scale: 8000.0, base: 8.5 },
+		biome:          BiomeSettings { depth_weight: 1.0, depth_offset: 0.0, scale_weight: 1.0, scale_offset: 0.0, fixed: -1, biome_size: 4, river_size: 4 },
+		ocean:          Ocean { top: 64, lava: false },
+		structures:     Structures { caves: true, strongholds: true, villages: true, mineshafts: true, temples: true, ravines: true },
+		decorators:     Decorators {
+			dungeon_chance: Some(8),
+			water_lake_chance: Some(4),
+			lava_lake_chance: Some(80),
+			dirt: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 256 },
+			gravel: VeinSettings { size: 33, count: 8, min_y: 0, max_y: 256 },
+			granite: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 80 },
+			diorite: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 80 },
+			andesite: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 80 },
+			coal: VeinSettings { size: 17, count: 20, min_y: 0, max_y: 128 },
+			iron: VeinSettings { size: 9, count: 20, min_y: 0, max_y: 64 },
+			redstone: VeinSettings { size: 8, count: 8, min_y: 0, max_y: 16 },
+			diamond: VeinSettings { size: 8, count: 1, min_y: 0, max_y: 16 },
+			lapis: VeinSettingsCentered { size: 7, count: 1, center_y: 16, spread: 16 }
+		}
+	};
+
 	println!("  Tri Noise Settings: {:?}", parts.tri);
 	println!("  Height Stretch: {:?}", parts.height_stretch);
 	println!("  Height Settings: {:?}", parts.height);
@@ -76,16 +105,32 @@ fn main() {
 	settings.paint_blocks.ocean = sea_block;
 
 	// TODO: Structures and Decorators
+
+	// TODO: Better JSON parser; uncommenting this adds 18 seconds to the compile time
+	// let biomes_config = serde_json::from_reader::<File, BiomesConfig>(File::open(profile.join("biomes.json")).unwrap()).unwrap();
+	let mut biomes_config = BiomesConfig { decorator_sets: HashMap::new(), biomes: HashMap::new(), default: "plains".to_string(), grid: vec![RectConfig { temperature: (0.0, 0.1), rainfall: (0.0, 1.0), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.0, 0.2), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.2, 0.5), biome: "taiga".to_string() }, RectConfig { temperature: (0.1, 0.7), rainfall: (0.5, 1.0), biome: "swampland".to_string() }, RectConfig { temperature: (0.5, 0.95), rainfall: (0.0, 0.2), biome: "savanna".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.2, 0.35), biome: "shrubland".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.35, 0.5), biome: "forest".to_string() }, RectConfig { temperature: (0.7, 0.97), rainfall: (0.5, 1.0), biome: "forest".to_string() }, RectConfig { temperature: (0.95, 1.0), rainfall: (0.0, 0.2), biome: "desert".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.2, 0.45), biome: "plains".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.45, 0.9), biome: "seasonal_forest".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.9, 1.0), biome: "rainforest".to_string() }] };
+	biomes_config.biomes.insert("seasonal_forest".to_string(), BiomeConfig { debug_name: "Seasonal Forest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("swampland".to_string(), BiomeConfig { debug_name: "Swampland".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("rainforest".to_string(), BiomeConfig { debug_name: "Rainforest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("desert".to_string(), BiomeConfig { debug_name: "Desert".to_string(), surface: SurfaceConfig { top: "12:0".to_string(), fill: "12:0".to_string(), chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }] }, decorators: vec![] });
+	biomes_config.biomes.insert("savanna".to_string(), BiomeConfig { debug_name: "Savanna".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("plains".to_string(), BiomeConfig { debug_name: "Plains".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("tundra".to_string(), BiomeConfig { debug_name: "Tundra".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("shrubland".to_string(), BiomeConfig { debug_name: "Shrubland".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("taiga".to_string(), BiomeConfig { debug_name: "Taiga".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("forest".to_string(), BiomeConfig { debug_name: "Forest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
+	biomes_config.biomes.insert("ice_desert".to_string(), BiomeConfig { debug_name: "Ice Desert".to_string(), surface: SurfaceConfig { top: "12:0".to_string(), fill: "12:0".to_string(), chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }] }, decorators: vec![] });
 	
-	let biomes_config = serde_json::from_reader::<File, BiomesConfig>(File::open(profile.join("biomes.json")).unwrap()).unwrap();
+	println!("{:?}", biomes_config);
+
 	let grid = biomes_config.to_grid().unwrap();
 
-	let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
+	/*let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
 	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
 	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::config::decorator::vein::SeasideVeinDecoratorFactory::default()));
-	decorator_registry.insert("lake".into(), Box::new(::i73::config::decorator::lake::LakeDecoratorFactory::default()));
+	decorator_registry.insert("lake".into(), Box::new(::i73::config::decorator::lake::LakeDecoratorFactory::default()));*/
 
-	let gravel_config = DecoratorConfig {
+	/*let gravel_config = DecoratorConfig {
 		decorator: "vein".into(),
 		settings: json!({
 			"blocks": {
@@ -113,11 +158,11 @@ fn main() {
 			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		}
-	};
+	};*/
 
 	let mut decorators: Vec<::i73_decorator::Dispatcher<i73_base::distribution::Chance<i73_base::distribution::Baseline>, i73_base::distribution::Chance<i73_base::distribution::Baseline>>> = Vec::new();
 
-	for (name, decorator_set) in biomes_config.decorator_sets {
+	/*for (name, decorator_set) in biomes_config.decorator_sets {
 		println!("Configuring decorator set {}", name);
 
 		for decorator_config in decorator_set {
@@ -125,7 +170,7 @@ fn main() {
 
 			decorators.push(decorator_config.into_dispatcher(&decorator_registry).unwrap());
 		}
-	}
+	}*/
 
 	decorators.push (::i73_decorator::Dispatcher {
 		decorator: Box::new(::i73_decorator::lake::LakeDecorator {
@@ -194,7 +239,7 @@ fn main() {
 		}
 	});
 
-	decorators.push (gravel_config.into_dispatcher(&decorator_registry).unwrap());
+	//decorators.push (gravel_config.into_dispatcher(&decorator_registry).unwrap());
 
 	decorators.push (::i73_decorator::Dispatcher {
 		decorator: Box::new(::i73_decorator::clump::Clump {
