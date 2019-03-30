@@ -1,7 +1,7 @@
 use java_rand::Random;
 use noise::octaves::PerlinOctavesVertical;
 use cgmath::Vector3;
-use noise_field::height::Height;
+use height::Height;
 use vocs::position::ColumnPosition;
 
 #[derive(Debug, PartialEq)]

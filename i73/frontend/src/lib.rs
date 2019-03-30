@@ -12,16 +12,15 @@ extern crate vocs;
 extern crate cgmath;
 extern crate java_rand;
 
-pub mod noise;
-pub mod biome;
-pub mod sample;
-pub mod noise_field;
+extern crate noise;
+extern crate biome;
+extern crate shape;
+
 pub mod decorator;
 pub mod trig;
 pub mod structure;
 pub mod generator;
 pub mod distribution;
-pub mod segmented;
 pub mod config;
 pub mod matcher;
 

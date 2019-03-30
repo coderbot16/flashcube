@@ -1,5 +1,5 @@
-use noise_field::volume::TriNoiseSettings;
-use noise_field::height::HeightSettings81;
+use shape::volume::TriNoiseSettings;
+use shape::height::HeightSettings81;
 use cgmath::Vector3;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

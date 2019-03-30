@@ -1,11 +1,11 @@
 // Note: The values returned by these functions may be off by up to ±0.00000000000001 units compared to Notchian implementations due to moving around FP operations.
 // The simplex implementation may also suffer from some inaccuracy due to it doing the *70 and *amplitude multiplications seperately.
 
+use java_rand::Random;
 use cgmath::{Point2, Vector2, Vector3};
 use sample::{Sample, Layer};
-use noise::simplex::Simplex;
-use noise::perlin::Perlin;
-use java_rand::Random;
+use simplex::Simplex;
+use perlin::Perlin;
 
 #[derive(Debug)]
 pub struct SimplexOctaves(Vec<Simplex>);

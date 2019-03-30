@@ -1,9 +1,9 @@
-use vocs::position::{LayerPosition, GlobalColumnPosition};
-use biome::{Biome, Lookup};
-use biome::climate::{Climate, ClimateSource};
-use vocs::indexed::{LayerIndexed, Target};
 use cgmath::{Point2, Vector2};
-use sample::Sample;
+use vocs::position::{LayerPosition, GlobalColumnPosition};
+use vocs::indexed::{LayerIndexed, Target};
+use {Biome, Lookup};
+use climate::{Climate, ClimateSource};
+use noise::sample::Sample;
 
 pub struct BiomeSource<B> where B: Target {
 	climate: ClimateSource,

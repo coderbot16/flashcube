@@ -1,8 +1,8 @@
 use noise::octaves::PerlinOctaves;
+use noise::sample::Sample;
 use cgmath::{Point2, Vector2, Vector3};
 use java_rand::Random;
 use biome::climate::Climate;
-use sample::Sample;
 use vocs::position::LayerPosition;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

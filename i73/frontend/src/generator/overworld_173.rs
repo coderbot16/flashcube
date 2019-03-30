@@ -1,18 +1,18 @@
 use java_rand::Random;
+use cgmath::{Point2, Vector2, Vector3};
 use noise::octaves::PerlinOctaves;
+use noise::sample::Sample;
 use biome::climate::{ClimateSettings, ClimateSource};
 use biome::source::BiomeSource;
 use biome::{Lookup, Surface};
-use noise_field::height::{HeightSettings, HeightSource};
-use noise_field::volume::{TriNoiseSettings, TriNoiseSource, FieldSettings, trilinear128};
+use shape::height::{HeightSettings, HeightSource};
+use shape::volume::{TriNoiseSettings, TriNoiseSource, FieldSettings, trilinear128};
 use generator::Pass;
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
 use vocs::indexed::Target;
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use matcher::BlockMatcher;
-use sample::Sample;
-use cgmath::{Point2, Vector2, Vector3};
-use noise_field::height::lerp_to_layer;
+use shape::height::lerp_to_layer;
 
 pub struct Settings<B> where B: Target {
 	pub shape_blocks: ShapeBlocks<B>,

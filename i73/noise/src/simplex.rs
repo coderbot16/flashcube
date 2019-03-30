@@ -1,6 +1,6 @@
 use java_rand::Random;
 use cgmath::{Point2, Vector2};
-use noise::Permutations;
+use Permutations;
 use sample::Sample;
 
 const GRAD_TABLE: [(f64, f64); 12] = [

@@ -1,7 +1,15 @@
+#[macro_use]
+extern crate serde_derive;
+extern crate java_rand;
+extern crate cgmath;
+extern crate vocs;
+extern crate noise;
+
 pub mod climate;
 pub mod source;
+pub mod segmented;
 
-use biome::climate::Climate;
+use climate::Climate;
 use vocs::indexed::Target;
 use std::borrow::Cow;
 use segmented::Segmented;

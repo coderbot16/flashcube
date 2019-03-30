@@ -1,6 +1,11 @@
+extern crate java_rand;
+extern crate cgmath;
+extern crate vocs;
+
 pub mod perlin;
 pub mod simplex;
 pub mod octaves;
+pub mod sample;
 
 use java_rand::Random;
 use cgmath::Vector3;

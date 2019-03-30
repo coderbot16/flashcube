@@ -1,6 +1,9 @@
 [workspace]
 members = [
-	"frontend"
+	"frontend",
+	"noise",
+	"biome",
+	"shape"
 ]
 
 [profile.dev]

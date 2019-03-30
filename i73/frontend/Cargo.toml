@@ -16,3 +16,7 @@ nom = "3.2.1"
 rs25 = { path = "../../rs25" }
 vocs = { path = "../../vocs" }
 java-rand = "0.2.0"
+
+noise = { path = "../noise" }
+biome = { path = "../biome" }
+shape = { path = "../shape" }
