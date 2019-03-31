@@ -103,6 +103,27 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		self.storage.set(position, association);
 	}
 
+	/// Replaces all occurrences of the first block with the second block. This will attempt to
+	/// simply exchange the palette values, but if needed it will update the block storage.
+	pub fn replace(&mut self, from: &B, to: B) {
+		let old_index = match self.palette.reverse_lookup(&from) {
+			Some(index) => index,
+			None => return
+		};
+
+		match self.palette.reverse_lookup(&to) {
+			None => self.palette.replace(old_index, to),
+			Some(new_index) => for index in 0..P::size_factor()*64 {
+
+				let position = P::from_usize(index);
+
+				if self.storage.get(position) == old_index {
+					self.storage.set(position, new_index);
+				}
+			}
+		}
+	}
+
 	pub fn bits(&self) -> u8 {
 		self.storage.bits()
 	}
