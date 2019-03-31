@@ -41,7 +41,7 @@ const  TEMP_COEFF: i64 = 9871;
 const  RAIN_COEFF: i64 = 39811;
 const MIXIN_COEFF: i64 = 543321;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClimateSource {
 	temperature: SimplexOctaves,
 	rainfall:    SimplexOctaves,

@@ -17,8 +17,9 @@ use std::cmp::min;
 use i73::config::settings::customized::{Parts, BiomeSettings, Ocean, Structures, Decorators, VeinSettingsCentered, VeinSettings};
 use i73_base::{Pass, Block};
 use i73_terrain::overworld_173::{self, Settings};
+use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73::config::biomes::{BiomesConfig, BiomeConfig, SurfaceConfig, RectConfig, FollowupConfig};
-use i73_biome::Lookup;
+use i73_biome::{Lookup, climate};
 use i73_base::matcher::BlockMatcher;
 
 use cgmath::Vector3;
@@ -101,7 +102,7 @@ fn main() {
 		0*16
 	});
 	
-	settings.shape_blocks.ocean = sea_block;
+	// settings.shape_blocks.ocean = sea_block;
 	settings.paint_blocks.ocean = sea_block;
 
 	// TODO: Structures and Decorators
@@ -292,9 +293,18 @@ fn main() {
 			y -= 1;
 		}
 	}*/
-	
+
+	let ocean = OceanPass {
+		climate: climate::ClimateSource::new(8399452073110208023, settings.climate),
+		blocks: OceanBlocks {
+			ocean: settings.paint_blocks.ocean.clone(),
+			air: settings.paint_blocks.air.clone()
+		},
+		sea_top: (settings.sea_coord + 1) as usize
+	};
+
 	let (shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
-	
+
 	let caves_generator = i73_structure::caves::CavesGenerator {
 		carve: Block::air(),
 		lower: Block::from_anvil_id(10*16),
@@ -355,6 +365,7 @@ fn main() {
 
 				shape.apply(&mut column, column_position);
 				paint.apply(&mut column, column_position);
+				ocean.apply(&mut column, column_position);
 				caves.apply(&mut column, column_position);
 			}
 
@@ -381,7 +392,7 @@ fn main() {
 		((decoration_rng.next_i64() >> 1) << 1) + 1
 	);
 
-	for x in 0..31 {
+	/*for x in 0..31 {
 		println!("{}", x);
 		for z in 0..31 {
 			let x_part = (x as i64).wrapping_mul(coefficients.0) as u64;
@@ -395,7 +406,7 @@ fn main() {
 				dispatcher.generate(&mut quad, &mut decoration_rng).unwrap();
 			}
 		}
-	}
+	}*/
 
 	{
 		let end = ::std::time::Instant::now();

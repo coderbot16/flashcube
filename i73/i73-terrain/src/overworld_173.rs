@@ -14,6 +14,8 @@ use i73_base::matcher::BlockMatcher;
 use i73_base::Block;
 use i73_shape::height::lerp_to_layer;
 
+use overworld::shape::{ShapeBlocks, ShapePass};
+
 pub struct Settings {
 	pub shape_blocks: ShapeBlocks,
 	pub paint_blocks: PaintBlocks,
@@ -65,8 +67,7 @@ pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ShapePass
 			blocks: settings.shape_blocks, 
 			tri, 
 			height, 
-			field, 
-			sea_coord: settings.sea_coord 
+			field
 		},
 		PaintPass {
 			biomes: BiomeSource::new(ClimateSource::new(seed, settings.climate), biome_lookup),
@@ -81,16 +82,16 @@ pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ShapePass
 	)
 }
 
-pub struct ShapeBlocks {
+pub struct ShapeBlocks_ {
 	pub solid: Block,
 	pub ocean: Block,
 	pub ice:   Block,
 	pub air:   Block
 }
 
-impl Default for ShapeBlocks {
+impl Default for ShapeBlocks_ {
 	fn default() -> Self {
-		ShapeBlocks {
+		ShapeBlocks_ {
 			solid: Block::from_anvil_id( 1 * 16),
 			ocean: Block::from_anvil_id( 9 * 16),
 			ice:   Block::from_anvil_id(79 * 16),
@@ -99,16 +100,16 @@ impl Default for ShapeBlocks {
 	}
 }
 
-pub struct ShapePass {
+pub struct ShapePass_ {
 	climate: ClimateSource,
-	blocks:  ShapeBlocks,
+	blocks:  ShapeBlocks_,
 	tri:     TriNoiseSource,
 	height:  HeightSource,
 	field:   FieldSettings,
 	sea_coord: u8
 }
 
-impl Pass for ShapePass {
+impl Pass for ShapePass_ {
 	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
 		let offset = Point2::new(
 			(chunk.x() as f64) * 4.0,
@@ -276,10 +277,11 @@ impl PaintPass {
 			let existing_block = blocks.get(position, &palette);
 
 			if self.blocks.reset.matches(existing_block) {
-				remaining = None;
-				continue
-			} else if self.blocks.ignore.matches(existing_block) {
-				continue
+				if y > self.sea_coord {
+					remaining = None;
+				}
+
+				continue;
 			}
 			
 			match remaining {
@@ -314,17 +316,11 @@ impl PaintPass {
 					}
 			
 					blocks.set(position, if y >= self.sea_coord {&current_surface.top} else {&current_surface.fill});
-				
-					if y <= self.sea_coord && blocks.get(position, palette) == &self.blocks.air {
-						blocks.set(position, &associations.ocean);
-					}
 			
 					remaining = reset_remaining;
 					followup_index = None;
 				}
 			}
-			
-			
 		}
 	}
 }

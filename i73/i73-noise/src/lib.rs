@@ -46,3 +46,18 @@ impl ::std::fmt::Debug for Permutations {
 		write!(f, "Permutations {{ offset: ({}, {}, {}), permutations: {:?} }}", self.offset.x, self.offset.y, self.offset.z, &self.permutations[..])
 	}
 }
+
+impl Clone for Permutations {
+	fn clone(&self) -> Self {
+		let mut permutations = [0; 256];
+
+		for (index, &permutation) in (&self.permutations).iter().enumerate() {
+			permutations[index] = permutation;
+		}
+
+		Permutations {
+			offset: self.offset.clone(),
+			permutations
+		}
+	}
+}

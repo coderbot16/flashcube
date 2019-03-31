@@ -7,7 +7,7 @@ use sample::{Sample, Layer};
 use simplex::Simplex;
 use perlin::Perlin;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SimplexOctaves(Vec<Simplex>);
 impl SimplexOctaves {
 	pub fn new(rng: &mut Random, octaves: usize, fq: f64, persistence: f64, scale: (f64, f64)) -> Self {

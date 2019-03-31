@@ -29,7 +29,7 @@ const F2: f64 = 0.5 * (SQRT_THREE - 1.0);
 const G2: f64 = (3.0 - SQRT_THREE) / 6.0;
 
 // We can only implement Simplex noise up to 2D or we will run into patent issues.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Simplex {
 	p: Permutations,
 	scale: Vector2<f64>,
