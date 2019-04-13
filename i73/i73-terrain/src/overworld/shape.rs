@@ -8,7 +8,6 @@ use vocs::position::{ColumnPosition, GlobalColumnPosition, ChunkPosition};
 use vocs::view::ColumnMut;
 use i73_base::{Block, math};
 use i73_shape::height::lerp_to_layer;
-use std::convert::TryInto;
 
 pub struct ShapeBlocks {
 	pub solid: Block,
@@ -64,6 +63,18 @@ impl Pass for ShapePass {
 		}
 
 		for (index, chunk) in target.0.iter_mut().enumerate().take(8) {
+			let section: &[[[f64; 5]; 5]; 3] = array_ref!(field, index*2, 3);
+
+			if let Some(fill) = is_filled(&section) {
+				if fill {
+					chunk.fill(self.blocks.solid.clone());
+				} else {
+					chunk.fill(self.blocks.air.clone());
+				}
+
+				continue;
+			}
+
 			chunk.ensure_available(self.blocks.air.clone());
 			chunk.ensure_available(self.blocks.solid.clone());
 
@@ -72,12 +83,8 @@ impl Pass for ShapePass {
 			let air   = palette.reverse_lookup(&self.blocks.air).unwrap();
 			let solid = palette.reverse_lookup(&self.blocks.solid).unwrap();
 
-			let new_field: &[[[f64; 5]; 5]; 3] = (&field[1..3]).try_into().unwrap();
-
 			for position in ChunkPosition::enumerate() {
-				let column = ColumnPosition::from_chunk(index as u8, position);
-
-				let block = if trilinear(&new_field, position) > 0.0 {
+				let block = if trilinear(&section, position) > 0.0 {
 					solid
 				} else {
 					air
@@ -86,6 +93,31 @@ impl Pass for ShapePass {
 				blocks.set(position, block);
 			}
 		}
+	}
+}
+
+pub fn is_filled(array: &[[[f64; 5]; 5]; 3]) -> Option<bool> {
+	let mut empty = false;
+	let mut full = false;
+
+	for y in 0..3 {
+		for z in 0..5 {
+			for x in 0..5 {
+				if array[y][z][x] > 0.0 {
+					empty = false;
+				} else {
+					full = false;
+				}
+			}
+		}
+	}
+
+	if empty {
+		Some(false)
+	} else if full {
+		Some(true)
+	} else {
+		None
 	}
 }
 

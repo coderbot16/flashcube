@@ -1,6 +1,8 @@
 extern crate java_rand;
 extern crate cgmath;
 extern crate vocs;
+#[macro_use]
+extern crate arrayref;
 extern crate i73_noise;
 extern crate i73_biome;
 extern crate i73_shape;

@@ -6,6 +6,7 @@ authors = ["coderbot <coderbot16@gmail.com>"]
 [dependencies]
 cgmath = "0.16"
 java-rand = "0.2.0"
+arrayref = "0.3.5"
 vocs = { path = "../../vocs" }
 i73-noise = { path = "../i73-noise" }
 i73-biome = { path = "../i73-biome" }

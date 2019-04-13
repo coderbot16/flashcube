@@ -3,11 +3,15 @@
   <component name="CargoProjects">
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="vqRQMplM" />
+  </component>
   <component name="ProjectRootManager">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="RustProjectSettings">
     <option name="explicitPathToStdlib" value="/usr/lib/rustlib/src/rust/src" />
     <option name="toolchainHomeDirectory" value="/usr/bin" />
+    <option name="version" value="2" />
   </component>
 </project>
