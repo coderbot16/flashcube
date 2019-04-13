@@ -66,16 +66,22 @@ impl HeightSource {
 	
 	pub fn sample(&self, point: Point2<f64>, climate: Climate) -> Height {
 		let scaled_noise = self.biome_influence.sample(point) / self.biome_influence_scale;
-		
+
+		// Note: older revisions of the generator do not clamp chaos to 0 (ie. min=Infinity)
+		// This can result in chaos becoming negative, producing large "monolith" structures.
 		let chaos = math::clamp(climate.influence_factor() * (scaled_noise + 0.5), 0.0, 1.0) + 0.5;
 		
 		let mut depth = self.depth.sample(point) / self.depth_scale;
-		
+
+		// Infdev generator excludes this...
 		if depth < 0.0 {
 			depth *= 0.3
 		}
-		
+
+		// Infdev does not place a bound on the depth, and subtracts 3.0 instead of 2.0.
 		depth = depth.abs().min(1.0) * 3.0 - 2.0;
+
+		// Infdev uses 1.5 instead of 2.0.
 		depth /= if depth < 0.0 {1.4} else {2.0};
 		
 		Height { 
@@ -175,13 +181,13 @@ impl BiomeDigestor {
 }*/
 
 /// Converts form lerp coords (5x5) to layer coords (16x16).
-/// ```
+/// `
 /// 0 => 1
 /// 1 => 4
 /// 2 => 7
 /// 3 => 10
 /// 4 => 13
-/// ```
+/// `
 pub fn lerp_to_layer(lerp: Vector2<u8>) -> LayerPosition {
 	LayerPosition::new(
 		lerp.x*3 + 1,

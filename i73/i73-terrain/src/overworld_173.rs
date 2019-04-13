@@ -6,7 +6,7 @@ use i73_biome::climate::{ClimateSettings, ClimateSource};
 use i73_biome::source::BiomeSource;
 use i73_biome::{Lookup, Surface};
 use i73_shape::height::{HeightSettings, HeightSource};
-use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, FieldSettings, trilinear128};
+use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings, trilinear128};
 use i73_base::Pass;
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
@@ -21,7 +21,7 @@ pub struct Settings {
 	pub paint_blocks: PaintBlocks,
 	pub tri:          TriNoiseSettings,
 	pub height:       HeightSettings,
-	pub field:        FieldSettings,
+	pub field:        ShapeSettings,
 	pub sea_coord:    u8,
 	pub beach:        Option<(u8, u8)>,
 	pub max_bedrock_height: Option<u8>,
@@ -35,7 +35,7 @@ impl Default for Settings {
 			paint_blocks: PaintBlocks::default(),
 			tri:          TriNoiseSettings::default(),
 			height:       HeightSettings::default(),
-			field:        FieldSettings::default(),
+			field:        ShapeSettings::default(),
 			sea_coord:    63,
 			beach:        Some((59, 65)),
 			max_bedrock_height: Some(5),
@@ -105,7 +105,7 @@ pub struct ShapePass_ {
 	blocks:  ShapeBlocks_,
 	tri:     TriNoiseSource,
 	height:  HeightSource,
-	field:   FieldSettings,
+	field:   ShapeSettings,
 	sea_coord: u8
 }
 

@@ -61,14 +61,24 @@ impl TriNoiseSource {
 }
 
 #[derive(Debug)]
-pub struct FieldSettings {
+pub struct ShapeSettings {
+	/// Stretch value for positions below the height center. Amplifies the effect that distance from
+	/// the height center has on the noise value.
 	pub seabed_stretch :   f64,
+	/// Stretch value for positions above the height center. Amplifies the effect that distance from
+	/// the height center has on the noise value.
 	pub ground_stretch:    f64,
+	/// Controls the distance from the maximum Y value where the tapering function will begin to
+	/// have effect. Higher values result in shorter mountains on account of the more aggressive
+	/// taper function.
 	pub taper_control:     f64,
+	/// Stretch value that is applied to all heights. Multiplied with the measured distance from the
+	/// height center to influence the reduction of the noise value received from the Tri Noise
+	/// generator.
 	pub height_stretch:    f64
 }
 
-impl FieldSettings {
+impl ShapeSettings {
 	pub fn with_height_stretch(height_stretch: f64) -> Self {
 		let mut default = Self::default();
 		
@@ -78,9 +88,9 @@ impl FieldSettings {
 	}
 }
 
-impl Default for FieldSettings {
+impl Default for ShapeSettings {
 	fn default() -> Self {
-		FieldSettings {
+		ShapeSettings {
 			seabed_stretch:    4.0,
 			ground_stretch:    1.0,
 			taper_control:     4.0,
@@ -89,32 +99,38 @@ impl Default for FieldSettings {
 	}
 }
 
-impl FieldSettings {
-	// TODO: Replace with FieldSource.
+impl ShapeSettings {
+	// TODO: Replace with ShapeSource.
 	pub fn compute_noise_value(&self, y: f64, height: Height, tri_noise: f64) -> f64 {
 		let distance = y - height.center;
-		let distance = distance * if distance < 0.0 {self.seabed_stretch} else {self.ground_stretch};
-		
+
+		// Apply different stretch multipliers based on whether the Y value is above or below the
+		// height center.
+		let distance = distance * if distance < 0.0 { self.seabed_stretch } else { self.ground_stretch };
+
 		let reduction = distance * self.height_stretch / height.chaos;
 		let value = tri_noise - reduction;
-		
-		reduce_upper(value, y, self.taper_control, 10.0, 17.0)
+
+		// Older generators (ie. inf-20100618) omit this call, resulting in mountains cut off at the
+		// height limit. This makes sure that does not happen, by making certain that mountains will
+		// taper off well before the limit.
+		reduce_upper(value, -10.0, y, self.taper_control, 17.0)
 	}
 }
 
-pub fn reduce_upper(value: f64, y: f64, control: f64, min: f64, max_y: f64) -> f64 {
+pub fn reduce_upper(value: f64, min: f64, y: f64, control: f64, max_y: f64) -> f64 {
 	let threshold = max_y - control;
 	let divisor   = control - 1.0;
 	let factor    = (y.max(threshold) - threshold) / divisor;
 
-	math::lerp_precise(value, -min, factor)
+	math::lerp_precise(value, min, factor)
 }
 
-pub fn reduce_lower(value: f64, y: f64, control: f64, min: f64) -> f64 {
+pub fn reduce_lower(value: f64, min: f64, y: f64, control: f64) -> f64 {
 	let divisor   = control - 1.0;
 	let factor    = (control - y.min(control)) / divisor;
 
-	math::lerp_precise(value, -min, factor)
+	math::lerp_precise(value, min, factor)
 }
 
 pub fn reduce_cubic(value: f64, distance: f64) -> f64 {

@@ -70,7 +70,7 @@ impl Pass for ShapePass {
 					let mut value = self.tri.sample(Vector3::new(offset.x + x as f64, y as f64, offset.y + z as f64), y);
 					
 					value -= self.reduction[y];
-					value = volume::reduce_upper(value, y as f64, 4.0, 10.0, 17.0);
+					value = volume::reduce_upper(value, -10.0, y as f64, 4.0, 17.0);
 					
 					field[x][y][z] = value;
 				}
