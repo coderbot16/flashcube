@@ -418,7 +418,7 @@ fn main() {
 					};
 				}
 
-				i73_decorator::tree::TreeDecorator::default().generate(&mut quad, &mut decoration_rng, position.offset(dir::Up).unwrap_or(position));
+				TreeDecorator::default().generate(&mut quad, &mut decoration_rng, position.offset(dir::Up).unwrap_or(position)).unwrap();
 			}
 		}
 	}

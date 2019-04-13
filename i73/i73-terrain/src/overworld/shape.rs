@@ -4,7 +4,7 @@ use i73_biome::climate::ClimateSource;
 use i73_shape::height::HeightSource;
 use i73_shape::volume::{TriNoiseSource, ShapeSettings, trilinear128};
 use i73_base::Pass;
-use vocs::position::{ColumnPosition, GlobalColumnPosition, ChunkPosition};
+use vocs::position::{GlobalColumnPosition, ChunkPosition};
 use vocs::view::ColumnMut;
 use i73_base::{Block, math};
 use i73_shape::height::lerp_to_layer;
@@ -97,8 +97,8 @@ impl Pass for ShapePass {
 }
 
 pub fn is_filled(array: &[[[f64; 5]; 5]; 3]) -> Option<bool> {
-	let mut empty = false;
-	let mut full = false;
+	let mut empty = true;
+	let mut full = true;
 
 	for y in 0..3 {
 		for z in 0..5 {
