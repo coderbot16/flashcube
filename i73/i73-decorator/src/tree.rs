@@ -1,3 +1,4 @@
+use i73_base::Block;
 use i73_base::matcher::BlockMatcher;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};
@@ -5,7 +6,7 @@ use {Decorator, Result};
 use java_rand::Random;
 
 pub struct TreeDecorator {
-	blocks: TreeBlocks<B>,
+	blocks: TreeBlocks,
 	settings: TreeSettings
 }
 
@@ -38,12 +39,12 @@ impl Decorator for TreeDecorator {
 		let log = palette.reverse_lookup(&self.blocks.log).unwrap();
 		let foliage = palette.reverse_lookup(&self.blocks.foliage).unwrap();
 		
-		for y in tree.leaves_min_y..tree.leaves_max_y {
+		for y in tree.leaves_min_y..=tree.leaves_max_y {
 			let radius = tree.foliage_radius(y) as i32;
 			
-			for z_offset in -radius..radius {
-				for x_offset in -radius..radius {
-					if z_offset.abs() != radius || x_offset.abs() != radius || rng.next_u32_bound(self.settings.foliage_corner_chance) != 0 && y < tree.trunk_top {
+			for z_offset in -radius..=radius {
+				for x_offset in -radius..=radius {
+					if z_offset.abs() != radius || x_offset.abs() != radius || (rng.next_u32_bound(self.settings.foliage_corner_chance) != 0 && y < tree.trunk_top) {
 
 						let position = match position.offset((x_offset as i8, 0, z_offset as i8)) {
 							Some(position) => position,
@@ -70,7 +71,7 @@ impl Decorator for TreeDecorator {
 	}
 }
 
-impl Default for TreeDecorator<u16> {
+impl Default for TreeDecorator {
 	fn default() -> Self {
 		TreeDecorator {
 			blocks: TreeBlocks::default(),
@@ -80,21 +81,21 @@ impl Default for TreeDecorator<u16> {
 }
 
 struct TreeBlocks {
-	log:      B,
-	foliage:  B,
+	log:      Block,
+	foliage:  Block,
 	replace:  BlockMatcher,
 	soil:     BlockMatcher,
-	new_soil: B
+	new_soil: Block
 }
 
-impl Default for TreeBlocks<u16> {
+impl Default for TreeBlocks {
 	fn default() -> Self {
 		TreeBlocks {
-			log:      17*16,
-			foliage:  18*16,
-			replace:  BlockMatcher::include([0*16, 18*16].iter()),
-			soil:     BlockMatcher::include([2*16, 3*16].iter()),
-			new_soil: 3*16
+			log:      Block::from_anvil_id(17*16),
+			foliage:  Block::from_anvil_id(18*16),
+			replace:  BlockMatcher::include([Block::air(), Block::from_anvil_id(18*16)].iter()),
+			soil:     BlockMatcher::include([Block::from_anvil_id(2*16), Block::from_anvil_id(3*16)].iter()),
+			new_soil: Block::from_anvil_id(3*16)
 		}
 	}
 }
@@ -162,7 +163,7 @@ struct Tree {
 impl Tree {
 	/// Radius of the foliage at a given location. 0 is just the trunk.
 	fn foliage_radius(&self, y: u32) -> u32 {
-		(self.leaves_radius_base + self.trunk_top - y) / self.leaves_slope
+		(self.leaves_radius_base + self.trunk_top + 1 - y) / self.leaves_slope
 	}
 	
 	/// Radius of the bounding box for the foliage at a given level. 0 for just checking the trunk.

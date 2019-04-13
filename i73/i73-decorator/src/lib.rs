@@ -16,7 +16,7 @@ pub mod vein;
 pub mod clump;
 // TODO: pub mod large_tree;
 pub mod lake;
-// TODO: pub mod tree;
+pub mod tree;
 pub mod exposed;
 
 // TODO: MultiDispatcher

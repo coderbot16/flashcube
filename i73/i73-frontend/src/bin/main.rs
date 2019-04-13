@@ -27,7 +27,7 @@ use cgmath::Vector3;
 use vocs::indexed::ChunkIndexed;
 use vocs::world::world::World;
 use vocs::view::ColumnMut;
-use vocs::position::{GlobalColumnPosition, GlobalChunkPosition};
+use vocs::position::{GlobalColumnPosition, GlobalChunkPosition, QuadPosition};
 
 use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
 use rs25::level::region::RegionWriter;
@@ -35,6 +35,8 @@ use rs25::level::anvil::ColumnRoot;
 use std::collections::HashMap;
 use i73_shape::volume::TriNoiseSettings;
 use i73_shape::height::HeightSettings81;
+use i73_decorator::tree::TreeDecorator;
+use i73_decorator::Decorator;
 
 fn main() {
 	let profile_name = match ::std::env::args().skip(1).next() {
@@ -391,6 +393,35 @@ fn main() {
 		((decoration_rng.next_i64() >> 1) << 1) + 1,
 		((decoration_rng.next_i64() >> 1) << 1) + 1
 	);
+
+	for x in 0..31 {
+		println!("{}", x);
+		for z in 0..31 {
+			let x_part = (x as i64).wrapping_mul(coefficients.0) as u64;
+			let z_part = (z as i64).wrapping_mul(coefficients.1) as u64;
+			decoration_rng = ::java_rand::Random::new((x_part.wrapping_add(z_part)) ^ 8399452073110208023);
+
+			let mut quad = world.get_quad_mut(GlobalColumnPosition::new(x as i32, z as i32)).unwrap();
+
+			'outer:
+			for _ in 0..8 {
+				let mut position = QuadPosition::new (
+					decoration_rng.next_u32_bound(16) as u8 + 8,
+					127,
+					decoration_rng.next_u32_bound(16) as u8 + 8
+				);
+
+				while quad.get(position) == &Block::air() {
+					position = match position.offset(dir::Down) {
+						Some(pos) => pos,
+						None => break 'outer
+					};
+				}
+
+				i73_decorator::tree::TreeDecorator::default().generate(&mut quad, &mut decoration_rng, position.offset(dir::Up).unwrap_or(position));
+			}
+		}
+	}
 
 	/*for x in 0..31 {
 		println!("{}", x);
