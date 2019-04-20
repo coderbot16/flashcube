@@ -55,12 +55,17 @@
       <sourceFolder url="file://$MODULE_DIR$/i73-decorator/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/i73-decorator/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/i73-decorator/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/benches" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/biome/target" />
       <excludeFolder url="file://$MODULE_DIR$/frontend/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-base/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-biome/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-decorator/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-frontend/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-image/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-noise/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-shape/target" />
       <excludeFolder url="file://$MODULE_DIR$/i73-structure/target" />

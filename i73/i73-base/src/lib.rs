@@ -19,11 +19,11 @@ pub trait Pass {
 pub struct Block(u16);
 
 impl Block {
-	pub fn from_anvil_id(id: u16) -> Self {
+	pub const fn from_anvil_id(id: u16) -> Self {
 		Block(id)
 	}
 
-	pub fn air() -> Self {
+	pub const fn air() -> Self {
 		Block(0)
 	}
 }

@@ -1,0 +1,17 @@
+[package]
+name = "i73-image"
+version = "0.1.0"
+authors = ["coderbot <coderbot16@gmail.com>"]
+
+[dependencies]
+image = "*"
+cgmath = "0.16"
+vocs = { path = "../../vocs" }
+java-rand = "0.2.0"
+
+i73-noise = { path = "../i73-noise" }
+i73-biome = { path = "../i73-biome" }
+i73-shape = { path = "../i73-shape" }
+i73-base = { path = "../i73-base" }
+i73-terrain = { path = "../i73-terrain" }
+frontend = { path = "../i73-frontend" }

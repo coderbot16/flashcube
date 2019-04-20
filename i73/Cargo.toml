@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"i73-frontend",
+	"i73-image",
 	"i73-noise",
 	"i73-biome",
 	"i73-shape",
