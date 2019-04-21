@@ -14,7 +14,7 @@ extern crate vocs;
 use image::{Rgb, RgbImage, SubImage, GenericImage};
 use std::fs;
 
-use i73_biome::climate::Climate;
+use i73_biome::climate::{Climate, ClimateSource};
 use i73_noise::sample::Sample;
 use i73_terrain::overworld::ocean::{OceanPass, OceanBlocks};
 use i73_terrain::overworld_173;
@@ -22,14 +22,21 @@ use i73_biome::Lookup;
 use i73_base::{Block, Pass, Layer, math};
 use vocs::indexed::ChunkIndexed;
 use vocs::view::ColumnMut;
-use vocs::position::{GlobalColumnPosition, ColumnPosition, LayerPosition};
+use vocs::position::{GlobalColumnPosition, ColumnPosition, LayerPosition, GlobalSectorPosition};
 use std::collections::HashMap;
 use i73_terrain::overworld_173::Settings;
 use frontend::config::biomes::{BiomesConfig, RectConfig, BiomeConfig, SurfaceConfig, FollowupConfig};
 use i73_image::colorizer::colorize_grass;
+use i73_terrain::overworld::shape::ShapePass;
+use i73_terrain::overworld::paint::PaintPass;
+use std::thread;
+use std::cmp;
+use std::sync::mpsc;
 
 fn main() {
-	generate_full_image("world", (64, 64), (784400, 0));
+	// Farlands
+	// generate_full_image("world", (4, 4), (784400, 0));
+	generate_full_image("world", (32, 32), (0, 0));
 }
 
 // Block types
@@ -43,7 +50,88 @@ const SAND: Block = Block::from_anvil_id(12 * 16);
 const GRAVEL: Block = Block::from_anvil_id(13 * 16);
 const ICE: Block = Block::from_anvil_id(79 * 16);
 
-fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
+type OverworldPasses = (ClimateSource, ShapePass, PaintPass);
+
+fn generate_full_image(name: &str, sector_size: (u32, u32), offset: (u32, u32)) {
+	println!("Generating world map...");
+	let gen_start = ::std::time::Instant::now();
+	let mut map = RgbImage::new(sector_size.0 * 256, sector_size.1 * 256);
+
+	let mut sectors = sector_size.0 * sector_size.1;
+	let thread_count = cmp::min(4, sectors);
+	let per_sector = sectors / thread_count;
+	let mut threads = Vec::with_capacity(thread_count as usize);
+
+	let (sender, receiver) = mpsc::channel();
+
+	for _ in 0..thread_count {
+		let base = sector_size.0 * sector_size.1 - sectors;
+		let allotment = cmp::min(per_sector, sectors);
+		sectors -= allotment;
+		let sender = sender.clone();
+
+		let handle = thread::spawn(move || {
+			let (passes, ocean) = create_generator(8399452073110208023);
+
+			for index in 0..allotment {
+				let index = index + base;
+				let (x, z) = (index % sector_size.0, index / sector_size.0);
+
+				let position = GlobalSectorPosition::new(
+					x as i32 + offset.0 as i32,
+					z as i32 + offset.1 as i32
+				);
+
+				let sector = process_sector(position, &passes, &ocean);
+
+				sender.send((x, z, sector)).unwrap();
+			}
+		});
+
+		threads.push(handle);
+	}
+
+	let mut recieved = 0;
+	while let Ok((x, z, sector)) = receiver.recv() {
+		println!("Got chunk! {}, {}", x, z);
+		for iz in 0..256 {
+			for ix in 0..256 {
+				map.put_pixel(
+					x * 256 + ix,
+					z * 256 + iz,
+					*sector.get_pixel(ix, iz)
+				);
+			}
+		}
+
+		recieved += 1;
+
+		if recieved >= sector_size.0 * sector_size.1 {
+			break;
+		}
+	}
+
+	for thread in threads {
+		thread.join().unwrap();
+	}
+
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(gen_start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("Generation done in {}us ({}us per sector)", us, us / ((sector_size.0 as u64) * (sector_size.1 as u64)));
+	}
+
+	println!("Saving image...");
+	fs::create_dir_all("out/image/").unwrap();
+
+	map.save(format!("out/image/{}.png", name)).unwrap();
+}
+
+fn create_generator(seed: u64) -> (OverworldPasses, OceanPass) {
 	let settings = Settings::default();
 
 	let mut biomes_config = BiomesConfig { decorator_sets: HashMap::new(), biomes: HashMap::new(), default: "plains".to_string(), grid: vec![RectConfig { temperature: (0.0, 0.1), rainfall: (0.0, 1.0), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.0, 0.2), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.2, 0.5), biome: "taiga".to_string() }, RectConfig { temperature: (0.1, 0.7), rainfall: (0.5, 1.0), biome: "swampland".to_string() }, RectConfig { temperature: (0.5, 0.95), rainfall: (0.0, 0.2), biome: "savanna".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.2, 0.35), biome: "shrubland".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.35, 0.5), biome: "forest".to_string() }, RectConfig { temperature: (0.7, 0.97), rainfall: (0.5, 1.0), biome: "forest".to_string() }, RectConfig { temperature: (0.95, 1.0), rainfall: (0.0, 0.2), biome: "desert".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.2, 0.45), biome: "plains".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.45, 0.9), biome: "seasonal_forest".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.9, 1.0), biome: "rainforest".to_string() }] };
@@ -72,14 +160,20 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 		sea_top: (settings.sea_coord + 1) as usize
 	};
 
-	let (climates, shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
+	let passes = overworld_173::passes(seed, settings, Lookup::generate(&grid));
 
-	println!("Generating region (0, 0)");
+	(passes, ocean)
+}
+
+fn process_sector(sector_position: GlobalSectorPosition, passes: &OverworldPasses, ocean: &OceanPass) -> RgbImage {
+	let (ref climates, ref shape, ref paint) = &passes;
+
+	println!("Generating sector ({}, {})", sector_position.x(), sector_position.z());
 	let gen_start = ::std::time::Instant::now();
-	let mut map = RgbImage::new(size.0 * 16, size.1 * 16);
+	let mut map = RgbImage::new(256, 256);
 
-	for x in 0..size.0 {
-		print!("{:.2}% ", ((x as f64) / (size.0 as f64)) * 100.0);
+	for layer_position in LayerPosition::enumerate() {
+		/*print!("{:.2}% ", ((x as f64) / (size.0 as f64)) * 100.0);
 
 		{
 			let end = ::std::time::Instant::now();
@@ -89,63 +183,53 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
 			println!("[{}us elapsed ({}us per column)]", us, if x > 0 { us / ((x as u64) * (size.1 as u64)) } else { 0 });
-		}
+		}*/
 
-		for z in 0..size.1 {
-			let column_position = GlobalColumnPosition::new((x + offset.0) as i32, (z + offset.1) as i32);
+		let column_position = GlobalColumnPosition::combine(sector_position, layer_position);
 
-			let mut column_chunks = [
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air())
-			];
+		let mut column_chunks = [
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air()),
+			ChunkIndexed::<Block>::new(4, Block::air())
+		];
 
-			let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
+		let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
 
-			let climates = climates.chunk((
-				((x + offset.0) * 16) as f64,
-				((z + offset.1) * 16) as f64
-			));
+		let climates = climates.chunk((
+			(column_position.x() * 16) as f64,
+			(column_position.z() * 16) as f64
+		));
 
-			/*fn metrics(stage: &'static str, column: &ColumnMut<Block>, x: u32, z: u32) {
-				if x==0 && z==0 {
-					println!("Chunk palette metrics @ {}:", stage);
-					for index in 0..16 {
-						let bits = column.0[index].bits();
-						print!("[{}]: {} bits; Palette: ", index, bits);
+		//metrics("initial", &column, x, z);
+		shape.apply(&mut column, &climates, column_position);
+		//metrics("shape", &column, x, z);
+		paint.apply(&mut column, &climates, column_position);
+		//metrics("paint", &column, x, z);
+		ocean.apply(&mut column, &climates, column_position);
+		//metrics("ocean", &column, x, z);
 
-						for entry in column.0[index].freeze().1.iter() {
-							print!("{:?} ", entry);
-						}
+		let target = SubImage::new(
+			&mut map,
+			layer_position.x() as u32 * 16,
+			layer_position.z() as u32 * 16,
+			16,
+			16
+		);
 
-						println!();
-					}
-				}
-			}*/
-
-			// metrics("initial", &column, x, z);
-			shape.apply(&mut column, &climates, column_position);
-			// metrics("shape", &column, x, z);
-			paint.apply(&mut column, &climates, column_position);
-			// metrics("paint", &column, x, z);
-			ocean.apply(&mut column, &climates, column_position);
-			// metrics("ocean", &column, x, z);
-
-			render_column(&column, SubImage::new(&mut map, x * 16, z * 16, 16, 16), &climates);
-		}
+		render_column(&column, target, &climates);
 	}
 
 	{
@@ -155,14 +239,27 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 		let secs = time.as_secs();
 		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
-		println!("Generation done in {}us ({}us per column)", us, us / ((size.0 as u64) * (size.1 as u64)));
+		println!("Generation done for sector ({}, {}) in {}us ({}us per column)", sector_position.x(), sector_position.z(), us, us / 256);
 	}
 
-	println!("Saving image...");
-	fs::create_dir_all("out/image/").unwrap();
-
-	map.save(format!("out/image/{}.png", name)).unwrap();
+	map
 }
+
+/*fn metrics(stage: &'static str, column: &ColumnMut<Block>, x: u32, z: u32) {
+	if x==0 && z==0 {
+		println!("Chunk palette metrics @ {}:", stage);
+		for index in 0..16 {
+			let bits = column.0[index].bits();
+			print!("[{}]: {} bits; Palette: ", index, bits);
+
+			for entry in column.0[index].freeze().1.iter() {
+				print!("{:?} ", entry);
+			}
+
+			println!();
+		}
+	}
+}*/
 
 fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>, climates: &Layer<Climate>) {
 	for layer_position in LayerPosition::enumerate() {
