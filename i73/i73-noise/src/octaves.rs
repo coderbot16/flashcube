@@ -3,7 +3,8 @@
 
 use java_rand::Random;
 use cgmath::{Point2, Vector2, Vector3};
-use sample::{Sample, Layer};
+use i73_base::Layer;
+use sample::Sample;
 use simplex::Simplex;
 use perlin::Perlin;
 

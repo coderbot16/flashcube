@@ -2,12 +2,11 @@ use java_rand::Random;
 use cgmath::{Point2, Vector2, Vector3};
 use i73_noise::octaves::PerlinOctaves;
 use i73_noise::sample::Sample;
-use i73_biome::climate::{ClimateSettings, ClimateSource};
-use i73_biome::source::BiomeSource;
+use i73_biome::climate::{ClimateSettings, ClimateSource, Climate};
 use i73_biome::{Lookup, Surface};
 use i73_shape::height::{HeightSettings, HeightSource};
 use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings, trilinear128};
-use i73_base::Pass;
+use i73_base::{Pass, Layer};
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use i73_base::matcher::BlockMatcher;
@@ -44,7 +43,7 @@ impl Default for Settings {
 	}
 }
 
-pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ShapePass, PaintPass) {
+pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ClimateSource, ShapePass, PaintPass) {
 	let mut rng = Random::new(seed);
 	
 	let tri = TriNoiseSource::new(&mut rng, &settings.tri);
@@ -59,18 +58,17 @@ pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ShapePass
 	
 	let height  = HeightSource::new(&mut rng, &settings.height);
 	let field   = settings.field;
-	let climate = ClimateSource::new(seed, settings.climate);
 
 	(
-		ShapePass { 
-			climate, 
+		ClimateSource::new(seed, settings.climate),
+		ShapePass {
 			blocks: settings.shape_blocks, 
 			tri, 
 			height, 
 			field
 		},
 		PaintPass {
-			biomes: BiomeSource::new(ClimateSource::new(seed, settings.climate), biome_lookup),
+			lookup: biome_lookup,
 			blocks: settings.paint_blocks, 
 			sand, 
 			gravel, 
@@ -101,7 +99,6 @@ impl Default for ShapeBlocks_ {
 }
 
 pub struct ShapePass_ {
-	climate: ClimateSource,
 	blocks:  ShapeBlocks_,
 	tri:     TriNoiseSource,
 	height:  HeightSource,
@@ -109,19 +106,12 @@ pub struct ShapePass_ {
 	sea_coord: u8
 }
 
-impl Pass for ShapePass_ {
-	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
+impl Pass<Climate> for ShapePass_ {
+	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, chunk: GlobalColumnPosition) {
 		let offset = Point2::new(
 			(chunk.x() as f64) * 4.0,
 			(chunk.z() as f64) * 4.0
 		);
-		
-		let block_offset = (
-			(chunk.x() as f64) * 16.0,
-			(chunk.z() as f64) * 16.0
-		);
-		
-		let climate_chunk = self.climate.chunk(block_offset);
 		
 		let mut field = [[[0f64; 5]; 17]; 5];
 	
@@ -129,7 +119,7 @@ impl Pass for ShapePass_ {
 			for z in 0..5 {
 				let layer = lerp_to_layer(Vector2::new(x as u8, z as u8));
 				
-				let climate = climate_chunk.get(layer);
+				let climate = climates.get(layer);
 				let height = self.height.sample(offset + Vector2::new(x as f64, z as f64), climate);
 				
 				for y in 0..17 {
@@ -158,7 +148,7 @@ impl Pass for ShapePass_ {
 			
 			let block = if trilinear128(&field, position) > 0.0 {
 				&solid
-			} else if altitude == self.sea_coord && climate_chunk.get(position.layer()).freezing() {
+			} else if altitude == self.sea_coord && climates.get(position.layer()).freezing() {
 				&ice
 			} else if altitude <= self.sea_coord {
 				&ocean
@@ -230,7 +220,7 @@ struct FollowupAssociation {
 }
 
 pub struct PaintPass {
-	biomes:    BiomeSource,
+	lookup:    Lookup,
 	blocks:    PaintBlocks,
 	sand:      PerlinOctaves,
 	gravel:    PerlinOctaves,
@@ -241,8 +231,8 @@ pub struct PaintPass {
 }
 
 impl PaintPass {
-	pub fn biomes(&self) -> &BiomeSource {
-		&self.biomes
+	pub fn biome_lookup(&self) -> &Lookup {
+		&self.lookup
 	}
 
 	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, bedrock: &ColumnAssociation, layer: LayerPosition, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
@@ -318,13 +308,13 @@ impl PaintPass {
 	}
 }
 
-impl Pass for PaintPass {
-	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
+impl Pass<Climate> for PaintPass {
+	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, chunk: GlobalColumnPosition) {
 		let block = ((chunk.x() * 16) as f64, (chunk.z() * 16) as f64);
 		let seed = (chunk.x() as i64).wrapping_mul(341873128712).wrapping_add((chunk.z() as i64).wrapping_mul(132897987541));
 		let mut rng = Random::new(seed as u64);
-		
-		let biome_layer = self.biomes.layer(chunk);
+
+		let biome_layer = self.lookup.climates_to_biomes(&climates);
 		let (biomes, biome_palette) = biome_layer.freeze();
 		
 		let      sand_vertical = self.     sand.vertical_ref(block.1, 16);

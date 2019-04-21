@@ -9,7 +9,7 @@ pub mod caves;
 use java_rand::Random;
 use vocs::view::ColumnMut;
 use vocs::position::GlobalColumnPosition;
-use i73_base::{Pass, Block};
+use i73_base::{Pass, Block, Layer};
 
 pub struct StructureGenerateNearby<T> where T: StructureGenerator {
 	seed_coefficients: (i64, i64),
@@ -36,8 +36,8 @@ impl<T> StructureGenerateNearby<T> where T: StructureGenerator {
 	}
 }
 
-impl<T> Pass for StructureGenerateNearby<T> where T: StructureGenerator {
-	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
+impl<T> Pass<()> for StructureGenerateNearby<T> where T: StructureGenerator {
+	fn apply(&self, target: &mut ColumnMut<Block>, _: &Layer<()>, chunk: GlobalColumnPosition) {
 		let radius = self.radius as i32;
 
 		for x in     (0..self.diameter).map(|x| chunk.x() + (x as i32) - radius) {

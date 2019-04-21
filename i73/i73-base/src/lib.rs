@@ -7,11 +7,14 @@ pub mod distribution;
 pub mod matcher;
 pub mod math;
 
+mod layer;
+pub use layer::Layer;
+
 use vocs::view::ColumnMut;
 use vocs::position::GlobalColumnPosition;
 
-pub trait Pass {
-	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition);
+pub trait Pass<C: Copy> {
+	fn apply(&self, target: &mut ColumnMut<Block>, climate: &Layer<C>, chunk: GlobalColumnPosition);
 }
 
 /// ID of a block.

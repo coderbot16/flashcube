@@ -1,5 +1,8 @@
 use java_rand::Random;
 use cgmath::Point2;
+use vocs::mask::LayerMask;
+use vocs::position::LayerPosition;
+use vocs::component::LayerStorage;
 use i73_noise::octaves::SimplexOctaves;
 use i73_noise::sample::Sample;
 use i73_base::math;
@@ -64,6 +67,17 @@ impl ClimateSource {
 			temp_keep:   1.0 - settings.temperature_mixin,
 			rain_keep:   1.0 - settings.rainfall_mixin
 		}
+	}
+
+	pub fn freezing_layer(&self, column: (f64, f64)) -> LayerMask {
+		let mut out = LayerMask::default();
+		let chunk = self.chunk(column);
+
+		for position in LayerPosition::enumerate() {
+			out.set(position, chunk.get(position).freezing());
+		}
+
+		out
 	}
 }
 

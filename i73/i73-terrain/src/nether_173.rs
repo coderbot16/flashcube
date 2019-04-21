@@ -1,6 +1,6 @@
 use vocs::position::{ColumnPosition,GlobalColumnPosition};
 use vocs::view::ColumnMut;
-use i73_base::{Pass, Block};
+use i73_base::{Pass, Block, Layer};
 use i73_shape::volume::{self, TriNoiseSource, TriNoiseSettings, trilinear128};
 use cgmath::{Vector2, Vector3};
 use java_rand::Random;
@@ -55,8 +55,8 @@ pub struct ShapePass {
 	sea_coord: u8
 }
 
-impl Pass for ShapePass {
-	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
+impl Pass<()> for ShapePass {
+	fn apply(&self, target: &mut ColumnMut<Block>, _: &Layer<()>, chunk: GlobalColumnPosition) {
 		let offset = Vector2::new(
 			(chunk.x() as f64) * 4.0,
 			(chunk.z() as f64) * 4.0

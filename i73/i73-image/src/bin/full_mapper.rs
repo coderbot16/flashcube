@@ -14,12 +14,12 @@ extern crate vocs;
 use image::{Rgb, RgbImage, SubImage, GenericImage};
 use std::fs;
 
-use i73_biome::climate::{ClimateSource, Climate};
-use i73_noise::sample::{Sample, Layer};
+use i73_biome::climate::Climate;
+use i73_noise::sample::Sample;
 use i73_terrain::overworld::ocean::{OceanPass, OceanBlocks};
 use i73_terrain::overworld_173;
 use i73_biome::Lookup;
-use i73_base::{Block, Pass, math};
+use i73_base::{Block, Pass, Layer, math};
 use vocs::indexed::ChunkIndexed;
 use vocs::view::ColumnMut;
 use vocs::position::{GlobalColumnPosition, ColumnPosition, LayerPosition};
@@ -62,17 +62,16 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 
 	let grid = biomes_config.to_grid().unwrap();
 
-	let climates = ClimateSource::new(8399452073110208023, settings.climate);
 	let ocean = OceanPass {
-		climate: ClimateSource::new(8399452073110208023, settings.climate),
 		blocks: OceanBlocks {
 			ocean: Block::from_anvil_id(9 * 16),
-			air: settings.paint_blocks.air.clone()
+			air: Block::air(),
+			ice: Block::from_anvil_id(79 * 16)
 		},
 		sea_top: (settings.sea_coord + 1) as usize
 	};
 
-	let (shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
+	let (climates, shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
 
 	println!("Generating region (0, 0)");
 	let gen_start = ::std::time::Instant::now();
@@ -115,14 +114,14 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 
 			let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
 
-			shape.apply(&mut column, column_position);
-			paint.apply(&mut column, column_position);
-			ocean.apply(&mut column, column_position);
-
 			let climates = climates.chunk((
 				((x + offset.0) * 16) as f64,
 				((z + offset.1) * 16) as f64
 			));
+
+			shape.apply(&mut column, &climates, column_position);
+			paint.apply(&mut column, &climates, column_position);
+			ocean.apply(&mut column, &climates, column_position);
 
 			render_column(&column, SubImage::new(&mut map, x * 16, z * 16, 16, 16), &climates);
 		}

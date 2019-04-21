@@ -13,7 +13,9 @@ pub mod segmented;
 use climate::Climate;
 use std::borrow::Cow;
 use segmented::Segmented;
-use i73_base::Block;
+use i73_base::{Block, Layer};
+use vocs::indexed::LayerIndexed;
+use vocs::position::LayerPosition;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Biome {
@@ -98,5 +100,19 @@ impl Lookup {
 	
 	pub fn lookup(&self, climate: Climate) -> &Biome {
 		self.lookup_raw((climate.temperature() * 63.0) as usize, (climate.rainfall() * 63.0) as usize)
+	}
+
+	pub fn climates_to_biomes(&self, climates: &Layer<Climate>) -> LayerIndexed<Biome> {
+		// TODO: Avoid the default lookup and clone.
+		let mut layer = LayerIndexed::new(2, self.lookup(Climate::alpha()).clone());
+
+		for position in LayerPosition::enumerate() {
+			let climate = climates.get(position);
+			let biome = self.lookup(climate);
+
+			layer.set_immediate(position, biome);
+		}
+
+		layer
 	}
 }

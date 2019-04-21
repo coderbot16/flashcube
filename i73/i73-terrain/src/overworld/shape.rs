@@ -1,9 +1,8 @@
 use cgmath::{Point2, Vector2, Vector3};
-use i73_noise::sample::Sample;
-use i73_biome::climate::ClimateSource;
+use i73_biome::climate::Climate;
 use i73_shape::height::HeightSource;
 use i73_shape::volume::{TriNoiseSource, ShapeSettings};
-use i73_base::Pass;
+use i73_base::{Pass, Layer};
 use vocs::position::{GlobalColumnPosition, ChunkPosition};
 use vocs::view::ColumnMut;
 use i73_base::{Block, math};
@@ -24,26 +23,18 @@ impl Default for ShapeBlocks {
 }
 
 pub struct ShapePass {
-	pub climate: ClimateSource,
 	pub blocks:  ShapeBlocks,
 	pub tri:     TriNoiseSource,
 	pub height:  HeightSource,
 	pub field:   ShapeSettings
 }
 
-impl Pass for ShapePass {
-	fn apply(&self, target: &mut ColumnMut<Block>, chunk: GlobalColumnPosition) {
+impl Pass<Climate> for ShapePass {
+	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, chunk: GlobalColumnPosition) {
 		let offset = Point2::new(
 			(chunk.x() as f64) * 4.0,
 			(chunk.z() as f64) * 4.0
 		);
-
-		let block_offset = (
-			(chunk.x() as f64) * 16.0,
-			(chunk.z() as f64) * 16.0
-		);
-
-		let climate_chunk = self.climate.chunk(block_offset);
 
 		let mut field = [[[0f64; 5]; 5]; 17];
 
@@ -51,7 +42,7 @@ impl Pass for ShapePass {
 			for z in 0..5 {
 				let layer = lerp_to_layer(Vector2::new(x as u8, z as u8));
 
-				let climate = climate_chunk.get(layer);
+				let climate = climates.get(layer);
 				let height = self.height.sample(offset + Vector2::new(x as f64, z as f64), climate);
 
 				for y in 0..17 {
