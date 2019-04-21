@@ -29,7 +29,7 @@ use frontend::config::biomes::{BiomesConfig, RectConfig, BiomeConfig, SurfaceCon
 use i73_image::colorizer::colorize_grass;
 
 fn main() {
-	generate_full_image("world", (32, 32), (0, 0));
+	generate_full_image("world", (64, 64), (784400, 0));
 }
 
 // Block types
@@ -91,7 +91,7 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 		}
 
 		for z in 0..size.1 {
-			let column_position = GlobalColumnPosition::new((x + offset.0) as i32, (z + offset.0) as i32);
+			let column_position = GlobalColumnPosition::new((x + offset.0) as i32, (z + offset.1) as i32);
 
 			let mut column_chunks = [
 				ChunkIndexed::<Block>::new(4, Block::air()),
@@ -166,7 +166,6 @@ fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
 			}
 		}
 
-		let shade = (height as f64) / 127.0;
 		let position = ColumnPosition::from_layer(height, layer_position);
 		let top = *column.get(position);
 
@@ -184,7 +183,7 @@ fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
 
 		let shaded_color = if ocean_height != 0 {
 			let depth = ocean_height - height;
-			let shade = math::clamp(depth as f64 / 10.0, 0.0, 1.0);
+			let shade = math::clamp(depth as f64 / 32.0, 0.0, 1.0);
 			let shade = 1.0 - (1.0 - shade).powi(2);
 
 			if !climate.freezing() {
@@ -192,37 +191,33 @@ fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
 					data: [
 						(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
 						(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
-						math::lerp(color.data[2] as f64, 255f64, shade) as u8
+						math::lerp(color.data[2] as f64, 255.0, shade) as u8
 					]
 				}
 			} else {
 				Rgb {
 					data: [
-						math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
-						math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
-						math::lerp(color.data[2] as f64, 255f64, shade) as u8
+						math::lerp(color.data[1] as f64 * 0.5 + 63.0, 63.0, shade) as u8,
+						math::lerp(color.data[1] as f64 * 0.5 + 63.0, 63.0, shade) as u8,
+						math::lerp(color.data[2] as f64, 255.0, shade) as u8
 					]
 				}
 			}
 		} else {
-			if !climate.freezing() {
-				Rgb {
-					data: [
-						(color.data[0] as f64 * shade) as u8,
-						(color.data[1] as f64 * shade) as u8,
-						(color.data[2] as f64 * shade) as u8
-					]
-				}
-			} else {
-				let shade = 1.0 - (1.0 - shade).powi(2);
+			let shade = math::clamp(((height as f64) / 127.0) * 0.6 + 0.4, 0.0, 1.0) ;
 
-				Rgb {
-					data: [
-						(255f64 * shade) as u8,
-						(255f64 * shade) as u8,
-						(255f64 * shade) as u8
-					]
-				}
+			let (color, shade) = if climate.freezing() {
+				(Rgb { data: [255, 255, 255] }, 1.0 - (1.0 - shade).powi(2))
+			} else {
+				(color, shade)
+			};
+
+			Rgb {
+				data: [
+					(color.data[0] as f64 * shade) as u8,
+					(color.data[1] as f64 * shade) as u8,
+					(color.data[2] as f64 * shade) as u8
+				]
 			}
 		};
 
