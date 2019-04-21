@@ -1,4 +1,4 @@
-use i73_biome::climate::Climate;
+use i73_biome::climate::{self, Climate};
 use i73_base::{Pass, Layer};
 use vocs::position::{ChunkPosition, GlobalColumnPosition, LayerPosition};
 use vocs::view::ColumnMut;
@@ -21,30 +21,26 @@ impl Default for OceanBlocks {
 	}
 }
 
-// TODO: Ice
 pub struct OceanPass {
 	pub blocks:  OceanBlocks,
 	pub sea_top: usize
 }
 
 impl Pass<Climate> for OceanPass {
-	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, column_position: GlobalColumnPosition) {
+	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, _: GlobalColumnPosition) {
 		if self.sea_top == 0 {
 			return;
 		}
 
-		//let ice_mask = self.climate.freezing_layer((column_position.x() as f64, column_position.z() as f64));
-		//let has_ice = !ice_mask.is_filled(false);
-		let has_ice = false;
+		let ice_mask = climate::freezing_layer(climates);
+		let has_ice = !ice_mask.is_filled(false);
 
-		let chunk_base = self.sea_top / 16;
-
+		// TODO: Optimization: When the top layer of the chunk is ice, fill the rest with water.
+		let chunk_base = (self.sea_top - has_ice as usize) / 16;
 		for chunk in target.0.iter_mut().take(chunk_base) {
 			chunk.replace(&self.blocks.air, self.blocks.ocean);
 		}
 
-		// Make chunk_base lower because the top layer might be ice.
-		let chunk_base = (self.sea_top - has_ice as usize) / 16;
 		if chunk_base > 15 {
 			return
 		}
@@ -57,11 +53,14 @@ impl Pass<Climate> for OceanPass {
 		}
 
 		chunk.ensure_available(self.blocks.ocean);
-		chunk.ensure_available(self.blocks.ice);
+
+		if has_ice {
+			chunk.ensure_available(self.blocks.ice);
+		}
 
 		let (chunk, palette) = chunk.freeze_palette();
 		let ocean = palette.reverse_lookup(&self.blocks.ocean).unwrap();
-		let ice = palette.reverse_lookup(&self.blocks.ice).unwrap();
+		let ice = if has_ice { Some(palette.reverse_lookup(&self.blocks.ice).unwrap()) } else { None };
 		let air = palette.reverse_lookup(&self.blocks.air).unwrap();
 
 		// Calculate how many layers of the chunk will have ocean.
@@ -75,17 +74,16 @@ impl Pass<Climate> for OceanPass {
 			}
 		}
 
-		/*if has_ice {
-			println!("Ice detected! {}", column_position);
+		if let Some(ice) = ice {
 			let y = ((self.sea_top - 1) % 16) as u8;
 
 			for layer_position in LayerPosition::enumerate() {
 				let position = ChunkPosition::from_layer(y, layer_position);
 
-				if ice_mask[layer_position] && chunk.get(position) == air {
-					chunk.set(position, ice);
+				if chunk.get(position) == air {
+					chunk.set(position, if ice_mask[layer_position] { ice } else { ocean });
 				}
 			}
-		}*/
+		}
 	}
 }

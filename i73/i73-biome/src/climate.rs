@@ -5,7 +5,7 @@ use vocs::position::LayerPosition;
 use vocs::component::LayerStorage;
 use i73_noise::octaves::SimplexOctaves;
 use i73_noise::sample::Sample;
-use i73_base::math;
+use i73_base::{math, Layer};
 
 #[derive(Deserialize, Copy, Clone, Debug)]
 pub struct ClimateSettings {
@@ -67,17 +67,6 @@ impl ClimateSource {
 			temp_keep:   1.0 - settings.temperature_mixin,
 			rain_keep:   1.0 - settings.rainfall_mixin
 		}
-	}
-
-	pub fn freezing_layer(&self, column: (f64, f64)) -> LayerMask {
-		let mut out = LayerMask::default();
-		let chunk = self.chunk(column);
-
-		for position in LayerPosition::enumerate() {
-			out.set(position, chunk.get(position).freezing());
-		}
-
-		out
 	}
 }
 
@@ -141,4 +130,14 @@ impl Climate {
 	pub fn influence_factor(&self) -> f64 {
 		1.0 - f64::powi(1.0 - self.adjusted_rainfall(), 4)
 	}
+}
+
+pub fn freezing_layer(climates: &Layer<Climate>) -> LayerMask {
+	let mut out = LayerMask::default();
+
+	for position in LayerPosition::enumerate() {
+		out.set(position, climates.get(position).freezing());
+	}
+
+	out
 }

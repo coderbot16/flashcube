@@ -5,13 +5,12 @@ use i73_noise::sample::Sample;
 use i73_biome::climate::{ClimateSettings, ClimateSource, Climate};
 use i73_biome::{Lookup, Surface};
 use i73_shape::height::{HeightSettings, HeightSource};
-use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings, trilinear128};
+use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings};
 use i73_base::{Pass, Layer};
 use vocs::position::{ColumnPosition, LayerPosition, GlobalColumnPosition};
 use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use i73_base::matcher::BlockMatcher;
 use i73_base::Block;
-use i73_shape::height::lerp_to_layer;
 
 use overworld::shape::{ShapeBlocks, ShapePass};
 
@@ -78,87 +77,6 @@ pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ClimateSo
 			max_bedrock_height: settings.max_bedrock_height 
 		}
 	)
-}
-
-pub struct ShapeBlocks_ {
-	pub solid: Block,
-	pub ocean: Block,
-	pub ice:   Block,
-	pub air:   Block
-}
-
-impl Default for ShapeBlocks_ {
-	fn default() -> Self {
-		ShapeBlocks_ {
-			solid: Block::from_anvil_id( 1 * 16),
-			ocean: Block::from_anvil_id( 9 * 16),
-			ice:   Block::from_anvil_id(79 * 16),
-			air:   Block::air()
-		}
-	}
-}
-
-pub struct ShapePass_ {
-	blocks:  ShapeBlocks_,
-	tri:     TriNoiseSource,
-	height:  HeightSource,
-	field:   ShapeSettings,
-	sea_coord: u8
-}
-
-impl Pass<Climate> for ShapePass_ {
-	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, chunk: GlobalColumnPosition) {
-		let offset = Point2::new(
-			(chunk.x() as f64) * 4.0,
-			(chunk.z() as f64) * 4.0
-		);
-		
-		let mut field = [[[0f64; 5]; 17]; 5];
-	
-		for x in 0..5 {
-			for z in 0..5 {
-				let layer = lerp_to_layer(Vector2::new(x as u8, z as u8));
-				
-				let climate = climates.get(layer);
-				let height = self.height.sample(offset + Vector2::new(x as f64, z as f64), climate);
-				
-				for y in 0..17 {
-					let tri = self.tri.sample(Vector3::new(offset.x + x as f64, y as f64, offset.y + z as f64), y);
-					
-					field[x][y][z] = self.field.compute_noise_value(y as f64, height, tri);
-				}
-			}
-		}
-		
-		target.ensure_available(self.blocks.air.clone());
-		target.ensure_available(self.blocks.solid.clone());
-		target.ensure_available(self.blocks.ocean.clone());
-		target.ensure_available(self.blocks.ice.clone());
-		
-		let (mut blocks, palette) = target.freeze_palette();
-		
-		let air   = palette.reverse_lookup(&self.blocks.air).unwrap();
-		let solid = palette.reverse_lookup(&self.blocks.solid).unwrap();
-		let ocean = palette.reverse_lookup(&self.blocks.ocean).unwrap();
-		let ice   = palette.reverse_lookup(&self.blocks.ice).unwrap();
-		
-		for i in 0..32768 {
-			let position = ColumnPosition::from_yzx(i);
-			let altitude = position.y();
-			
-			let block = if trilinear128(&field, position) > 0.0 {
-				&solid
-			} else if altitude == self.sea_coord && climates.get(position.layer()).freezing() {
-				&ice
-			} else if altitude <= self.sea_coord {
-				&ocean
-			} else {
-				&air
-			};
-			
-			blocks.set(position, block);
-		}
-	}
 }
 
 pub struct PaintBlocks {

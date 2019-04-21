@@ -41,6 +41,7 @@ const BEDROCK: Block = Block::from_anvil_id(7 * 16);
 const OCEAN: Block = Block::from_anvil_id(9 * 16);
 const SAND: Block = Block::from_anvil_id(12 * 16);
 const GRAVEL: Block = Block::from_anvil_id(13 * 16);
+const ICE: Block = Block::from_anvil_id(79 * 16);
 
 fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 	let settings = Settings::default();
@@ -147,16 +148,18 @@ fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
 	for layer_position in LayerPosition::enumerate() {
 		let mut height = 0;
 		let mut ocean_height = 0;
+		let mut ice = false;
 
 		for cy in (0..128).rev() {
 			let mut column_position = ColumnPosition::from_layer(cy, layer_position);
 			let block = *column.get(column_position);
 
-			let ocean = block == OCEAN;
+			let ocean = block == OCEAN || block == ICE;
 			let solid = block != AIR;
 
 			if ocean_height == 0 && ocean {
 				ocean_height = cy;
+				ice = block == ICE;
 				continue;
 			}
 
@@ -195,7 +198,7 @@ fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
 			let shade = math::clamp(depth as f64 / 32.0, 0.0, 1.0);
 			let shade = 1.0 - (1.0 - shade).powi(2);
 
-			if !climate.freezing() {
+			if !ice {
 				Rgb {
 					data: [
 						(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
