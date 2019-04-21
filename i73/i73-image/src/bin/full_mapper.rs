@@ -11,51 +11,38 @@ extern crate cgmath;
 extern crate java_rand;
 extern crate vocs;
 
-use image::{Rgb, RgbImage};
+use image::{Rgb, RgbImage, SubImage, GenericImage};
 use std::fs;
 
-//use i73_image::colorizer::colorize_grass;
-use i73_biome::climate::{ClimateSource, ClimateSettings};
-use i73_noise::sample::Sample;
-use i73_shape::height::{HeightSource, HeightSettings, HeightSettings81};
-use i73_noise::octaves::PerlinOctaves;
-use cgmath::{Point2, Vector3};
-use i73_shape::volume::TriNoiseSettings;
+use i73_biome::climate::{ClimateSource, Climate};
+use i73_noise::sample::{Sample, Layer};
 use i73_terrain::overworld::ocean::{OceanPass, OceanBlocks};
 use i73_terrain::overworld_173;
 use i73_biome::Lookup;
 use i73_base::{Block, Pass, math};
-use i73_base::matcher::BlockMatcher;
 use vocs::indexed::ChunkIndexed;
 use vocs::view::ColumnMut;
-use vocs::position::{GlobalColumnPosition, ColumnPosition};
+use vocs::position::{GlobalColumnPosition, ColumnPosition, LayerPosition};
 use std::collections::HashMap;
 use i73_terrain::overworld_173::Settings;
 use frontend::config::biomes::{BiomesConfig, RectConfig, BiomeConfig, SurfaceConfig, FollowupConfig};
 use i73_image::colorizer::colorize_grass;
 
 fn main() {
-	// Initialization
-	let seed = 8399452073110208023;
-
-	let mut rng = java_rand::Random::new(seed);
-
-	let _tri = i73_shape::volume::TriNoiseSource::new(&mut rng, &TriNoiseSettings::default());
-
-	let _sand      = PerlinOctaves::new(&mut rng.clone(), 4, Vector3::new(1.0 / 32.0, 1.0 / 32.0,        1.0)); // Vertical,   Z =   0.0
-	let _gravel    = PerlinOctaves::new(&mut rng,                        4, Vector3::new(1.0 / 32.0,        1.0, 1.0 / 32.0)); // Horizontal
-	let _thickness = PerlinOctaves::new(&mut rng,                        4, Vector3::new(1.0 / 16.0, 1.0 / 16.0, 1.0 / 16.0)); // Vertical,   Z =   0.0
-
-	let height_source  = HeightSource::new(&mut rng, &HeightSettings::default());
-	let climates = ClimateSource::new(seed, ClimateSettings::default());
-
-	// Image generation
-
-	generate_full_image("world", (256, 256));
+	generate_full_image("world", (32, 32), (0, 0));
 }
 
-fn generate_full_image(name: &str, size: (u32, u32)) {
-	let mut settings = Settings::default();
+// Block types
+const AIR: Block = Block::air();
+const STONE: Block = Block::from_anvil_id(1 * 16);
+const GRASS: Block = Block::from_anvil_id(2 * 16);
+const DIRT: Block = Block::from_anvil_id(3 * 16);
+const OCEAN: Block = Block::from_anvil_id(9 * 16);
+const SAND: Block = Block::from_anvil_id(12 * 16);
+const GRAVEL: Block = Block::from_anvil_id(13 * 16);
+
+fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
+	let settings = Settings::default();
 
 	let mut biomes_config = BiomesConfig { decorator_sets: HashMap::new(), biomes: HashMap::new(), default: "plains".to_string(), grid: vec![RectConfig { temperature: (0.0, 0.1), rainfall: (0.0, 1.0), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.0, 0.2), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.2, 0.5), biome: "taiga".to_string() }, RectConfig { temperature: (0.1, 0.7), rainfall: (0.5, 1.0), biome: "swampland".to_string() }, RectConfig { temperature: (0.5, 0.95), rainfall: (0.0, 0.2), biome: "savanna".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.2, 0.35), biome: "shrubland".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.35, 0.5), biome: "forest".to_string() }, RectConfig { temperature: (0.7, 0.97), rainfall: (0.5, 1.0), biome: "forest".to_string() }, RectConfig { temperature: (0.95, 1.0), rainfall: (0.0, 0.2), biome: "desert".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.2, 0.45), biome: "plains".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.45, 0.9), biome: "seasonal_forest".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.9, 1.0), biome: "rainforest".to_string() }] };
 	biomes_config.biomes.insert("seasonal_forest".to_string(), BiomeConfig { debug_name: "Seasonal Forest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
@@ -86,29 +73,25 @@ fn generate_full_image(name: &str, size: (u32, u32)) {
 
 	let (shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
 
-	/*let caves_generator = i73_structure::caves::CavesGenerator {
-		carve: Block::air(),
-		lower: Block::from_anvil_id(10*16),
-		surface_block: Block::from_anvil_id(2*16),
-		ocean: BlockMatcher::include([Block::from_anvil_id(8*16), Block::from_anvil_id(9*16)].iter()),
-		carvable: BlockMatcher::include([Block::from_anvil_id(1*16), Block::from_anvil_id(2*16), Block::from_anvil_id(3*16)].iter()),
-		surface_top: BlockMatcher::is(Block::from_anvil_id(2*16)),
-		surface_fill: BlockMatcher::is(Block::from_anvil_id(3*16)),
-		blob_size_multiplier: 1.0,
-		vertical_multiplier: 1.0,
-		lower_surface: 10
-	};
-	let caves = i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);*/
-
 	println!("Generating region (0, 0)");
 	let gen_start = ::std::time::Instant::now();
 	let mut map = RgbImage::new(size.0 * 16, size.1 * 16);
 
 	for x in 0..size.0 {
-		println!("{:.2}%", ((x as f64) / (size.0 as f64)) * 100.0);
+		print!("{:.2}% ", ((x as f64) / (size.0 as f64)) * 100.0);
+
+		{
+			let end = ::std::time::Instant::now();
+			let time = end.duration_since(gen_start);
+
+			let secs = time.as_secs();
+			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+			println!("[{}us elapsed ({}us per column)]", us, if x > 0 { us / ((x as u64) * (size.1 as u64)) } else { 0 });
+		}
 
 		for z in 0..size.1 {
-			let column_position = GlobalColumnPosition::new(x as i32, z as i32);
+			let column_position = GlobalColumnPosition::new((x + offset.0) as i32, (z + offset.0) as i32);
 
 			let mut column_chunks = [
 				ChunkIndexed::<Block>::new(4, Block::air()),
@@ -134,91 +117,121 @@ fn generate_full_image(name: &str, size: (u32, u32)) {
 			shape.apply(&mut column, column_position);
 			paint.apply(&mut column, column_position);
 			ocean.apply(&mut column, column_position);
-			//caves.apply(&mut column, column_position);
 
-			for cz in 0..16 {
-				for cx in 0..16 {
-					let mut height = 0;
-					let mut ocean_height = 0;
+			let climates = climates.chunk((
+				((x + offset.0) * 16) as f64,
+				((z + offset.1) * 16) as f64
+			));
 
-					for cy in (0..128).rev() {
-						let mut column_position = ColumnPosition::new(cx, cy, cz);
-						let block = *column.get(column_position);
-
-						let ocean = block == Block::from_anvil_id(9 * 16);
-						let solid = block != Block::air();
-
-						if ocean_height == 0 && ocean {
-							ocean_height = cy;
-							continue;
-						}
-
-						if solid && !ocean {
-							height = cy;
-							break;
-						}
-					}
-
-					let shade = (height as f64) / 127.0;
-					let position = ColumnPosition::new(cx, height, cz);
-					let top = *column.get(position);
-
-					// Block types
-					const AIR: Block = Block::air();
-					const STONE: Block = Block::from_anvil_id(1 * 16);
-					const GRASS: Block = Block::from_anvil_id(2 * 16);
-					const DIRT: Block = Block::from_anvil_id(3 * 16);
-					const OCEAN: Block = Block::from_anvil_id(9 * 16);
-					const SAND: Block = Block::from_anvil_id(12 * 16);
-					const GRAVEL: Block = Block::from_anvil_id(13 * 16);
-
-					let color = match top {
-						AIR => Rgb { data: [255, 255, 255] },
-						STONE => Rgb { data: [127, 127, 127] },
-						GRASS => colorize_grass(climates.sample(Point2::new(
-							(x * 16 + cx as u32) as f64,
-							(z * 16 + cz as u32) as f64
-						))),
-						DIRT => Rgb { data: [255, 196, 127] },
-						SAND => Rgb { data: [255, 240, 127] },
-						GRAVEL => Rgb { data: [196, 196, 196] },
-						_ => Rgb { data: [255, 0, 255] }
-					};
-
-					let shaded_color = if ocean_height != 0 {
-						let depth = ocean_height - height;
-						let shade = math::clamp(depth as f64 / 10.0, 0.0, 1.0);
-						let shade = 1.0 - (1.0 - shade).powi(2);
-
-						Rgb {
-							data: [
-								(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
-								(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
-								math::lerp(color.data[2] as f64, 255f64, shade) as u8
-							]
-						}
-					} else {
-						Rgb {
-							data: [
-								(color.data[0] as f64 * shade) as u8,
-								(color.data[1] as f64 * shade) as u8,
-								(color.data[2] as f64 * shade) as u8
-							]
-						}
-					};
-
-					map.put_pixel(
-						x * 16 + cx as u32,
-						z * 16 + cz as u32,
-						shaded_color
-					);
-				}
-			}
+			render_column(&column, SubImage::new(&mut map, x * 16, z * 16, 16, 16), &climates);
 		}
 	}
 
-	println!("Generation complete, saving image...");
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(gen_start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("Generation done in {}us ({}us per column)", us, us / ((size.0 as u64) * (size.1 as u64)));
+	}
+
+	println!("Saving image...");
 	fs::create_dir_all("out/image/").unwrap();
 
 	map.save(format!("out/image/{}.png", name)).unwrap();
+}
+
+fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>, climates: &Layer<Climate>) {
+	for cz in 0..16 {
+		for cx in 0..16 {
+			let mut height = 0;
+			let mut ocean_height = 0;
+
+			for cy in (0..128).rev() {
+				let mut column_position = ColumnPosition::new(cx, cy, cz);
+				let block = *column.get(column_position);
+
+				let ocean = block == OCEAN;
+				let solid = block != AIR;
+
+				if ocean_height == 0 && ocean {
+					ocean_height = cy;
+					continue;
+				}
+
+				if solid && !ocean {
+					height = cy;
+					break;
+				}
+			}
+
+			let shade = (height as f64) / 127.0;
+			let position = ColumnPosition::new(cx, height, cz);
+			let top = *column.get(position);
+
+			let climate = climates.get(LayerPosition::new(cx as u8, cz as u8));
+
+			let color = match top {
+				AIR => Rgb { data: [255, 255, 255] },
+				STONE => Rgb { data: [127, 127, 127] },
+				GRASS => colorize_grass(climate),
+				DIRT => Rgb { data: [255, 196, 127] },
+				SAND => Rgb { data: [255, 240, 127] },
+				GRAVEL => Rgb { data: [196, 196, 196] },
+				_ => Rgb { data: [255, 0, 255] }
+			};
+
+			let shaded_color = if ocean_height != 0 {
+				let depth = ocean_height - height;
+				let shade = math::clamp(depth as f64 / 10.0, 0.0, 1.0);
+				let shade = 1.0 - (1.0 - shade).powi(2);
+
+				if !climate.freezing() {
+					Rgb {
+						data: [
+							(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
+							(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
+							math::lerp(color.data[2] as f64, 255f64, shade) as u8
+						]
+					}
+				} else {
+					Rgb {
+						data: [
+							math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
+							math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
+							math::lerp(color.data[2] as f64, 255f64, shade) as u8
+						]
+					}
+				}
+			} else {
+				if !climate.freezing() {
+					Rgb {
+						data: [
+							(color.data[0] as f64 * shade) as u8,
+							(color.data[1] as f64 * shade) as u8,
+							(color.data[2] as f64 * shade) as u8
+						]
+					}
+				} else {
+					let shade = 1.0 - (1.0 - shade).powi(2);
+
+					Rgb {
+						data: [
+							(255f64 * shade) as u8,
+							(255f64 * shade) as u8,
+							(255f64 * shade) as u8
+						]
+					}
+				}
+			};
+
+			target.put_pixel(
+				cx as u32,
+				cz as u32,
+				shaded_color
+			);
+		}
+	}
 }
