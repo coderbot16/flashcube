@@ -43,6 +43,12 @@ impl LayerPosition {
 	pub fn with_z(&self, y: u8) -> Self {
 		LayerPosition((self.0 & 0x0F) | ((y & 0x0F) << 4))
 	}
+
+	// Iteration
+
+	pub fn enumerate() -> Enumerate {
+		Enumerate { index: 0 }
+	}
 }
 
 impl PackedIndex for LayerPosition {
@@ -56,5 +62,25 @@ impl PackedIndex for LayerPosition {
 
 	fn to_usize(&self) -> usize {
 		self.zx() as usize
+	}
+}
+
+pub struct Enumerate {
+	index: u16
+}
+
+impl Iterator for Enumerate {
+	type Item = LayerPosition;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.index < 256 {
+			let position = LayerPosition::from_zx(self.index as u8);
+
+			self.index += 1;
+
+			Some(position)
+		} else {
+			None
+		}
 	}
 }
