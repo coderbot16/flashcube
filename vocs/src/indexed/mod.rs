@@ -62,6 +62,11 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		self.storage.fill(0);
 	}
 
+	/// Tests if this storage is filled with the specified entry. May return false negatives, ie. not filled when the chunk is truly filled.
+	pub fn is_filled_heuristic(&self, target: &B) -> bool {
+		self.palette.has_single_entry(target)
+	}
+
 	pub fn palette(&self) -> &Palette<B> {
 		&self.palette
 	}

@@ -41,6 +41,10 @@ impl<B> Palette<B> where B: Target {
 		}
 	}
 
+	pub fn has_single_entry(&self, target: &B) -> bool {
+		self.reverse.len() == 1 && self.reverse.contains_key(target)
+	}
+
 	/// Tries to shrink the palette without remapping any elements.
 	pub fn try_shrink(&mut self) -> Option<(Box<[Option<B>]>, u8)> {
 		let mut half_size = self.entries.len() / 2;

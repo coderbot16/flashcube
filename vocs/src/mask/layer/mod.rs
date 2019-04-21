@@ -96,3 +96,87 @@ impl Index<LayerPosition> for LayerMask {
 		if (self.0[index / 64] >> (index % 64))&1 == 1 { TRUE_REF } else { FALSE_REF }
 	}
 }
+
+#[cfg(test)]
+mod test {
+	use position::LayerPosition;
+	use component::LayerStorage;
+	use mask::{LayerMask, Mask};
+
+	#[test]
+	fn test_plain_set() {
+		for position in LayerPosition::enumerate() {
+			let mut mask = LayerMask::default();
+
+			mask.set(position, true);
+			assert!(mask.get(position), "Mask set failed on index: {:?}", position);
+		}
+	}
+
+	#[test]
+	fn test_mixed_set() {
+		let mut mask = LayerMask::default();
+
+		for position in LayerPosition::enumerate() {
+			mask.set(position, should_set(position));
+		}
+
+		for position in LayerPosition::enumerate() {
+			assert_eq!(mask.get(position), should_set(position), "Mask set failed on index: {:?}", position);
+		}
+
+		display_mask(&mask);
+	}
+
+	#[test]
+	fn test_fill() {
+		{
+			let mut mask = LayerMask::default();
+
+			for position in LayerPosition::enumerate() {
+				mask.set(position, should_set(position));
+			}
+
+			assert!(!mask.is_filled(true), "test_fill: NotFilled failed");
+			assert!(!mask.is_filled(false), "test_fill: NotFilled failed");
+		}
+
+		{
+			let mut mask = LayerMask::default();
+
+			for position in LayerPosition::enumerate() {
+				mask.set_true(position);
+			}
+
+			assert!(mask.is_filled(true), "test_fill: Filled(True) failed");
+			assert!(!mask.is_filled(false), "test_fill: Filled(True) failed");
+		}
+
+		{
+			let mut mask = LayerMask::default();
+
+			for position in LayerPosition::enumerate() {
+				mask.set_false(position);
+			}
+
+			assert!(!mask.is_filled(true), "test_fill: Filled(False) failed");
+			assert!(mask.is_filled(false), "test_fill: Filled(False) failed");
+		}
+	}
+
+	fn should_set(position: LayerPosition) -> bool {
+		((position.zx() as u64) * 32181) % 13 < 2
+	}
+
+	fn display_mask(mask: &LayerMask) {
+		for z in 0..16 {
+			for x in 0..16 {
+				let position = LayerPosition::new(x, z);
+				print!("{}", if mask.get(position) {'*'} else {' '});
+
+			}
+
+			println!();
+		}
+	}
+}
