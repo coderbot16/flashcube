@@ -37,6 +37,7 @@ const AIR: Block = Block::air();
 const STONE: Block = Block::from_anvil_id(1 * 16);
 const GRASS: Block = Block::from_anvil_id(2 * 16);
 const DIRT: Block = Block::from_anvil_id(3 * 16);
+const BEDROCK: Block = Block::from_anvil_id(7 * 16);
 const OCEAN: Block = Block::from_anvil_id(9 * 16);
 const SAND: Block = Block::from_anvil_id(12 * 16);
 const GRAVEL: Block = Block::from_anvil_id(13 * 16);
@@ -170,18 +171,27 @@ fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
 		let top = *column.get(position);
 
 		let climate = climates.get(layer_position);
+		let mut no_shade = false;
 
 		let color = match top {
 			AIR => Rgb { data: [255, 255, 255] },
 			STONE => Rgb { data: [127, 127, 127] },
 			GRASS => colorize_grass(climate),
 			DIRT => Rgb { data: [255, 196, 127] },
+			BEDROCK => Rgb { data: [0, 0, 0] },
 			SAND => Rgb { data: [255, 240, 127] },
 			GRAVEL => Rgb { data: [196, 196, 196] },
-			_ => Rgb { data: [255, 0, 255] }
+			_ => {
+				println!("warning: unknown block: {:?}", top);
+				no_shade = true;
+
+				Rgb { data: [255, 0, 255] }
+			}
 		};
 
-		let shaded_color = if ocean_height != 0 {
+		let shaded_color = if no_shade {
+			color
+		} else if ocean_height != 0 {
 			let depth = ocean_height - height;
 			let shade = math::clamp(depth as f64 / 32.0, 0.0, 1.0);
 			let shade = 1.0 - (1.0 - shade).powi(2);
