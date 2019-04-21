@@ -120,7 +120,7 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 				((z + offset.1) * 16) as f64
 			));
 
-			fn metrics(stage: &'static str, column: &ColumnMut<Block>, x: u32, z: u32) {
+			/*fn metrics(stage: &'static str, column: &ColumnMut<Block>, x: u32, z: u32) {
 				if x==0 && z==0 {
 					println!("Chunk palette metrics @ {}:", stage);
 					for index in 0..16 {
@@ -134,15 +134,15 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 						println!();
 					}
 				}
-			}
+			}*/
 
-			metrics("initial", &column, x, z);
+			// metrics("initial", &column, x, z);
 			shape.apply(&mut column, &climates, column_position);
-			metrics("shape", &column, x, z);
+			// metrics("shape", &column, x, z);
 			paint.apply(&mut column, &climates, column_position);
-			metrics("paint", &column, x, z);
+			// metrics("paint", &column, x, z);
 			ocean.apply(&mut column, &climates, column_position);
-			metrics("ocean", &column, x, z);
+			// metrics("ocean", &column, x, z);
 
 			render_column(&column, SubImage::new(&mut map, x * 16, z * 16, 16, 16), &climates);
 		}

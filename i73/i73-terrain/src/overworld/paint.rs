@@ -153,7 +153,7 @@ impl PaintPass {
 		&self.lookup
 	}
 
-	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, bedrock: &ColumnAssociation, layer: LayerPosition, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
+	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, bedrock: &ColumnAssociation, layer: LayerPosition, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32, max_y: u8) {
 		let reset_remaining = match thickness {
 			-1          => None,
 			x if x <= 0 => Some(0),
@@ -165,7 +165,7 @@ impl PaintPass {
 		
 		let mut current_surface = if thickness <= 0 {basin} else {surface};
 		
-		for y in (0..128).rev() {
+		for y in (0..max_y).rev() {
 			let position = ColumnPosition::from_layer(y, layer);
 			
 			if let Some(chance) = self.max_bedrock_height {
@@ -228,6 +228,13 @@ impl PaintPass {
 
 impl Pass<Climate> for PaintPass {
 	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, chunk: GlobalColumnPosition) {
+		let mut max_y = 0;
+		for (index, chunk) in target.0.iter().take(8).enumerate() {
+			if !chunk.is_filled_heuristic(&self.blocks.air) {
+				max_y = (index as u8 + 1) * 16;
+			}
+		}
+
 		let block = ((chunk.x() * 16) as f64, (chunk.z() * 16) as f64);
 		let seed = (chunk.x() as i64).wrapping_mul(341873128712).wrapping_add((chunk.z() as i64).wrapping_mul(132897987541));
 		let mut rng = Random::new(seed as u64);
@@ -313,7 +320,7 @@ impl Pass<Climate> for PaintPass {
 				surface
 			};
 
-			self.paint_stack(&mut rng, &mut blocks, &palette, &bedrock, position, surface, beach, &basin, thickness);
+			self.paint_stack(&mut rng, &mut blocks, &palette, &bedrock, position, surface, beach, &basin, thickness, max_y);
 		}
 	}
 }
