@@ -23,16 +23,12 @@ impl BiomeSource {
 
 		// TODO: Avoid the default lookup and clone.
 		let mut layer = LayerIndexed::new(2, self.lookup.lookup(Climate::new(1.0, 1.0)).clone());
-		
-		for z in 0..16 {
-			for x in 0..16 {
-				let position = LayerPosition::new(x, z);
-				
-				let climate = self.climate.sample(block + Vector2::new(x as f64, z as f64));
-				let biome = self.lookup.lookup(climate);
-				
-				layer.set_immediate(position, biome);
-			}
+
+		for position in LayerPosition::enumerate() {
+			let climate = self.climate.sample(block + Vector2::new(position.x() as f64, position.z() as f64));
+			let biome = self.lookup.lookup(climate);
+
+			layer.set_immediate(position, biome);
 		}
 		
 		layer

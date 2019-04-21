@@ -65,7 +65,7 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 	let ocean = OceanPass {
 		climate: ClimateSource::new(8399452073110208023, settings.climate),
 		blocks: OceanBlocks {
-			ocean: settings.paint_blocks.ocean.clone(),
+			ocean: Block::from_anvil_id(9 * 16),
 			air: settings.paint_blocks.air.clone()
 		},
 		sea_top: (settings.sea_coord + 1) as usize
@@ -144,94 +144,92 @@ fn generate_full_image(name: &str, size: (u32, u32), offset: (u32, u32)) {
 }
 
 fn render_column(column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>, climates: &Layer<Climate>) {
-	for cz in 0..16 {
-		for cx in 0..16 {
-			let mut height = 0;
-			let mut ocean_height = 0;
+	for layer_position in LayerPosition::enumerate() {
+		let mut height = 0;
+		let mut ocean_height = 0;
 
-			for cy in (0..128).rev() {
-				let mut column_position = ColumnPosition::new(cx, cy, cz);
-				let block = *column.get(column_position);
+		for cy in (0..128).rev() {
+			let mut column_position = ColumnPosition::from_layer(cy, layer_position);
+			let block = *column.get(column_position);
 
-				let ocean = block == OCEAN;
-				let solid = block != AIR;
+			let ocean = block == OCEAN;
+			let solid = block != AIR;
 
-				if ocean_height == 0 && ocean {
-					ocean_height = cy;
-					continue;
-				}
-
-				if solid && !ocean {
-					height = cy;
-					break;
-				}
+			if ocean_height == 0 && ocean {
+				ocean_height = cy;
+				continue;
 			}
 
-			let shade = (height as f64) / 127.0;
-			let position = ColumnPosition::new(cx, height, cz);
-			let top = *column.get(position);
+			if solid && !ocean {
+				height = cy;
+				break;
+			}
+		}
 
-			let climate = climates.get(LayerPosition::new(cx as u8, cz as u8));
+		let shade = (height as f64) / 127.0;
+		let position = ColumnPosition::from_layer(height, layer_position);
+		let top = *column.get(position);
 
-			let color = match top {
-				AIR => Rgb { data: [255, 255, 255] },
-				STONE => Rgb { data: [127, 127, 127] },
-				GRASS => colorize_grass(climate),
-				DIRT => Rgb { data: [255, 196, 127] },
-				SAND => Rgb { data: [255, 240, 127] },
-				GRAVEL => Rgb { data: [196, 196, 196] },
-				_ => Rgb { data: [255, 0, 255] }
-			};
+		let climate = climates.get(layer_position);
 
-			let shaded_color = if ocean_height != 0 {
-				let depth = ocean_height - height;
-				let shade = math::clamp(depth as f64 / 10.0, 0.0, 1.0);
-				let shade = 1.0 - (1.0 - shade).powi(2);
+		let color = match top {
+			AIR => Rgb { data: [255, 255, 255] },
+			STONE => Rgb { data: [127, 127, 127] },
+			GRASS => colorize_grass(climate),
+			DIRT => Rgb { data: [255, 196, 127] },
+			SAND => Rgb { data: [255, 240, 127] },
+			GRAVEL => Rgb { data: [196, 196, 196] },
+			_ => Rgb { data: [255, 0, 255] }
+		};
 
-				if !climate.freezing() {
-					Rgb {
-						data: [
-							(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
-							(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
-							math::lerp(color.data[2] as f64, 255f64, shade) as u8
-						]
-					}
-				} else {
-					Rgb {
-						data: [
-							math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
-							math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
-							math::lerp(color.data[2] as f64, 255f64, shade) as u8
-						]
-					}
+		let shaded_color = if ocean_height != 0 {
+			let depth = ocean_height - height;
+			let shade = math::clamp(depth as f64 / 10.0, 0.0, 1.0);
+			let shade = 1.0 - (1.0 - shade).powi(2);
+
+			if !climate.freezing() {
+				Rgb {
+					data: [
+						(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
+						(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
+						math::lerp(color.data[2] as f64, 255f64, shade) as u8
+					]
 				}
 			} else {
-				if !climate.freezing() {
-					Rgb {
-						data: [
-							(color.data[0] as f64 * shade) as u8,
-							(color.data[1] as f64 * shade) as u8,
-							(color.data[2] as f64 * shade) as u8
-						]
-					}
-				} else {
-					let shade = 1.0 - (1.0 - shade).powi(2);
-
-					Rgb {
-						data: [
-							(255f64 * shade) as u8,
-							(255f64 * shade) as u8,
-							(255f64 * shade) as u8
-						]
-					}
+				Rgb {
+					data: [
+						math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
+						math::lerp(color.data[1] as f64 * 0.5 + 63f64, 63f64, shade) as u8,
+						math::lerp(color.data[2] as f64, 255f64, shade) as u8
+					]
 				}
-			};
+			}
+		} else {
+			if !climate.freezing() {
+				Rgb {
+					data: [
+						(color.data[0] as f64 * shade) as u8,
+						(color.data[1] as f64 * shade) as u8,
+						(color.data[2] as f64 * shade) as u8
+					]
+				}
+			} else {
+				let shade = 1.0 - (1.0 - shade).powi(2);
 
-			target.put_pixel(
-				cx as u32,
-				cz as u32,
-				shaded_color
-			);
-		}
+				Rgb {
+					data: [
+						(255f64 * shade) as u8,
+						(255f64 * shade) as u8,
+						(255f64 * shade) as u8
+					]
+				}
+			}
+		};
+
+		target.put_pixel(
+			layer_position.x() as u32,
+			layer_position.z() as u32,
+			shaded_color
+		);
 	}
 }

@@ -1,13 +1,8 @@
-use cgmath::{Point2, Vector2, Vector3};
-use i73_noise::sample::Sample;
 use i73_biome::climate::ClimateSource;
-use i73_shape::height::HeightSource;
-use i73_shape::volume::{TriNoiseSource, ShapeSettings, trilinear128};
 use i73_base::Pass;
 use vocs::position::{ChunkPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
 use i73_base::Block;
-use i73_shape::height::lerp_to_layer;
 
 pub struct OceanBlocks {
 	pub air:   Block,

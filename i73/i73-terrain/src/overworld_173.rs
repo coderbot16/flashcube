@@ -176,7 +176,6 @@ pub struct PaintBlocks {
 	pub ignore:    BlockMatcher,
 	pub air:       Block,
 	pub stone:     Block,
-	pub ocean:     Block,
 	pub gravel:    Block,
 	pub sand:      Block,
 	pub sandstone: Block,
@@ -190,18 +189,12 @@ impl Default for PaintBlocks {
 			ignore:    BlockMatcher::is_not(Block::from_anvil_id(1 * 16)),
 			air:       Block::air(),
 			stone:     Block::from_anvil_id( 1 * 16),
-			ocean:     Block::from_anvil_id( 9 * 16),
 			gravel:    Block::from_anvil_id(13 * 16),
 			sand:      Block::from_anvil_id(12 * 16),
 			sandstone: Block::from_anvil_id(24 * 16),
 			bedrock:   Block::from_anvil_id( 7 * 16)
 		}
 	}
-}
-
-pub struct PaintAssociations {
-	ocean:     ColumnAssociation,
-	bedrock:   ColumnAssociation
 }
 
 struct SurfaceAssociations {
@@ -252,7 +245,7 @@ impl PaintPass {
 		&self.biomes
 	}
 
-	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, associations: &PaintAssociations, x: u8, z: u8, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
+	fn paint_stack(&self, rng: &mut Random, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, bedrock: &ColumnAssociation, layer: LayerPosition, surface: &SurfaceAssociations, beach: &SurfaceAssociations, basin: &SurfaceAssociations, thickness: i32) {
 		let reset_remaining = match thickness {
 			-1          => None,
 			x if x <= 0 => Some(0),
@@ -265,11 +258,11 @@ impl PaintPass {
 		let mut current_surface = if thickness <= 0 {basin} else {surface};
 		
 		for y in (0..128).rev() {
-			let position = ColumnPosition::new(x, y, z);
+			let position = ColumnPosition::from_layer(y, layer);
 			
 			if let Some(chance) = self.max_bedrock_height {
 				if (y as u32) <= rng.next_u32_bound(chance as u32) {
-					blocks.set(position, &associations.bedrock);
+					blocks.set(position, bedrock);
 					continue;
 				}
 			}
@@ -342,7 +335,6 @@ impl Pass for PaintPass {
 		
 		target.ensure_available(self.blocks.air.clone());
 		target.ensure_available(self.blocks.stone.clone());
-		target.ensure_available(self.blocks.ocean.clone());
 		target.ensure_available(self.blocks.gravel.clone());
 		target.ensure_available(self.blocks.sand.clone());
 		target.ensure_available(self.blocks.sandstone.clone());
@@ -367,10 +359,7 @@ impl Pass for PaintPass {
 			);
 		}
 		
-		let associations = PaintAssociations {
-			ocean:      palette.reverse_lookup(&self.blocks.ocean).unwrap(),
-			bedrock:    palette.reverse_lookup(&self.blocks.bedrock).unwrap()
-		};
+		let bedrock = palette.reverse_lookup(&self.blocks.bedrock).unwrap();
 		
 		let gravel_beach = SurfaceAssociations {
 			top:   palette.reverse_lookup(&self.blocks.air).unwrap(),
@@ -394,31 +383,29 @@ impl Pass for PaintPass {
 			fill:  palette.reverse_lookup(&self.blocks.stone).unwrap(),
 			chain: vec![]
 		};
-		
-		for z in 0..16 {
-			for x in 0..16 {
-				let position = LayerPosition::new(x, z);
-				
-				// TODO: BeachSelector
-				
-				let (sand_variation, gravel_variation, thickness_variation) = (rng.next_f64() * 0.2, rng.next_f64() * 0.2, rng.next_f64() * 0.25);
 
-				let   sand    =       sand_vertical.generate_override(  vertical_offset + Vector3::new(x as f64, z as f64, 0.0), z as usize) +   sand_variation > 0.0;
-				let gravel    =         self.gravel.sample           (horizontal_offset + Vector2::new(x as f64, z as f64     )            ) + gravel_variation > 3.0;
-				let thickness = (thickness_vertical.generate_override(  vertical_offset + Vector3::new(x as f64, z as f64, 0.0), z as usize) / 3.0 + 3.0 + thickness_variation) as i32;
+		for position in LayerPosition::enumerate() {
+			// TODO: BeachSelector
 
-				let surface   = surfaces[biomes.get(position) as usize].as_ref().unwrap();
-				
-				let beach = if sand {
-					&sand_beach
-				} else if gravel {
-					&gravel_beach
-				} else {
-					surface
-				};
-				
-				self.paint_stack(&mut rng, &mut blocks, &palette, &associations, x, z, surface, beach, &basin, thickness);
-			}
+			let (x, z) = (position.x() as f64, position.z() as f64);
+
+			let (sand_variation, gravel_variation, thickness_variation) = (rng.next_f64() * 0.2, rng.next_f64() * 0.2, rng.next_f64() * 0.25);
+
+			let   sand    =       sand_vertical.generate_override(  vertical_offset + Vector3::new(x, z, 0.0), position.z() as usize) +   sand_variation > 0.0;
+			let gravel    =         self.gravel.sample           (horizontal_offset + Vector2::new(x, z     )            ) + gravel_variation > 3.0;
+			let thickness = (thickness_vertical.generate_override(  vertical_offset + Vector3::new(x, z, 0.0), position.z() as usize) / 3.0 + 3.0 + thickness_variation) as i32;
+
+			let surface   = surfaces[biomes.get(position) as usize].as_ref().unwrap();
+
+			let beach = if sand {
+				&sand_beach
+			} else if gravel {
+				&gravel_beach
+			} else {
+				surface
+			};
+
+			self.paint_stack(&mut rng, &mut blocks, &palette, &bedrock, position, surface, beach, &basin, thickness);
 		}
 	}
 }

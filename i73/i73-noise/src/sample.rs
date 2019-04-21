@@ -50,8 +50,7 @@ pub trait Sample {
 		let mut out = Layer::fill(Self::Output::default());
 		let chunk = Point2::new(chunk.0, chunk.1);
 
-		for index in 0..=255 {
-			let position = LayerPosition::from_zx(index);
+		for position in LayerPosition::enumerate() {
 			let point = chunk + Vector2::new(position.x() as f64, position.z() as f64);
 
 			out.set(position, self.sample(point));
