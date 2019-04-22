@@ -64,11 +64,6 @@ fn main() {
 			]
 		}*/
 	});
-
-	generate_image("biomes", (8192, 8192), 1, |x, z| {
-		let climate = climates.sample(Point2 { x: x as f64, y: z as f64});
-		colorize_grass(climate)
-	});
 }
 
 fn generate_image<F>(name: &str, size: (u32, u32), scale: u32, f: F) where F: Fn(u32, u32) -> Rgb<u8> {

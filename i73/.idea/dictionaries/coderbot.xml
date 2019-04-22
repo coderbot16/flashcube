@@ -2,6 +2,8 @@
   <dictionary name="coderbot">
     <words>
       <w>biome</w>
+      <w>biomes</w>
+      <w>colorizer</w>
       <w>lerp</w>
       <w>overworld</w>
       <w>rainforest</w>

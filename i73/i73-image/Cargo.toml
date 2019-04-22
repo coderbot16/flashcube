@@ -15,3 +15,6 @@ i73-shape = { path = "../i73-shape" }
 i73-base = { path = "../i73-base" }
 i73-terrain = { path = "../i73-terrain" }
 frontend = { path = "../i73-frontend" }
+
+clap = "2.33"
+num_cpus = "1.10"

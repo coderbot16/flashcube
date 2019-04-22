@@ -6,14 +6,14 @@ use std::sync::mpsc;
 
 use renderer::{duration_us, Renderer, TotalMetrics};
 use vocs::position::GlobalSectorPosition;
+use std::path::Path;
 
-pub fn generate_stitched_image<F, R>(create_renderer: F, name: &str, sector_size: (u32, u32), offset: (u32, u32)) where F: 'static + Send + Sync + Fn() -> R, R: 'static + Renderer + Sync {
+pub fn generate_stitched_image<F, R>(create_renderer: F, name: String, sector_size: (u32, u32), offset: (u32, u32), thread_count: u32, quiet: bool) where F: 'static + Send + Sync + Fn() -> R, R: 'static + Renderer + Sync {
 	println!("[=======] Generating {} map...", name);
 	let gen_start = ::std::time::Instant::now();
 	let mut map = RgbImage::new(sector_size.0 * 256, sector_size.1 * 256);
 
 	let sector_count = sector_size.0 * sector_size.1;
-	let thread_count = cmp::min(8, sector_count);
 	let per_sector = sector_count / thread_count;
 	let mut threads = Vec::with_capacity(thread_count as usize);
 
@@ -49,6 +49,8 @@ pub fn generate_stitched_image<F, R>(create_renderer: F, name: &str, sector_size
 	}
 
 	let mut recieved = 0;
+	let mut last_percentage = 0;
+
 	while let Ok((x, z, sector, metrics)) = receiver.recv() {
 		for iz in 0..256 {
 			for ix in 0..256 {
@@ -63,8 +65,10 @@ pub fn generate_stitched_image<F, R>(create_renderer: F, name: &str, sector_size
 		recieved += 1;
 
 		let percentage = (recieved as f64 / sector_count as f64) * 100.0;
-
-		println!("[{:6.2}%] Sector generated: ({:2}, {:2}) | {}", percentage, x, z, metrics);
+		if percentage as u32 > last_percentage || !quiet {
+			last_percentage = percentage as u32;
+			println!("[{:6.2}%] Sector: ({:2}, {:2}) | {}", percentage, x, z, metrics);
+		}
 
 		total_metrics += metrics;
 
@@ -82,16 +86,18 @@ pub fn generate_stitched_image<F, R>(create_renderer: F, name: &str, sector_size
 
 	println!("[=======] Generation complete in {:.3}ms, {:.3}ms/sector, {:.3}ms/column | {}",
 			 (total as f64) / 1000.0,
-			 (total / (sector_count as u64)) as f64 / 1000.0,
-			 (total / (sector_count as u64 * 256)) as f64 / 1000.0,
+			 (total * thread_count as u64 / (sector_count as u64)) as f64 / 1000.0,
+			 (total * thread_count as u64/ (sector_count as u64 * 256)) as f64 / 1000.0,
 			 total_metrics
 	);
 
 	println!("[=======] Saving image...");
 
-	fs::create_dir_all("out/image/").unwrap();
+	if let Some(parent) = Path::new(&name).parent() {
+		fs::create_dir_all(parent).unwrap();
+	}
 
-	map.save(format!("out/image/{}.png", name)).unwrap();
+	map.save(name).unwrap();
 	let us = duration_us(&gen_start) - total;
 
 	println!("[=======] Saving complete in {:.3}ms", (us as f64) / 1000.0);
