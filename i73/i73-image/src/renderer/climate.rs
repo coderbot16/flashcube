@@ -4,10 +4,20 @@ use i73_noise::sample::Sample;
 use image::{Rgb, RgbImage, SubImage};
 use vocs::position::{GlobalSectorPosition, LayerPosition, GlobalColumnPosition};
 
-/// Renders climates to colors using a user-provided mapping function.
-pub struct ClimateRenderer<F>(ClimateSource, F) where F: Send + Sync + Fn(Climate) -> Rgb<u8>;
+pub trait Mapper: Send + Sync {
+	fn map(&self, climate: Climate) -> Rgb<u8>;
+}
 
-impl<F> ClimateRenderer<F> where F: Send + Sync + Fn(Climate) -> Rgb<u8> {
+impl<F> Mapper for F where F: Send + Sync + Fn(Climate) -> Rgb<u8> {
+	fn map(&self, climate: Climate) -> Rgb<u8> {
+		self(climate)
+	}
+}
+
+/// Renders climates to colors using a user-provided mapping function.
+pub struct ClimateRenderer<F>(ClimateSource, F) where F: Mapper;
+
+impl<F> ClimateRenderer<F> where F: Mapper {
 	pub fn new(seed: u64, f: F) -> Self {
 		let climates = ClimateSource::new(seed, ClimateSettings::default());
 
@@ -15,7 +25,7 @@ impl<F> ClimateRenderer<F> where F: Send + Sync + Fn(Climate) -> Rgb<u8> {
 	}
 }
 
-impl<F> Renderer for ClimateRenderer<F> where F: Send + Sync + Fn(Climate) -> Rgb<u8> {
+impl<F> Renderer for ClimateRenderer<F> where F: Mapper {
 	type SectorMetrics = BasicTimeMetrics;
 	type TotalMetrics = BasicTotalMetrics;
 
@@ -42,7 +52,7 @@ impl<F> Renderer for ClimateRenderer<F> where F: Send + Sync + Fn(Climate) -> Rg
 				map.put_pixel(
 					base.0 + pixel.x() as u32,
 					base.1 + pixel.z() as u32,
-					self.1(climates.get(pixel))
+					self.1.map(climates.get(pixel))
 				);
 			}
 		}

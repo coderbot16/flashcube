@@ -1,6 +1,8 @@
 extern crate clap;
 extern crate num_cpus;
 extern crate i73_image;
+extern crate i73_biome;
+extern crate image;
 
 use clap::{Arg, App};
 use std::cmp;
@@ -8,8 +10,13 @@ use std::str::FromStr;
 
 use i73_image::stitcher;
 use i73_image::renderer::full::create_renderer;
-use i73_image::renderer::climate::ClimateRenderer;
-use i73_image::colorizer::colorize_grass;
+use i73_image::renderer::climate::{ClimateRenderer, Mapper};
+use i73_image::colorizer::{colorize_grass, RAINFOREST, COLDEST, DESERT};
+
+use i73_biome::{Grid, Lookup};
+
+use image::Rgb;
+use i73_biome::climate::Climate;
 
 #[derive(Default)]
 struct MapperOptions {
@@ -167,7 +174,7 @@ fn execute(options: MapperOptions) {
 	if let Some(biome) = biome {
 		any_mappers = true;
 
-		println!("error: the biome mapper is not currently implemented, map {} not rendered", biome);
+		execute_biome(seed, biome, (width, height), (0, 0), threads, quiet);
 	}
 
 	if let Some(grass) = grass {
@@ -180,4 +187,61 @@ fn execute(options: MapperOptions) {
 		println!("error: no mappers specified");
 		println!("help: specity a mapper with --world, --grass, or --biome");
 	}
+}
+
+fn execute_biome(seed: u64, name: String, sector_size: (u32, u32), offset: (u32, u32), thread_count: u32, quiet: bool) {
+	#[derive(Copy, Clone)]
+	enum Biome {
+		Tundra,
+		Taiga,
+		Swampland,
+		Savanna,
+		Shrubland,
+		Forest,
+		Desert,
+		Plains,
+		SeasonalForest,
+		Rainforest
+	}
+
+	impl Biome {
+		fn color(self) -> Rgb<u8> {
+			match self {
+				Biome::Tundra         => Rgb { data: [245, 255, 255] },
+				Biome::Taiga          => Rgb { data: [175, 255, 255] },
+				Biome::Swampland      => Rgb { data: [40,  70,   40] },
+				Biome::Savanna        => DESERT,
+				Biome::Shrubland      => Rgb { data: [150, 185,  50] },
+				Biome::Forest         => Rgb { data: [70,  185,  50] },
+				Biome::Desert         => Rgb { data: [255, 240, 127] },
+				Biome::Plains         => Rgb { data: [150, 220,  90] },
+				Biome::SeasonalForest => Rgb { data: [70,  220,  50] },
+				Biome::Rainforest     => Rgb { data: [70,  255,  50] }
+			}
+		}
+	}
+
+	let mut grid = Grid::new(Biome::Plains);
+	grid.add((0.0, 0.1), (0.0, 1.0), Biome::Tundra);
+	grid.add((0.1, 0.5), (0.0, 0.2), Biome::Tundra);
+	grid.add((0.1, 0.5), (0.2, 0.5), Biome::Taiga);
+	grid.add((0.1, 0.7), (0.5, 1.0), Biome::Swampland);
+	grid.add((0.5, 0.95), (0.0, 0.2), Biome::Savanna);
+	grid.add((0.5, 0.97), (0.2, 0.35), Biome::Shrubland);
+	grid.add((0.5, 0.97), (0.35, 0.5), Biome::Forest);
+	grid.add((0.7, 0.97), (0.5, 1.0), Biome::Forest);
+	grid.add((0.95, 1.0), (0.0, 0.2), Biome::Desert);
+	grid.add((0.97, 1.0), (0.2, 0.45), Biome::Plains);
+	grid.add((0.97, 1.0), (0.45, 0.9), Biome::SeasonalForest);
+	grid.add((0.97, 1.0), (0.9, 1.0), Biome::Rainforest);
+
+	struct BiomeMapper(Lookup<Biome>);
+
+	impl Mapper for BiomeMapper {
+		fn map(&self, climate: Climate) -> Rgb<u8> {
+			self.0.lookup(climate).color()
+		}
+	}
+
+	stitcher::generate_stitched_image(move || { ClimateRenderer::new(seed, BiomeMapper(Lookup::generate(&grid))) }, name, sector_size, offset, thread_count, quiet);
 }

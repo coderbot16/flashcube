@@ -2,7 +2,7 @@ use java_rand::Random;
 use cgmath::Vector3;
 use i73_noise::octaves::PerlinOctaves;
 use i73_biome::climate::{ClimateSettings, ClimateSource};
-use i73_biome::Lookup;
+use i73_biome::{Lookup, Biome};
 use i73_shape::height::{HeightSettings, HeightSource};
 use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings};
 
@@ -37,7 +37,7 @@ impl Default for Settings {
 	}
 }
 
-pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ClimateSource, ShapePass, PaintPass) {
+pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup<Biome>) -> (ClimateSource, ShapePass, PaintPass) {
 	let mut rng = Random::new(seed);
 
 	let tri = TriNoiseSource::new(&mut rng, &settings.tri);

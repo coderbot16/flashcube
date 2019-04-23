@@ -30,7 +30,7 @@ pub struct BiomesConfig {
 }
 
 impl BiomesConfig {
-	pub fn to_grid(&self) -> Result<Grid, Error> {
+	pub fn to_grid(&self) -> Result<Grid<Biome>, Error> {
 		let mut translated = HashMap::with_capacity(self.biomes.capacity());
 		
 		for (name, biome) in &self.biomes {

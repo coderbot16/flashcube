@@ -6,11 +6,11 @@ use {Biome, Lookup};
 
 pub struct BiomeSource {
 	climate: ClimateSource,
-	lookup:  Lookup
+	lookup:  Lookup<Biome>
 }
 
 impl BiomeSource {
-	pub fn new(climate: ClimateSource, lookup: Lookup) -> Self {
+	pub fn new(climate: ClimateSource, lookup: Lookup<Biome>) -> Self {
 		BiomeSource { climate, lookup }
 	}
 

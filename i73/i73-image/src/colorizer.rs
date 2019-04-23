@@ -7,9 +7,9 @@ use image::Rgb;
 const DESERT: Rgb<u8> = Rgb { data: [0xAE, 0xA4, 0x2A] };
 const COLDEST: Rgb<u8> = Rgb { data: [0x60, 0xA1, 0x7B] };*/
 
-const RAINFOREST: Rgb<u8> = Rgb { data: [0x47, 0xCD, 0x33] };
-const DESERT: Rgb<u8> = Rgb { data: [0xBF, 0xB7, 0x55] };
-const COLDEST: Rgb<u8> = Rgb { data: [0x80, 0xB4, 0x97] };
+pub const RAINFOREST: Rgb<u8> = Rgb { data: [0x47, 0xCD, 0x33] };
+pub const DESERT: Rgb<u8> = Rgb { data: [0xBF, 0xB7, 0x55] };
+pub const COLDEST: Rgb<u8> = Rgb { data: [0x80, 0xB4, 0x97] };
 
 pub fn coordinates_to_climate(x: u32, y: u32) -> Climate {
 	Climate::new (

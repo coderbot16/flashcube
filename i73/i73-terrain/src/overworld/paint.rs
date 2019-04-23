@@ -3,7 +3,7 @@ use cgmath::{Point2, Vector2, Vector3};
 use i73_noise::octaves::PerlinOctaves;
 use i73_noise::sample::Sample;
 use i73_biome::climate::{ClimateSettings, ClimateSource, Climate};
-use i73_biome::{Lookup, Surface};
+use i73_biome::{Lookup, Surface, Biome};
 use i73_shape::height::{HeightSettings, HeightSource};
 use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings};
 use i73_base::{Pass, Layer};
@@ -42,7 +42,7 @@ impl Default for Settings {
 	}
 }
 
-pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup) -> (ClimateSource, ShapePass, PaintPass) {
+pub fn passes(seed: u64, settings: Settings, biome_lookup: Lookup<Biome>) -> (ClimateSource, ShapePass, PaintPass) {
 	let mut rng = Random::new(seed);
 	
 	let tri = TriNoiseSource::new(&mut rng, &settings.tri);
@@ -138,7 +138,7 @@ struct FollowupAssociation {
 }
 
 pub struct PaintPass {
-	pub lookup:    Lookup,
+	pub lookup:    Lookup<Biome>,
 	pub blocks:    PaintBlocks,
 	pub sand:      PerlinOctaves,
 	pub gravel:    PerlinOctaves,
@@ -149,7 +149,7 @@ pub struct PaintPass {
 }
 
 impl PaintPass {
-	pub fn biome_lookup(&self) -> &Lookup {
+	pub fn biome_lookup(&self) -> &Lookup<Biome> {
 		&self.lookup
 	}
 
