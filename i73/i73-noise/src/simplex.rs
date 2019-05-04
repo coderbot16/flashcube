@@ -2,6 +2,7 @@ use java_rand::Random;
 use cgmath::{Point2, Vector2};
 use Permutations;
 use sample::Sample;
+use i73_base::math;
 
 const GRAD_TABLE: [(f64, f64); 12] = [
 	( 1.0,  1.0),
@@ -57,8 +58,8 @@ impl Sample for Simplex {
 		let point = Point2::new(point.x * self.scale.x, point.y * self.scale.y) + Vector2::new(self.p.offset.x, self.p.offset.y);
 		
 		let s = (point.x + point.y) * F2;
-		let fx = (point.x + s).floor();
-		let fy = (point.y + s).floor();
+		let fx = math::floor_clamped(point.x + s);
+		let fy = math::floor_clamped(point.y + s);
 		let t = (fx + fy) * G2;
 		
 		let x0 = point.x - (fx - t);
@@ -72,8 +73,8 @@ impl Sample for Simplex {
 		let y2 = y0 - 1.0 + G2 * 2.0;
 		
 		// TODO: This is broken for negative coords.
-		let x_i = ((fx % 256.0) as u16) % 255;
-		let y_i = ((fy % 256.0) as u16) % 255;
+		let x_i = (fx as i32 & 0xFF) as u16;
+		let y_i = (fy as i32 & 0xFF) as u16;
 		
 		let t0 = f64::max(0.5 - x0*x0 - y0*y0, 0.0);
 		let n0 = f64::powi(t0, 4) * grad(self.hash(x_i + self.hash(y_i)), x0, y0);

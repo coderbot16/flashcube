@@ -66,13 +66,12 @@ impl Perlin {
 		
 		// TODO: Make sure we still get the far lands.
 		let floored = loc.map(math::floor_clamped);
-		
-		// Perform modulo before conversion to u16 because Rust currently has a bug that results in UB from out of bounds float to integer casts.
-		// TODO: This is broken for negative coords.
+
+		// Note: Since floor_clamped converts to the range of i32, these casts are safe.
 		let p = Vector3::new(
-			(floored.x % 256.0) as u16, 
-			(floored.y % 256.0) as u16, 
-			(floored.z % 256.0) as u16
+			(floored.x as i32 & 0xFF) as u16,
+			(floored.y as i32 & 0xFF) as u16,
+			(floored.z as i32 & 0xFF) as u16
 		);
 		
 		// Find the position of the point within the cell.
@@ -125,13 +124,13 @@ impl Perlin {
 		
 		// TODO: Make sure we still get the far lands.
 		let floored = loc.map(math::floor_clamped);
-		// TODO: This is broken for negative coords.
+
+		// Note: Since floor_clamped converts to the range of i32, these casts are safe.
 		let p = Vector3::new(
-			(floored.x % 256.0) as u16, 
-			(floored.y % 256.0) as u16, 
-			(floored.z % 256.0) as u16
+			(floored.x as i32 & 0xFF) as u16,
+			(floored.y as i32 & 0xFF) as u16,
+			(floored.z as i32 & 0xFF) as u16
 		);
-		let p = p.map(|x| x & 255);
 		
 		let mut loc = loc - floored;
 		let faded = loc.map(fade);
@@ -203,13 +202,14 @@ impl Sample for Perlin {
 	fn sample(&self, loc: Point2<f64>) -> f64 {
 		let loc = Vector2::new(loc.x * self.scale.x, loc.y * self.scale.z) + Vector2::new(self.p.offset.x, self.p.offset.z);
 		
-		// TODO: This is broken for negative coords?
+		// TODO: Verify the farlands effect.
 		let floored = loc.map(math::floor_clamped);
+
+		// Note: Since floor_clamped converts to the range of i32, these casts are safe.
 		let p = Vector2::new(
-			(floored.x % 256.0) as u16, 
-			(floored.y % 256.0) as u16
+			(floored.x as i32 & 0xFF) as u16,
+			(floored.y as i32 & 0xFF) as u16
 		);
-		let p = p.map(|x| x & 255);
 		
 		let loc = loc - floored;
 		let faded = loc.map(fade);
