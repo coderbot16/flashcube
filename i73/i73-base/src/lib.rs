@@ -2,6 +2,7 @@
 extern crate serde_derive;
 extern crate vocs;
 extern crate java_rand;
+extern crate fxhash;
 
 pub mod distribution;
 pub mod matcher;
