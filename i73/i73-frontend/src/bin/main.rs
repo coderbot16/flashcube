@@ -9,13 +9,14 @@ extern crate i73_structure;
 extern crate i73_decorator;
 extern crate cgmath;
 extern crate i73_shape;
+extern crate i73_noise;
 
 use std::path::PathBuf;
 use std::fs::File;
 use std::cmp::min;
 
 use i73::config::settings::customized::{Parts, BiomeSettings, Ocean, Structures, Decorators, VeinSettingsCentered, VeinSettings};
-use i73_base::{Pass, Block};
+use i73_base::{Pass, Block, Layer};
 use i73_terrain::overworld_173::{self, Settings};
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73::config::biomes::{BiomesConfig, BiomeConfig, SurfaceConfig, RectConfig, FollowupConfig};
@@ -37,6 +38,7 @@ use i73_shape::volume::TriNoiseSettings;
 use i73_shape::height::HeightSettings81;
 use i73_decorator::tree::TreeDecorator;
 use i73_decorator::Decorator;
+use i73_noise::sample::Sample;
 
 fn main() {
 	let profile_name = match ::std::env::args().skip(1).next() {
@@ -103,9 +105,6 @@ fn main() {
 	} else {
 		0*16
 	});
-	
-	// settings.shape_blocks.ocean = sea_block;
-	settings.paint_blocks.ocean = sea_block;
 
 	// TODO: Structures and Decorators
 
@@ -297,15 +296,15 @@ fn main() {
 	}*/
 
 	let ocean = OceanPass {
-		climate: climate::ClimateSource::new(8399452073110208023, settings.climate),
 		blocks: OceanBlocks {
-			ocean: settings.paint_blocks.ocean.clone(),
-			air: settings.paint_blocks.air.clone()
+			ocean: sea_block,
+			air: settings.paint_blocks.air.clone(),
+			ice:   Block::from_anvil_id(79 * 16)
 		},
 		sea_top: (settings.sea_coord + 1) as usize
 	};
 
-	let (shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
+	let (climates, shape, paint) = overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
 
 	let caves_generator = i73_structure::caves::CavesGenerator {
 		carve: Block::air(),
@@ -364,11 +363,12 @@ fn main() {
 
 			{
 				let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
+				let climate = climates.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
 
-				shape.apply(&mut column, column_position);
-				paint.apply(&mut column, column_position);
-				ocean.apply(&mut column, column_position);
-				caves.apply(&mut column, column_position);
+				shape.apply(&mut column, &climate, column_position);
+				paint.apply(&mut column, &climate, column_position);
+				ocean.apply(&mut column, &climate, column_position);
+				caves.apply(&mut column, &Layer::fill(()), column_position);
 			}
 
 			world.set_column(column_position, column_chunks);
