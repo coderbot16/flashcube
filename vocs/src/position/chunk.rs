@@ -132,14 +132,14 @@ impl ChunkPosition {
 	pub fn with_y(&self, y: u8) -> Self {
 		let y = y as u16;
 
-		ChunkPosition((self.0 & 0x0F0F) | ((y & 0x000F) << 4))
+		ChunkPosition((self.0 & 0x00FF) | ((y & 0x000F) << 8))
 	}
 
 	/// Replaces the Z component with the specified value, leaving X and Y the same.
 	pub fn with_z(&self, z: u8) -> Self {
 		let z = z as u16;
 
-		ChunkPosition((self.0 & 0x00FF) | ((z & 0x000F) << 8))
+		ChunkPosition((self.0 & 0x0F0F) | ((z & 0x000F) << 4))
 	}
 
 	// Iteration
@@ -354,5 +354,18 @@ impl Iterator for Enumerate {
 		} else {
 			None
 		}
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn test_with() {
+		let position = ChunkPosition::new(6, 6, 6);
+		assert_eq!(position.with_x(9), ChunkPosition::new(9, 6, 6));
+		assert_eq!(position.with_y(9), ChunkPosition::new(6, 9, 6));
+		assert_eq!(position.with_z(9), ChunkPosition::new(6, 6, 9));
 	}
 }
