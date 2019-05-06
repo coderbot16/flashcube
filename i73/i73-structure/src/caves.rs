@@ -46,8 +46,8 @@ struct CavesAssociations {
 	surface: ColumnAssociation
 }
 
-// Overworld: CavesGenerator { carve: air, ocean: [ flowing_water, still_water ], carvable: [ stone, dirt, grass ], blob_size_multiplier: 1.0, vertical_multiplier: 1.0 }
-// Nether: CavesGenerator { carve: air, ocean: [ flowing_lava, still_lava ], carvable: [ netherrack, dirt, grass ], blob_size_multiplier: 2.0, vertical_multiplier: 0.5}
+// Overworld: CavesGenerator { carve: air, ocean: [ flowing_water, still_water ], carvable: [ stone, dirt, grass ], spheroid_size_multiplier: 1.0, vertical_multiplier: 1.0 }
+// Nether: CavesGenerator { carve: air, ocean: [ flowing_lava, still_lava ], carvable: [ netherrack, dirt, grass ], spheroid_size_multiplier: 2.0, vertical_multiplier: 0.5}
 
 pub struct CavesGenerator {
 	pub carve:  Block,
@@ -57,36 +57,36 @@ pub struct CavesGenerator {
 	pub surface_top: BlockMatcher,
 	pub surface_fill: BlockMatcher,
 	pub carvable: BlockMatcher,
-	pub blob_size_multiplier: f32,
+	pub spheroid_size_multiplier: f32,
 	pub vertical_multiplier: f64,
 	pub lower_surface: u8
 }
 
 impl CavesGenerator {
-	fn carve_blob(&self, blob: Blob, associations: &CavesAssociations, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, chunk: GlobalColumnPosition) {
+	fn carve_spheroid(&self, spheroid: Spheroid, associations: &CavesAssociations, blocks: &mut ColumnBlocks, palette: &ColumnPalettes<Block>, chunk: GlobalColumnPosition) {
 		let chunk_block = ((chunk.x() * 16) as f64, (chunk.z() * 16) as f64);
 		
 		// Try to make sure that we don't carve into the ocean.
 		// However, this misses chunk boundaries - there is no easy way to fix this.
 
-		let y_top = blob.upper.y() + 2;
-		let y_bottom = blob.lower.y() - 1;
+		let y_top = spheroid.upper.y() + 2;
+		let y_bottom = spheroid.lower.y() - 1;
 
 		let check_water = |x, y, z| {
 			self.ocean.matches(blocks.get(ColumnPosition::new(x, y, z), palette))
 		};
 
-		for z in blob.lower.z()..=blob.upper.z() {
-			for x in blob.lower.x()..=blob.upper.x() {
+		for z in spheroid.lower.z()..=spheroid.upper.z() {
+			for x in spheroid.lower.x()..=spheroid.upper.x() {
 				let edge =
-					z == blob.lower.z() || z == blob.upper.z() ||
-					x == blob.lower.x() || x == blob.upper.x();
+					z == spheroid.lower.z() || z == spheroid.upper.z() ||
+					x == spheroid.lower.x() || x == spheroid.upper.x();
 
 				if !edge {
 					if check_water(x, y_top, z) { return }
 					if check_water(x, y_bottom, z) { return }
 				} else {
-					for y in ((blob.lower.y() - 1)..=y_top).rev() {
+					for y in ((spheroid.lower.y() - 1)..=y_top).rev() {
 						if check_water(x, y, z) { return }
 					}
 				}
@@ -94,27 +94,27 @@ impl CavesGenerator {
 		}
 
 		// TODO: FloorY
-		// block.1 > (-0.7) * blob.size.vertical + blob.center.1 - 0.5
+		// block.1 > (-0.7) * spheroid.size.vertical + spheroid.center.1 - 0.5
 
-		for z in blob.lower.z()..=blob.upper.z() {
-			for x in blob.lower.x()..=blob.upper.x() {
+		for z in spheroid.lower.z()..=spheroid.upper.z() {
+			for x in spheroid.lower.x()..=spheroid.upper.x() {
 				let mut hit_surface_top = false;
 
 				// Need to go downwards so that the grass gets pulled down.
-				for y in (blob.lower.y()..=blob.upper.y()).rev() {
+				for y in (spheroid.lower.y()..=spheroid.upper.y()).rev() {
 					let position = ColumnPosition::new(x, y, z);
 					
 					let block = (x as f64, y as f64, z as f64);
 				
 					let scaled = (
-						(block.0 + chunk_block.0 + 0.5 - blob.center.0) / blob.size.horizontal,
-						(block.1                 + 0.5 - blob.center.1) / blob.size.vertical,
-						(block.2 + chunk_block.1 + 0.5 - blob.center.2) / blob.size.horizontal
+						(block.0 + chunk_block.0 + 0.5 - spheroid.center.0) / spheroid.size.horizontal,
+						(block.1                 + 0.5 - spheroid.center.1) / spheroid.size.vertical,
+						(block.2 + chunk_block.1 + 0.5 - spheroid.center.2) / spheroid.size.horizontal
 					);
 					
 					// TODO: Grass pulldown sometimes is inconsistent?
 
-					// Test if the block is within the blob region. Additionally, the y > -0.7 check makes the floors flat.
+					// Test if the block is within the spheroid region. Additionally, the y > -0.7 check makes the floors flat.
 					if scaled.1 > -0.7 && scaled.0 * scaled.0 + scaled.1 * scaled.1 + scaled.2 * scaled.2 < 1.0 {
 						let block = blocks.get(position, palette);
 
@@ -161,7 +161,7 @@ impl CavesGenerator {
 				Outcome::Constrict         => (),
 				Outcome::Unreachable       => return,
 				Outcome::OutOfChunk        => (),
-				Outcome::Carve(Some(blob)) => self.carve_blob(blob, associations, blocks, palette, chunk),
+				Outcome::Carve(Some(spheroid)) => self.carve_spheroid(spheroid, associations, blocks, palette, chunk),
 				Outcome::Carve(None)       => (),
 				Outcome::Done              => return
 			}
@@ -171,7 +171,7 @@ impl CavesGenerator {
 
 impl StructureGenerator for CavesGenerator {
 	fn generate(&self, random: Random, column: &mut ColumnMut<Block>, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32) {
-		let mut caves = Caves::for_chunk(random, chunk, from, radius, self.blob_size_multiplier);
+		let mut caves = Caves::for_chunk(random, chunk, from, radius, self.spheroid_size_multiplier);
 		
 		column.ensure_available(self.carve.clone());
 		column.ensure_available(self.lower.clone());
@@ -188,7 +188,7 @@ impl StructureGenerator for CavesGenerator {
 		while let Some(start) = caves.next() {
 			match start {
 				Start::Tunnel(tunnel)       => self.carve_tunnel(tunnel, &mut caves, &associations, &mut blocks, &palette, chunk, from, radius),
-				Start::Circular(Some(blob)) => self.carve_blob(blob, &associations, &mut blocks, &palette, chunk),
+				Start::Circular(Some(spheroid)) => self.carve_spheroid(spheroid, &associations, &mut blocks, &palette, chunk),
 				Start::Circular(None)       => ()
 			};
 		}
@@ -202,15 +202,15 @@ pub struct Caves {
 	from: GlobalColumnPosition,
 	remaining: u32,
 	max_chunk_radius: u32,
-	blob_size_multiplier: f32,
+	spheroid_size_multiplier: f32,
 	extra: Option<(u32, (f64, f64, f64))>
 }
 
 impl Caves {
-	pub fn for_chunk(mut state: Random, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32, blob_size_multiplier: f32) -> Caves {
+	pub fn for_chunk(mut state: Random, chunk: GlobalColumnPosition, from: GlobalColumnPosition, radius: u32, spheroid_size_multiplier: f32) -> Caves {
 		let remaining = RARITY.next(&mut state);
 		
-		Caves { state, chunk, from, remaining, extra: None, max_chunk_radius: radius, blob_size_multiplier }
+		Caves { state, chunk, from, remaining, extra: None, max_chunk_radius: radius, spheroid_size_multiplier }
 	}
 }
 
@@ -228,7 +228,7 @@ impl Iterator for Caves {
 			if *extra > 0 {
 				*extra -= 1;
 				
-				return Some(Start::normal(&mut self.state, self.chunk, orgin, self.max_chunk_radius, self.blob_size_multiplier));
+				return Some(Start::normal(&mut self.state, self.chunk, orgin, self.max_chunk_radius, self.spheroid_size_multiplier));
 			}
 		}
 		
@@ -254,31 +254,31 @@ impl Iterator for Caves {
 			
 			Some(circular)
 		} else {
-			Some(Start::normal(&mut self.state, self.chunk, orgin, self.max_chunk_radius, self.blob_size_multiplier))
+			Some(Start::normal(&mut self.state, self.chunk, orgin, self.max_chunk_radius, self.spheroid_size_multiplier))
 		}
 	}
 }
 
 #[derive(Debug)]
 pub enum Start {
-	Circular(Option<Blob>),
+	Circular(Option<Spheroid>),
 	Tunnel(Tunnel)
 }
 
 impl Start {
-	fn normal(rng: &mut Random, chunk: GlobalColumnPosition, block: (f64, f64, f64), max_chunk_radius: u32, blob_size_multiplier: f32) -> Self {
-		Start::Tunnel(Tunnel::normal(rng, chunk, block, max_chunk_radius, blob_size_multiplier))
+	fn normal(rng: &mut Random, chunk: GlobalColumnPosition, block: (f64, f64, f64), max_chunk_radius: u32, spheroid_size_multiplier: f32) -> Self {
+		Start::Tunnel(Tunnel::normal(rng, chunk, block, max_chunk_radius, spheroid_size_multiplier))
 	}
 	
 	fn circular(rng: &mut Random, chunk: GlobalColumnPosition, block: (f64, f64, f64), max_chunk_radius: u32) -> Self {
-		let blob_size_factor = 1.0 + rng.next_f32() * 6.0;
+		let spheroid_size_factor = 1.0 + rng.next_f32() * 6.0;
 		let mut state = Random::new(rng.next_u64());
 		
 		let mut size = SystemSize::new(&mut state, 0, max_chunk_radius);
 		size.current = size.max / 2;
 		
-		let size = BlobSize::from_horizontal(
-			MIN_H_SIZE + (trig::sin(size.current as f32 * NOTCH_PI / size.max as f32) * blob_size_factor) as f64,
+		let size = SpheroidSize::from_horizontal(
+			MIN_H_SIZE + (trig::sin(size.current as f32 * NOTCH_PI / size.max as f32) * spheroid_size_factor) as f64,
 			0.5
 		);
 		
@@ -287,7 +287,7 @@ impl Start {
 		Start::Circular(if position.out_of_chunk(&size) {
 			None
 		} else {
-			position.blob(size)
+			position.spheroid(size)
 		})
 	}
 }
@@ -300,13 +300,13 @@ pub struct Tunnel {
 	split: Option<u32>,
 	/// 0.92 = Steep, 0.7 = Normal
 	pitch_keep: f32,
-	blob_size_factor: f32
+	spheroid_size_factor: f32
 }
 
 impl Tunnel {
-	fn normal(rng: &mut Random, chunk: GlobalColumnPosition, block: (f64, f64, f64), max_chunk_radius: u32, blob_size_multiplier: f32) -> Self {
+	fn normal(rng: &mut Random, chunk: GlobalColumnPosition, block: (f64, f64, f64), max_chunk_radius: u32, spheroid_size_multiplier: f32) -> Self {
 		let position = Position::with_angles(chunk, block, rng.next_f32() * NOTCH_PI * 2.0, (rng.next_f32() - 0.5) / 4.0);
-		let blob_size_factor = (rng.next_f32() * 2.0 + rng.next_f32()) * blob_size_multiplier;
+		let spheroid_size_factor = (rng.next_f32() * 2.0 + rng.next_f32()) * spheroid_size_multiplier;
 		
 		let mut state = Random::new(rng.next_u64());
 		
@@ -315,16 +315,16 @@ impl Tunnel {
 		Tunnel { 
 			position, 
 			size,
-			split:      size.split(&mut state, blob_size_factor), 
+			split:      size.split(&mut state, spheroid_size_factor),
 			pitch_keep: if state.next_u32_bound(6) == 0 { 0.92 } else { 0.7 },
-			blob_size_factor,
+			spheroid_size_factor,
 			state
 		}
 	}
 	
 	fn split_off(&mut self, rng: &mut Random, yaw_offset: f32) -> Tunnel {
 		let position = Position::with_angles(self.position.chunk, self.position.block, self.position.yaw + yaw_offset, self.position.pitch / 3.0);
-		let blob_size_factor = self.state.next_f32() * 0.5 + 0.5;
+		let spheroid_size_factor = self.state.next_f32() * 0.5 + 0.5;
 		
 		let mut state = Random::new(rng.next_u64());
 		
@@ -333,9 +333,9 @@ impl Tunnel {
 		Tunnel { 
 			position, 
 			size,
-			split:      size.split(&mut state, blob_size_factor), 
+			split:      size.split(&mut state, spheroid_size_factor),
 			pitch_keep: if state.next_u32_bound(6) == 0 { 0.92 } else { 0.7 },
-			blob_size_factor,
+			spheroid_size_factor,
 			state
 		}
 	}
@@ -358,14 +358,14 @@ impl Tunnel {
 		let remaining = (self.size.max - self.size.current) as f64;
 		
 		// Conservative buffer distance that accounts for the size of each carved part.
-		let buffer = (self.blob_size_factor * 2.0 + 16.0) as f64; 
+		let buffer = (self.spheroid_size_factor * 2.0 + 16.0) as f64;
 		
 		// Invalid: Subtraction from distance squared.
 		self.position.distance_from_chunk_squared() - remaining * remaining > buffer * buffer
 	}
 	
-	fn next_blob_size(&self) -> f64 {
-		MIN_H_SIZE + (trig::sin(self.size.current as f32 * NOTCH_PI / self.size.max as f32) * self.blob_size_factor) as f64
+	fn next_spheroid_size(&self) -> f64 {
+		MIN_H_SIZE + (trig::sin(self.size.current as f32 * NOTCH_PI / self.size.max as f32) * self.spheroid_size_factor) as f64
 	}
 	
 	pub fn step(&mut self, vertical_multiplier: f64) -> Outcome {
@@ -388,18 +388,18 @@ impl Tunnel {
 			return Outcome::Unreachable;
 		}
 
-		let size = BlobSize::from_horizontal(self.next_blob_size(), vertical_multiplier);
+		let size = SpheroidSize::from_horizontal(self.next_spheroid_size(), vertical_multiplier);
 
 		if self.position.out_of_chunk(&size) {
 			self.size.step();
 			return Outcome::OutOfChunk;
 		}
 		
-		let blob = self.position.blob(size);
+		let spheroid = self.position.spheroid(size);
 		
 		self.size.step();
 		
-		Outcome::Carve(blob)
+		Outcome::Carve(spheroid)
 	}
 }
 
@@ -430,10 +430,10 @@ impl SystemSize {
 	}
 	
 	/// Returns the point where the tunnel will split into 2. Returns None if it won't split.
-	fn split(&self, rng: &mut Random, blob_size_factor: f32) -> Option<u32> {
+	fn split(&self, rng: &mut Random, spheroid_size_factor: f32) -> Option<u32> {
 		let split = rng.next_u32_bound(self.max / 2) + self.max / 4;
 		
-		if blob_size_factor > 1.0 {Some(split)} else {None}
+		if spheroid_size_factor > 1.0 {Some(split)} else {None}
 	}
 }
 
@@ -496,8 +496,8 @@ impl Position {
 		distance_x * distance_x + distance_z * distance_z
 	}
 	
-	fn out_of_chunk(&self, blob: &BlobSize) -> bool {
-		let horizontal_diameter = blob.horizontal_diameter();
+	fn out_of_chunk(&self, spheroid: &SpheroidSize) -> bool {
+		let horizontal_diameter = spheroid.horizontal_diameter();
 		
 		self.block.0 < self.chunk_center.0 - 16.0 - horizontal_diameter ||
 		self.block.2 < self.chunk_center.1 - 16.0 - horizontal_diameter ||
@@ -505,7 +505,7 @@ impl Position {
 		self.block.2 > self.chunk_center.1 + 16.0 + horizontal_diameter
 	}
 	
-	fn blob(&self, size: BlobSize) -> Option<Blob> {
+	fn spheroid(&self, size: SpheroidSize) -> Option<Spheroid> {
 		let lower = (
 			math::floor_clamped(self.block.0 - size.horizontal) as i32 - self.chunk.x() * 16 - 1,
 			math::floor_clamped(self.block.1 - size.vertical)   as i32                       - 1,
@@ -532,7 +532,7 @@ impl Position {
 
 		if lower_clamped.0 >= upper_clamped.0 || lower_clamped.1 >= upper_clamped.1 || lower_clamped.2 >= upper_clamped.2 {
 			// Nothing to be carved
-			// The blob is not in the chunk, but this case is not caught by out_of_chunk
+			// The spheroid is not in the chunk, but this case is not caught by out_of_chunk
 			return None;
 		}
 
@@ -546,7 +546,7 @@ impl Position {
 
 		
 
-		Some( Blob {
+		Some( Spheroid {
 			center: self.block,
 			size,
 			lower: ColumnPosition::new(lower_clamped.0, lower_clamped.1, lower_clamped.2),
@@ -561,7 +561,7 @@ pub enum Outcome {
 	Constrict,
 	Unreachable,
 	OutOfChunk,
-	Carve(Option<Blob>),
+	Carve(Option<Spheroid>),
 	Done
 }
 
@@ -579,16 +579,16 @@ impl Outcome {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct BlobSize {
+pub struct SpheroidSize {
 	/// Radius on the X/Z axis
 	pub horizontal: f64,
 	/// Radius on the Y axis
 	pub vertical: f64
 }
 
-impl BlobSize {
+impl SpheroidSize {
 	fn from_horizontal(horizontal: f64, vertical_multiplier: f64) -> Self {
-		BlobSize {
+		SpheroidSize {
 			horizontal,
 			vertical: horizontal * vertical_multiplier
 		}
@@ -600,11 +600,11 @@ impl BlobSize {
 }
 
 #[derive(Debug)]
-pub struct Blob {
-	/// Center of the blob
+pub struct Spheroid {
+	/// Center of the spheroid
 	pub center: (f64, f64, f64),
-	/// Size of the blob
-	pub size: BlobSize,
+	/// Size of the spheroid
+	pub size: SpheroidSize,
 	/// Lower bounds of the feasible region, in chunk coordinates: [0,16), [0,256), [0,16)
 	pub lower: ColumnPosition,
 	/// Upper bounds of the feasible region, in chunk coordinates: [0,16), [0,256), [0,16)

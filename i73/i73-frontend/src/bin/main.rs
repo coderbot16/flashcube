@@ -314,7 +314,7 @@ fn main() {
 		carvable: BlockMatcher::include([Block::from_anvil_id(1*16), Block::from_anvil_id(2*16), Block::from_anvil_id(3*16)].iter()),
 		surface_top: BlockMatcher::is(Block::from_anvil_id(2*16)),
 		surface_fill: BlockMatcher::is(Block::from_anvil_id(3*16)),
-		blob_size_multiplier: 1.0,
+		spheroid_size_multiplier: 1.0,
 		vertical_multiplier: 1.0,
 		lower_surface: 10
 	};

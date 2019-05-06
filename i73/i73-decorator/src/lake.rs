@@ -33,7 +33,7 @@ impl Decorator for LakeDecorator {
 
 		let mut lake = Lake::new(self.settings.surface);
 		
-		lake.fill(LakeBlobs::new(rng, &self.settings));
+		lake.fill(LakeSpheroids::new(rng, &self.settings));
 		lake.update_border();
 
 		if !self.blocks.check_border(&lake, quad, lower) {
@@ -119,45 +119,45 @@ impl LakeBlocks {
 #[derive(Deserialize, Debug, Clone)]
 pub struct LakeSettings {
 	pub surface: u8,
-	pub min_blobs: u32,
-	pub add_blobs: u32
+	pub min_spheroids: u32,
+	pub add_spheroids: u32
 }
 
 impl Default for LakeSettings {
 	fn default() -> Self {
 		LakeSettings {
 			surface:    4,
-			min_blobs:  4,
-			add_blobs:  3
+			min_spheroids:  4,
+			add_spheroids:  3
 		}
 	}
 }
 
-pub struct LakeBlobs<'r> {
-	remaining_blobs: u32,
+pub struct LakeSpheroids<'r> {
+	remaining_spheroids: u32,
 	rng:             &'r mut Random
 }
 
-impl<'r> LakeBlobs<'r> {
+impl<'r> LakeSpheroids<'r> {
 	pub fn new(rng: &'r mut Random, settings: &LakeSettings) -> Self {
-		let remaining_blobs = settings.min_blobs + rng.next_u32_bound(settings.add_blobs + 1);
+		let remaining_spheroids = settings.min_spheroids + rng.next_u32_bound(settings.add_spheroids + 1);
 		
-		LakeBlobs {
-			remaining_blobs,
+		LakeSpheroids {
+			remaining_spheroids,
 			rng
 		}
 	}
 }
 
-impl<'r> Iterator for LakeBlobs<'r> {
-	type Item = Blob;
+impl<'r> Iterator for LakeSpheroids<'r> {
+	type Item = Spheroid;
 	
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.remaining_blobs <= 0 {
+		if self.remaining_spheroids <= 0 {
 			return None;
 		}
 		
-		self.remaining_blobs -= 1;
+		self.remaining_spheroids -= 1;
 		
 		let diameter = (
 			self.rng.next_f64() * 6.0 + 3.0, 
@@ -177,12 +177,12 @@ impl<'r> Iterator for LakeBlobs<'r> {
 			self.rng.next_f64() * (16.0 - diameter.2 - 2.0) + 1.0 + radius.2
 		);
 		
-		Some(Blob { radius, center })
+		Some(Spheroid { radius, center })
 	}
 }
 
 #[derive(Debug)]
-pub struct Blob {
+pub struct Spheroid {
 	pub center: (f64, f64, f64),
 	pub radius: (f64, f64, f64)
 }
@@ -228,21 +228,21 @@ impl Lake {
 		self.shape[at]
 	}
 	
-	pub fn fill(&mut self, blobs: LakeBlobs) {
-		for blob in blobs {
-			self.add_blob(blob);
+	pub fn fill(&mut self, spheroids: LakeSpheroids) {
+		for spheroid in spheroids {
+			self.add_spheroid(spheroid);
 		}
 	}
 	
-	pub fn add_blob(&mut self, blob: Blob) {
+	pub fn add_spheroid(&mut self, spheroid: Spheroid) {
 		// TODO: Reduce size of possible bounding box.
 		for x in 1..15 {
 			for y in 1..7 {
 				for z in 1..15 {
 					let axis_distances = (
-			 			(x as f64 - blob.center.0) / blob.radius.0,
-			 			(y as f64 - blob.center.1) / blob.radius.1,
-			 			(z as f64 - blob.center.2) / blob.radius.2,
+			 			(x as f64 - spheroid.center.0) / spheroid.radius.0,
+			 			(y as f64 - spheroid.center.1) / spheroid.radius.1,
+			 			(z as f64 - spheroid.center.2) / spheroid.radius.2,
 					);
 				
 		 			let distance_squared = 

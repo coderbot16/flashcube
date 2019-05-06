@@ -59,14 +59,14 @@ impl VeinBlocks {
 		let block = palette.reverse_lookup(&self.block).unwrap();
 		
 		for index in 0..(vein.size+1) {
-			let blob = vein.blob(index, rng);
+			let spheroid = vein.spheroid(index, rng);
 			
-			for y in blob.lower.1..(blob.upper.1 + 1) {
-				for z in blob.lower.2..(blob.upper.2 + 1) {
-					for x in blob.lower.2..(blob.upper.2 + 1) {
+			for y in spheroid.lower.1..(spheroid.upper.1 + 1) {
+				for z in spheroid.lower.2..(spheroid.upper.2 + 1) {
+					for x in spheroid.lower.2..(spheroid.upper.2 + 1) {
 						let at = QuadPosition::new(x as u8, y as u8, z as u8); // TODO
 
-						if blob.distance_squared((x, y, z)) < 1.0 && self.replace.matches(blocks.get(at, &palette)) {
+						if spheroid.distance_squared((x, y, z)) < 1.0 && self.replace.matches(blocks.get(at, &palette)) {
 							blocks.set(at, &block);
 						}
 					}
@@ -115,7 +115,7 @@ impl Vein {
 		Vein { size, size_f64: size as f64, size_f32, from, to }
 	}
 	
-	pub fn blob(&self, index: u32, rng: &mut Random) -> Blob {
+	pub fn spheroid(&self, index: u32, rng: &mut Random) -> Spheroid {
 		let index_f64 = index as f64;
 		let index_f32 = index as f32;
 		
@@ -144,19 +144,19 @@ impl Vein {
 			(center.2 + radius).floor() as i32
 		);
 		
-		Blob { center, radius, lower, upper }
+		Spheroid { center, radius, lower, upper }
 	}
 }
 
 #[derive(Debug)]
-pub struct Blob {
+pub struct Spheroid {
 	center: (f64, f64, f64),
 	radius:  f64,
 	lower:  (i32, i32, i32),
 	upper:  (i32, i32, i32)
 }
 
-impl Blob {
+impl Spheroid {
 	pub fn distance_squared(&self, at: (i32, i32, i32)) -> f64 {
 		let dist_x_sq = ((at.0 as f64 + 0.5 - self.center.0) / self.radius).powi(2);
 		let dist_y_sq = ((at.1 as f64 + 0.5 - self.center.1) / self.radius).powi(2);
