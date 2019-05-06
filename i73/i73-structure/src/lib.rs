@@ -4,7 +4,6 @@ extern crate i73_base;
 extern crate i73_trig;
 
 pub mod caves;
-// TODO: Should mineshafts/villages be implemented?: pub mod organized;
 
 use java_rand::Random;
 use vocs::view::ColumnMut;

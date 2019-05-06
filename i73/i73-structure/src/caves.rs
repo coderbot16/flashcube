@@ -68,45 +68,40 @@ impl CavesGenerator {
 		
 		// Try to make sure that we don't carve into the ocean.
 		// However, this misses chunk boundaries - there is no easy way to fix this.
-		
-		for z in blob.lower.2..blob.upper.2 {
-			for x in blob.lower.0..blob.upper.0 {
-				let mut y = (blob.upper.1 + 1) as i32;
-				
-				while y >= (blob.lower.1 - 1) as i32 {
-					if y < 0 || y >= 128 {
-						y -= 1;
-						continue;
-					}
-					
-					let block = ColumnPosition::new(x, y as u8, z);
 
-					if self.ocean.matches(blocks.get(block, palette)) {
-						return;
+		let y_top = blob.upper.y() + 2;
+		let y_bottom = blob.lower.y() - 1;
+
+		let check_water = |x, y, z| {
+			self.ocean.matches(blocks.get(ColumnPosition::new(x, y, z), palette))
+		};
+
+		for z in blob.lower.z()..=blob.upper.z() {
+			for x in blob.lower.x()..=blob.upper.x() {
+				let edge =
+					z == blob.lower.z() || z == blob.upper.z() ||
+					x == blob.lower.x() || x == blob.upper.x();
+
+				if !edge {
+					if check_water(x, y_top, z) { return }
+					if check_water(x, y_bottom, z) { return }
+				} else {
+					for y in ((blob.lower.y() - 1)..=y_top).rev() {
+						if check_water(x, y, z) { return }
 					}
-					
-					// Optimization: Only check the edges.
-					if    y != (blob.lower.1 - 1) as i32 
-					   && x != blob.lower.0 && x != blob.upper.0 - 1 
-					   && z != blob.lower.2 && z != blob.upper.2 - 1 {
-					   	// If it ain't on any of the other 5 sides, check the bottom and skip the interior of the volume.
-						y = blob.lower.1 as i32;
-					}
-					
-					y -= 1;
 				}
 			}
 		}
-		
+
 		// TODO: FloorY
 		// block.1 > (-0.7) * blob.size.vertical + blob.center.1 - 0.5
-		
-		for z in blob.lower.2..blob.upper.2 {
-			for x in blob.lower.0..blob.upper.0 {
+
+		for z in blob.lower.z()..=blob.upper.z() {
+			for x in blob.lower.x()..=blob.upper.x() {
 				let mut hit_surface_top = false;
 
 				// Need to go downwards so that the grass gets pulled down.
-				for y in (blob.lower.1..blob.upper.1).rev() {
+				for y in (blob.lower.y()..=blob.upper.y()).rev() {
 					let position = ColumnPosition::new(x, y, z);
 					
 					let block = (x as f64, y as f64, z as f64);
@@ -127,7 +122,7 @@ impl CavesGenerator {
 							hit_surface_top = true;
 						}
 
-						if !self.carvable.matches(block) {
+						if !self.carvable.matches(block) && !self.ocean.matches(block) {
 							continue;
 						}
 
@@ -163,11 +158,12 @@ impl CavesGenerator {
 					
 					return
 				},
-				Outcome::Constrict   => (),
-				Outcome::Unreachable => return,
-				Outcome::OutOfChunk  => (),
-				Outcome::Carve(blob) => self.carve_blob(blob, associations, blocks, palette, chunk),
-				Outcome::Done        => return
+				Outcome::Constrict         => (),
+				Outcome::Unreachable       => return,
+				Outcome::OutOfChunk        => (),
+				Outcome::Carve(Some(blob)) => self.carve_blob(blob, associations, blocks, palette, chunk),
+				Outcome::Carve(None)       => (),
+				Outcome::Done              => return
 			}
 		}
 	}
@@ -291,7 +287,7 @@ impl Start {
 		Start::Circular(if position.out_of_chunk(&size) {
 			None
 		} else {
-			Some(position.blob(size))
+			position.blob(size)
 		})
 	}
 }
@@ -509,7 +505,7 @@ impl Position {
 		self.block.2 > self.chunk_center.1 + 16.0 + horizontal_diameter
 	}
 	
-	fn blob(&self, size: BlobSize) -> Blob {
+	fn blob(&self, size: BlobSize) -> Option<Blob> {
 		let lower = (
 			math::floor_clamped(self.block.0 - size.horizontal) as i32 - self.chunk.x() * 16 - 1,
 			math::floor_clamped(self.block.1 - size.vertical)   as i32                       - 1,
@@ -521,21 +517,41 @@ impl Position {
 			math::floor_clamped(self.block.1 + size.vertical)   as i32                       + 1,
 			math::floor_clamped(self.block.2 + size.horizontal) as i32 - self.chunk.z() * 16 + 1
 		);
+
+		let lower_clamped = (
+			min(max(lower.0, 0), 16)  as u8,
+			min(max(lower.1, 1), 255) as u8,
+			min(max(lower.2, 0), 16)  as u8
+		);
+
+		let upper_clamped = (
+			min(max(upper.0, 0), 16)  as u8,
+			min(max(upper.1, 0), 120) as u8,
+			min(max(upper.2, 0), 16)  as u8
+		);
+
+		if lower_clamped.0 >= upper_clamped.0 || lower_clamped.1 >= upper_clamped.1 || lower_clamped.2 >= upper_clamped.2 {
+			// Nothing to be carved
+			// The blob is not in the chunk, but this case is not caught by out_of_chunk
+			return None;
+		}
+
+		assert_ne!(lower_clamped.0, 16, "Lower limit X cannot be 16");
+		assert!(lower_clamped.1 < 128, "Lower limit Y cannot be 128 or above");
+		assert_ne!(lower_clamped.2, 16, "Lower limit Z cannot be 16");
+
+		assert_ne!(upper_clamped.0, 0, "Upper limit X cannot be 0");
+		assert_ne!(upper_clamped.1, 0, "Upper limit Y cannot be 0");
+		assert_ne!(upper_clamped.2, 0, "Upper limit Z cannot be 0");
+
 		
-		Blob {
+
+		Some( Blob {
 			center: self.block,
 			size,
-			lower: (
-				min(max(lower.0, 0), 16)  as u8,
-				min(max(lower.1, 1), 255) as u8,
-				min(max(lower.2, 0), 16)  as u8
-			),
-			upper: (
-				min(max(upper.0, 0), 16)  as u8,
-				min(max(upper.1, 0), 120) as u8,
-				min(max(upper.2, 0), 16)  as u8
-			)
-		}
+			lower: ColumnPosition::new(lower_clamped.0, lower_clamped.1, lower_clamped.2),
+			upper: ColumnPosition::new(upper_clamped.0 - 1, upper_clamped.1 - 1, upper_clamped.2 - 1)
+		})
 	}
 }
 
@@ -545,7 +561,7 @@ pub enum Outcome {
 	Constrict,
 	Unreachable,
 	OutOfChunk,
-	Carve(Blob),
+	Carve(Option<Blob>),
 	Done
 }
 
@@ -589,8 +605,9 @@ pub struct Blob {
 	pub center: (f64, f64, f64),
 	/// Size of the blob
 	pub size: BlobSize,
-	/// Lower bounds of the feasible region, in chunk coordinates: [0,16), [0,128), [0,16)
-	pub lower: (u8, u8, u8),
-	/// Upper bounds of the feasible region, in chunk coordiantes: [0,16), [0,128), [0,16)
-	pub upper: (u8, u8, u8)
+	/// Lower bounds of the feasible region, in chunk coordinates: [0,16), [0,256), [0,16)
+	pub lower: ColumnPosition,
+	/// Upper bounds of the feasible region, in chunk coordinates: [0,16), [0,256), [0,16)
+	/// Forms an inclusive range - these are the maximum values of the coordinates on each axis
+	pub upper: ColumnPosition
 }

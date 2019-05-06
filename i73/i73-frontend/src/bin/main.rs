@@ -20,7 +20,7 @@ use i73_base::{Pass, Block, Layer};
 use i73_terrain::overworld_173::{self, Settings};
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73::config::biomes::{BiomesConfig, BiomeConfig, SurfaceConfig, RectConfig, FollowupConfig};
-use i73_biome::{Lookup, climate};
+use i73_biome::Lookup;
 use i73_base::matcher::BlockMatcher;
 
 use cgmath::Vector3;
@@ -606,8 +606,8 @@ fn main() {
 			let light_sector = sky_light.get_or_create_sector_mut(sector_position);
 
 			while let Some((position, incomplete)) = sector.pop_first() {
-				use vocs::mask::Mask;
-				println!("Completing chunk: {} / {} queued blocks", position, incomplete.count_ones());
+				// use vocs::mask::Mask;
+				// println!("Completing chunk: {} / {} queued blocks", position, incomplete.count_ones());
 
 
 				let (blocks, palette) = block_sector[position].as_ref().unwrap().freeze();
