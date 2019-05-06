@@ -323,7 +323,7 @@ impl Tunnel {
 	}
 	
 	fn split_off(&mut self, rng: &mut Random, yaw_offset: f32) -> Tunnel {
-		let position = Position::with_angles(self.position.chunk, self.position.block, self.position.yaw + yaw_offset, self.position.pitch / 3.0);
+		let position = Position::with_angles(self.position.chunk, (self.position.x, self.position.y, self.position.z), self.position.yaw + yaw_offset, self.position.pitch / 3.0);
 		let spheroid_size_factor = self.state.next_f32() * 0.5 + 0.5;
 		
 		let mut state = Random::new(rng.next_u64());
@@ -441,10 +441,12 @@ impl SystemSize {
 struct Position {
 	/// Position of the chunk being carved
 	chunk: GlobalColumnPosition,
-	/// Block position of the center of the generated chunk.
-	chunk_center: (f64, f64),
-	/// Absolute block position in the world
-	block: (f64, f64, f64),
+	/// Absolute x position in the world
+	x: f64,
+	/// Absolute y position in the world
+	y: f64,
+	/// Absolute z position in the world
+	z: f64,
 	/// Horizontal angle
 	yaw: f32,
 	/// Vertical angle
@@ -463,8 +465,9 @@ impl Position {
 	fn with_angles(chunk: GlobalColumnPosition, block: (f64, f64, f64), yaw: f32, pitch: f32) -> Self {
 		Position {
 			chunk,
-			chunk_center: ((chunk.x() * 16 + 8) as f64, (chunk.z() * 16 + 8) as f64),
-			block,
+			x: block.0,
+			y: block.1,
+			z: block.2,
 			yaw,
 			pitch,
 			yaw_velocity: 0.0,
@@ -475,9 +478,9 @@ impl Position {
 	fn step(&mut self, rng: &mut Random, pitch_keep: f32) {
 		let cos_pitch = trig::cos(self.pitch);
 		
-		self.block.0 += (trig::cos(self.yaw) * cos_pitch) as f64;
-		self.block.1 +=  trig::sin(self.pitch)            as f64;
-		self.block.2 += (trig::sin(self.yaw) * cos_pitch) as f64;
+		self.x += (trig::cos(self.yaw) * cos_pitch) as f64;
+		self.y +=  trig::sin(self.pitch)            as f64;
+		self.z += (trig::sin(self.yaw) * cos_pitch) as f64;
 		
 		self.pitch *= pitch_keep;
 		self.pitch += self.pitch_velocity * 0.1;
@@ -490,8 +493,8 @@ impl Position {
 	}
 	
 	fn distance_from_chunk_squared(&self) -> f64 {
-		let distance_x = self.block.0 - self.chunk_center.0;
-		let distance_z = self.block.2 - self.chunk_center.1;
+		let distance_x = self.x - self.chunk.x() as f64 * 16.0 - 8.0;
+		let distance_z = self.z - self.chunk.z() as f64 * 16.0 - 8.0;
 		
 		distance_x * distance_x + distance_z * distance_z
 	}
@@ -499,23 +502,23 @@ impl Position {
 	fn out_of_chunk(&self, spheroid: &SpheroidSize) -> bool {
 		let horizontal_diameter = spheroid.horizontal_diameter();
 		
-		self.block.0 < self.chunk_center.0 - 16.0 - horizontal_diameter ||
-		self.block.2 < self.chunk_center.1 - 16.0 - horizontal_diameter ||
-		self.block.0 > self.chunk_center.0 + 16.0 + horizontal_diameter ||
-		self.block.2 > self.chunk_center.1 + 16.0 + horizontal_diameter
+		self.x < self.chunk.x() as f64 * 16.0 -  8.0 - horizontal_diameter ||
+		self.z < self.chunk.z() as f64 * 16.0 -  8.0 - horizontal_diameter ||
+		self.x > self.chunk.x() as f64 * 16.0 + 24.0 + horizontal_diameter ||
+		self.z > self.chunk.z() as f64 * 16.0 + 24.0 + horizontal_diameter
 	}
 	
 	fn spheroid(&self, size: SpheroidSize) -> Option<Spheroid> {
 		let lower = (
-			math::floor_clamped(self.block.0 - size.horizontal) as i32 - self.chunk.x() * 16 - 1,
-			math::floor_clamped(self.block.1 - size.vertical)   as i32                       - 1,
-			math::floor_clamped(self.block.2 - size.horizontal) as i32 - self.chunk.z() * 16 - 1
+			math::floor_clamped(self.x - size.horizontal) as i32 - self.chunk.x() * 16 - 1,
+			math::floor_clamped(self.y - size.vertical)   as i32                       - 1,
+			math::floor_clamped(self.z - size.horizontal) as i32 - self.chunk.z() * 16 - 1
 		);
 		
 		let upper = (
-			math::floor_clamped(self.block.0 + size.horizontal) as i32 - self.chunk.x() * 16 + 1,
-			math::floor_clamped(self.block.1 + size.vertical)   as i32                       + 1,
-			math::floor_clamped(self.block.2 + size.horizontal) as i32 - self.chunk.z() * 16 + 1
+			math::floor_clamped(self.x + size.horizontal) as i32 - self.chunk.x() * 16 + 1,
+			math::floor_clamped(self.y + size.vertical)   as i32                       + 1,
+			math::floor_clamped(self.z + size.horizontal) as i32 - self.chunk.z() * 16 + 1
 		);
 
 		let lower_clamped = (
@@ -547,7 +550,7 @@ impl Position {
 		
 
 		Some( Spheroid {
-			center: self.block,
+			center: (self.x, self.y, self.z),
 			size,
 			lower: ColumnPosition::new(lower_clamped.0, lower_clamped.1, lower_clamped.2),
 			upper: ColumnPosition::new(upper_clamped.0 - 1, upper_clamped.1 - 1, upper_clamped.2 - 1)
