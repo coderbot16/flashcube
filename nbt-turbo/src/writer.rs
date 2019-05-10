@@ -41,15 +41,18 @@ impl<T: Output> CompoundWriter<T> {
 		writer
 	}
 
+	pub fn write<F>(name: &str, out: T, filler: F) -> T where F: FnOnce(&mut CompoundWriter<T>) {
+		let mut writer = CompoundWriter::start(name, out);
+
+		filler(&mut writer);
+
+		writer.end()
+	}
+
 	/// Ends the compound tag, returning the buffer.
 	pub fn end(mut self) -> T {
 		self.out.push(0);
 		self.out
-	}
-
-	/// Same as end, but for child compounds.
-	pub fn close(&mut self) {
-		self.out.push(0);
 	}
 
 	fn header(&mut self, kind: Kind, name: &str) {
@@ -126,7 +129,15 @@ impl<T: Output> CompoundWriter<T> {
 }
 
 impl<T> CompoundWriter<T> where T: Output + AsMut<Vec<u8>> {
-	pub fn compound(&mut self, name: &str) -> CompoundWriter<&mut T> {
+	pub fn compound_writer(&mut self, name: &str) -> CompoundWriter<&mut T> {
 		CompoundWriter::start(name, &mut self.out)
+	}
+
+	pub fn compound<F>(&mut self, name: &str, filler: F) where F: FnOnce(&mut CompoundWriter<&mut T>) {
+		let mut writer = CompoundWriter::start(name, &mut self.out);
+
+		filler(&mut writer);
+
+		writer.end();
 	}
 }
