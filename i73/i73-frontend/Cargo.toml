@@ -15,6 +15,7 @@ nom = "3.2.1"
 rs25 = { path = "../../rs25" }
 vocs = { path = "../../vocs" }
 java-rand = "0.2.0"
+nbt-turbo = { git = "https://gitlab.com/coderbot16/nbt-turbo" }
 
 i73-noise = { path = "../i73-noise" }
 i73-biome = { path = "../i73-biome" }
@@ -24,3 +25,7 @@ i73-base = { path = "../i73-base" }
 i73-terrain = { path = "../i73-terrain" }
 i73-structure = { path = "../i73-structure" }
 i73-decorator = { path = "../i73-decorator" }
+
+[dependencies.deflate]
+version = "0.7"
+features = ["gzip"]

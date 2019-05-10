@@ -10,6 +10,8 @@ extern crate i73_decorator;
 extern crate cgmath;
 extern crate i73_shape;
 extern crate i73_noise;
+extern crate nbt_turbo;
+extern crate deflate;
 
 use std::path::PathBuf;
 use std::fs::File;
@@ -28,17 +30,15 @@ use cgmath::Vector3;
 use vocs::indexed::ChunkIndexed;
 use vocs::world::world::World;
 use vocs::view::ColumnMut;
-use vocs::position::{GlobalColumnPosition, GlobalChunkPosition, QuadPosition};
+use vocs::position::{GlobalColumnPosition, GlobalChunkPosition, QuadPosition, ChunkPosition};
 
-use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
-use rs25::level::region::RegionWriter;
-use rs25::level::anvil::ColumnRoot;
 use std::collections::HashMap;
 use i73_shape::volume::TriNoiseSettings;
 use i73_shape::height::HeightSettings81;
 use i73_decorator::tree::TreeDecorator;
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
+use deflate::Compression;
 
 fn main() {
 	let profile_name = match ::std::env::args().skip(1).next() {
@@ -319,7 +319,7 @@ fn main() {
 		lower_surface: 10
 	};
 	let caves = i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
-	
+
 	/*let shape = nether_173::passes(-160654125608861039, &nether_173::default_tri_settings(), nether_173::ShapeBlocks::default(), 31);
 	
 	let default_grid = biome::default_grid();
@@ -671,6 +671,11 @@ fn main() {
 	// let pool = RegionPool::new(PathBuf::from("out/region/"), 512);
 	// let mut manager = Manager::manage(pool);
 
+	/*
+	use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
+	use rs25::level::region::RegionWriter;
+	use rs25::level::anvil::ColumnRoot;
+
 	let file = File::create("out/region/r.0.0.mca").unwrap();
 	let mut writer = RegionWriter::start(file).unwrap();
 
@@ -718,7 +723,76 @@ fn main() {
 		}
 	}
 	
-	writer.finish().unwrap();
+	writer.finish().unwrap();*/
+
+	// CW writing
+
+	let mut blocks = vec![0; 512 * 128 * 512];
+	for z in 0..32 {
+		println!("{}", z);
+		for x in 0..32 {
+			let column_position = GlobalColumnPosition::new(x, z);
+
+			for y in 0..8 {
+				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
+
+				let chunk = world.get(chunk_position).unwrap();
+				let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
+
+				fn index(x: u32, y: u32, z: u32) -> u32 {
+					(y * 512 + z) * 512 + x
+				}
+
+				for position in ChunkPosition::enumerate() {
+					let i = index(
+						position.x() as u32 + x as u32 * 16,
+						position.y() as u32 + y as u32 * 16,
+						position.z() as u32 + z as u32 * 16
+					);
+
+					let mut block: u16 = (*chunk.get(position)).into();
+					block /= 16;
+
+					// Sandstone is ID 52 in ClassiCube, not 24
+					if block == 24 {
+						block = 52;
+					}
+
+					blocks[i as usize] = block as u8;
+				}
+			};
+		}
+	}
+
+	use nbt_turbo::writer::CompoundWriter;
+	let buffer = CompoundWriter::write("ClassicWorld", Vec::new(), |writer| {
+		writer
+			.u8_array("BlockArray", &blocks)
+			.i8("FormatVersion", 1)
+			.string("Name", "i73 Test World")
+			.u8_array("UUID", &[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+			.i16("X", 512)
+			.i16("Y", 128)
+			.i16("Z", 512)
+			.i64("TimeCreated", 0)
+			.i64("LastAccessed", 0)
+			.i64("LastModified", 0)
+			.compound("Spawn", |writer| {
+				writer
+					.i16("X", 90)
+					.i16("Y", 64)
+					.i16("Z", 90);
+			});
+	});
+
+	use std::io::Write;
+	use deflate::write::GzEncoder;
+
+	let file = File::create("out/classic/i73.cw").unwrap();
+	let mut gzip = GzEncoder::new(file, Compression::Fast);
+	gzip.write_all(&buffer).unwrap();
+	gzip.finish().unwrap();
+
 
 	{
 		let end = ::std::time::Instant::now();
