@@ -91,6 +91,30 @@ impl HeightSource {
 	}
 }
 
+pub struct HeightSourceInfdev(pub HeightSource);
+impl HeightSourceInfdev {
+	pub fn sample(&self, point: Point2<f64>) -> Height {
+		let scaled_noise = self.biome_influence.sample(point) / self.biome_influence_scale;
+
+		// Note: older revisions of the generator do not clamp chaos to 0 (ie. min=Infinity)
+		// This can result in chaos becoming negative, producing large "monolith" structures.
+		let chaos = math::clamp(Climate::alpha().influence_factor() * (scaled_noise + 0.5), std::f64::INFINITY, 1.0) + 0.5;
+
+		let mut depth = self.depth.sample(point) / self.depth_scale;
+
+		// Infdev does not place a bound on the depth, and subtracts 3.0 instead of 2.0.
+		depth = depth.abs() * 3.0 - 3.0;
+
+		// Infdev uses 1.5 instead of 2.0.
+		depth /= if depth < 0.0 {1.4} else {1.5};
+
+		Height {
+			center: self.depth_base + depth * (self.depth_base / 8.0),
+			chaos: if depth < 0.0 {0.5} else {chaos}
+		}
+	}
+}
+
 #[derive(Debug, PartialEq)]
 pub struct HeightSettings81 {
 	pub coord_scale: Vector3<f64>,

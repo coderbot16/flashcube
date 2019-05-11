@@ -788,7 +788,7 @@ fn main() {
 	use std::io::Write;
 	use deflate::write::GzEncoder;
 
-	let file = File::create("out/classic/i73.cw").unwrap();
+	let file = File::create("out/classic/i73-infdev-3.cw").unwrap();
 	let mut gzip = GzEncoder::new(file, Compression::Fast);
 	gzip.write_all(&buffer).unwrap();
 	gzip.finish().unwrap();
