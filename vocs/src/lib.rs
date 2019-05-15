@@ -11,13 +11,13 @@
 //!
 //! This library is mainly intended to support an implementation of a Minecraft-compatible
 //! voxel engine. With a ground-up reimplementation of Minecraft, there is an
-//! opportunity to experiment with a new architecture. But, we must first explode the
+//! opportunity to experiment with a new architecture. But, we must first explore the
 //! design of Vanilla Minecraft:
 //!
 //!  * Block classes defining the behavior of each voxel type
 //!  * BlockEntity classes for storing additional complex block information
 //!  * BlockState for fetching small properties from a block ID
-//!  * ChunkSection for storing the staticly defined arrays for storage, as well as the BlockEntity list.
+//!  * ChunkSection for storing the statically defined arrays for storage, as well as the BlockEntity list.
 //!
 //! All of these features are natural extensions of a simple base, but are
 //! not optimal in many cases:
