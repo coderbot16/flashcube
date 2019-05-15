@@ -114,7 +114,7 @@ impl ShapeSettings {
 		// Older generators (ie. inf-20100618) omit this call, resulting in mountains cut off at the
 		// height limit. This makes sure that does not happen, by making certain that mountains will
 		// taper off well before the limit.
-		/*reduce_upper(value, -10.0, y, self.taper_control, 17.0)*/value
+		reduce_upper(value, -10.0, y, self.taper_control, 17.0)
 	}
 }
 
