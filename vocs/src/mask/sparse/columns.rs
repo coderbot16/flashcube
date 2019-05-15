@@ -1,9 +1,9 @@
-use position::{GlobalSectorPosition, GlobalColumnPosition};
-use mask::{Mask, LayerMask, Scan, ScanClear};
+use crate::position::{GlobalSectorPosition, GlobalColumnPosition};
+use crate::mask::{Mask, LayerMask, Scan, ScanClear};
 use std::collections::HashMap;
 use std::collections::hash_map::{Entry, Iter, IterMut};
 use std::ops::Index;
-use component::*;
+use crate::component::*;
 
 const FALSE_REF: &bool = &false;
 

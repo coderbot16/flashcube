@@ -1,6 +1,6 @@
-use mask::Mask;
-use component::LayerStorage;
-use position::LayerPosition;
+use crate::mask::Mask;
+use crate::component::LayerStorage;
+use crate::position::LayerPosition;
 use std::ops::Index;
 
 mod scan;
@@ -99,9 +99,9 @@ impl Index<LayerPosition> for LayerMask {
 
 #[cfg(test)]
 mod test {
-	use position::LayerPosition;
-	use component::LayerStorage;
-	use mask::{LayerMask, Mask};
+	use crate::position::LayerPosition;
+	use crate::component::LayerStorage;
+	use crate::mask::{LayerMask, Mask};
 
 	#[test]
 	fn test_plain_set() {

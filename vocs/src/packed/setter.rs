@@ -1,4 +1,4 @@
-use packed::{PackedStorage, PackedIndex};
+use crate::packed::{PackedStorage, PackedIndex};
 
 pub struct Setter<'s, P> where P: 's + PackedIndex {
 	storage: &'s mut PackedStorage<P>,

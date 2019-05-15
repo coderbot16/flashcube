@@ -1,5 +1,5 @@
-use position::{GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
-use world::shared::{Packed, Guard, SharedSector};
+use crate::position::{GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
+use crate::world::shared::{Packed, Guard, SharedSector};
 use std::collections::hash_map::{HashMap, Entry, Iter, IterMut};
 
 // TODO: Concurrent Hash Map

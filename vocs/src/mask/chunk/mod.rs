@@ -1,6 +1,6 @@
-use mask::{Mask, u1x64};
-use component::ChunkStorage;
-use position::{ChunkPosition, dir, Offset};
+use crate::mask::{Mask, u1x64};
+use crate::component::ChunkStorage;
+use crate::position::{ChunkPosition, dir, Offset};
 use std::ops::Index;
 use std::cmp::PartialEq;
 

@@ -1,4 +1,4 @@
-use packed::PackedIndex;
+use crate::packed::PackedIndex;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct LayerPosition(u8);

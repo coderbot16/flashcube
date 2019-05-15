@@ -1,6 +1,6 @@
-use mask::{u1x64, ChunkMask, LayerMask};
-use position::{ChunkPosition, LayerPosition};
-use component::*;
+use crate::mask::{u1x64, ChunkMask, LayerMask};
+use crate::position::{ChunkPosition, LayerPosition};
+use crate::component::*;
 
 pub struct LayerZxMut<'l> {
 	layer: &'l mut [u1x64],
@@ -277,9 +277,9 @@ impl<'l> LayerStorage<bool> for LayerYxMut<'l> {
 
 #[cfg(test)]
 mod test {
-	use mask::{LayerMask, ChunkMask};
-	use position::ChunkPosition;
-	use component::*;
+	use crate::mask::{LayerMask, ChunkMask};
+	use crate::position::ChunkPosition;
+	use crate::component::*;
 
 	fn verify_masks_equal(direct: &ChunkMask, indirect: &ChunkMask) {
 		if direct != indirect {

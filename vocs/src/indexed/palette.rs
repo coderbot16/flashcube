@@ -1,4 +1,4 @@
-use indexed::Target;
+use crate::indexed::Target;
 use fxhash::FxHashMap;
 use std::collections::hash_map::Entry;
 use std::mem;

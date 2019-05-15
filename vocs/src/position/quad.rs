@@ -1,4 +1,4 @@
-use position::{ColumnPosition, Offset, dir};
+use crate::position::{ColumnPosition, Offset, dir};
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]

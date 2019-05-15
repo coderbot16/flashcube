@@ -8,7 +8,7 @@
 // String: HashMap<ChunkPosition, String>
 // Entity: A complex struct stored in the local specs ECS.
 
-use position::{LayerPosition, ChunkPosition};
+use crate::position::{LayerPosition, ChunkPosition};
 
 /// A component usable in a comoponent system.
 pub trait Component: Sized + Clone + Default {

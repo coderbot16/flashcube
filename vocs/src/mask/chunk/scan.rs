@@ -1,5 +1,5 @@
-use mask::{ChunkMask, Scan, ScanClear, u1x64};
-use position::ChunkPosition;
+use crate::mask::{ChunkMask, Scan, ScanClear, u1x64};
+use crate::position::ChunkPosition;
 use std::cmp;
 
 impl<'a> IntoIterator for Scan<'a, ChunkMask, ChunkPosition> {
@@ -101,8 +101,8 @@ impl<'a> Iterator for ChunkScanClear<'a> {
 
 #[cfg(test)]
 mod tests {
-	use position::ChunkPosition;
-	use mask::{Mask, ChunkMask};
+	use crate::position::ChunkPosition;
+	use crate::mask::{Mask, ChunkMask};
 	use std::collections::BTreeSet;
 
 	#[test]
@@ -119,8 +119,8 @@ mod tests {
 				mask.set_true(position);
 			}
 
-			let mut expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
-			let mut created_vec = mask.scan().into_iter().collect::<Vec<ChunkPosition>>();
+			let expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
+			let created_vec = mask.scan().into_iter().collect::<Vec<ChunkPosition>>();
 
 			assert_eq!(expected_vec, created_vec);
 		}
@@ -140,8 +140,8 @@ mod tests {
 				mask.set_true(position);
 			}
 
-			let mut expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
-			let mut created_vec = mask.scan_clear().into_iter().collect::<Vec<ChunkPosition>>();
+			let expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
+			let created_vec = mask.scan_clear().into_iter().collect::<Vec<ChunkPosition>>();
 
 			assert_eq!(expected_vec, created_vec);
 

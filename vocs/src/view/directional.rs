@@ -1,4 +1,4 @@
-use position::{Dir, dir};
+use crate::position::{Dir, dir};
 use std::ops::{Index, IndexMut};
 
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]

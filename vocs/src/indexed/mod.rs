@@ -3,8 +3,8 @@ mod palette;
 use std::hash::Hash;
 use std::mem;
 use std::fmt::Debug;
-use packed::{PackedStorage, PackedIndex, Setter};
-use position::{ChunkPosition, LayerPosition};
+use crate::packed::{PackedStorage, PackedIndex, Setter};
+use crate::position::{ChunkPosition, LayerPosition};
 
 pub use self::palette::Palette;
 

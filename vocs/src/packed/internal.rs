@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use packed::setter::Setter;
+use crate::packed::setter::Setter;
 
 struct Indices {
 	start: usize,

@@ -1,5 +1,5 @@
-use position::ChunkPosition;
-use position::{LayerPosition, Offset, dir};
+use crate::position::ChunkPosition;
+use crate::position::{LayerPosition, Offset, dir};
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]

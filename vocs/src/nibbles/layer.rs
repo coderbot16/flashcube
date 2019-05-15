@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter, Result};
-use position::LayerPosition;
+use crate::position::LayerPosition;
 use super::{u4, u4x2, nibble_index};
-use component::LayerStorage;
+use crate::component::LayerStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
 /// Indexed with LayerPosition.

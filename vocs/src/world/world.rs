@@ -1,8 +1,8 @@
-use position::{GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
-use world::sector::Sector;
+use crate::position::{GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
+use crate::world::sector::Sector;
 use std::collections::hash_map::{HashMap, Entry, Iter, IterMut};
-use indexed::{Target, ChunkIndexed};
-use view::{QuadMut, ColumnMut};
+use crate::indexed::{Target, ChunkIndexed};
+use crate::view::{QuadMut, ColumnMut};
 use splitmut::SplitMut;
 
 pub struct World<T> {

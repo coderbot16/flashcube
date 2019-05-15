@@ -8,7 +8,7 @@ pub mod chunk;
 pub use self::layer::*;
 pub use self::chunk::*;
 
-use component::Component;
+use crate::component::Component;
 
 use std::ops::{Index, BitOrAssign, BitOr, BitAndAssign, BitAnd, Not};
 use std::marker::PhantomData;

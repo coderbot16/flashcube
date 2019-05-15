@@ -6,7 +6,7 @@ pub use self::chunk::ChunkNibbles;
 pub use self::layer::LayerNibbles;
 pub use self::bulk::BulkNibbles;
 
-use component::Component;
+use crate::component::Component;
 
 /// Returns the chunk_yzx index into a nibble array. Returns in the form (index, shift).
 fn nibble_index(index: usize) -> (usize, u8) {

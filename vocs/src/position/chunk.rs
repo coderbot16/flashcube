@@ -1,6 +1,6 @@
 use std::fmt;
-use position::{LayerPosition, Offset, dir};
-use packed::PackedIndex;
+use crate::position::{LayerPosition, Offset, dir};
+use crate::packed::PackedIndex;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ChunkPosition(u16);

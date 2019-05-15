@@ -1,7 +1,7 @@
-use position::{ChunkPosition, LayerPosition};
-use indexed::{ChunkIndexed, Target};
-use mask::{Mask, ChunkMask};
-use view::{ColumnMut, QuadMut};
+use crate::position::{ChunkPosition, LayerPosition};
+use crate::indexed::{ChunkIndexed, Target};
+use crate::mask::{Mask, ChunkMask};
+use crate::view::{ColumnMut, QuadMut};
 use std::slice;
 use std::ops::Index;
 

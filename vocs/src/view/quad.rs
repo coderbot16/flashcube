@@ -1,5 +1,5 @@
-use indexed::Target;
-use position::QuadPosition;
+use crate::indexed::Target;
+use crate::position::QuadPosition;
 use super::{ColumnAssociation, ColumnBlocks, ColumnMut, ColumnPalettes};
 
 #[derive(Debug)]

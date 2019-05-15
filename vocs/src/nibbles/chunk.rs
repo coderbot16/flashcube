@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter, Result};
-use position::ChunkPosition;
+use crate::position::ChunkPosition;
 use super::{u4, nibble_index};
-use component::ChunkStorage;
+use crate::component::ChunkStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
 /// Indexed with ChunkPosition.

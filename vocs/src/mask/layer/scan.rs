@@ -1,5 +1,5 @@
-use mask::{Mask, LayerMask, ScanClear};
-use position::LayerPosition;
+use crate::mask::{Mask, LayerMask, ScanClear};
+use crate::position::LayerPosition;
 
 impl<'a> IntoIterator for ScanClear<'a, LayerMask, LayerPosition> {
 	type Item = LayerPosition;

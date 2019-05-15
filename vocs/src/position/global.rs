@@ -1,4 +1,4 @@
-use position::{ChunkPosition, LayerPosition};
+use crate::position::{ChunkPosition, LayerPosition};
 use std::fmt::{Debug, Display, Result, Formatter};
 
 const MAX_U56: u64 =  72057594037927935;
@@ -329,7 +329,7 @@ impl Debug for GlobalSectorPosition {
 
 #[cfg(test)]
 mod test {
-	use position::{ChunkPosition, LayerPosition, GlobalPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
+	use crate::position::{ChunkPosition, LayerPosition, GlobalPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
 
 	// TODO: Test negative coordinates
 

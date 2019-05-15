@@ -1,7 +1,7 @@
-use component::*;
+use crate::component::*;
 use fxhash::FxHashMap;
 use std::collections::hash_map::Entry;
-use position::LayerPosition;
+use crate::position::LayerPosition;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct SparseStorage<C> where C: Component + Eq {

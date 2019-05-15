@@ -1,8 +1,8 @@
 use spin::RwLock;
 use std::ops::Index;
-use position::{LayerPosition, ChunkPosition};
+use crate::position::{LayerPosition, ChunkPosition};
 use std::slice;
-use world::shared::{Packed, Guard};
+use crate::world::shared::{Packed, Guard};
 
 // TODO: Design: Should locks panic by default? This would make sense with the scheduler design, but could be a similar footgun to RefCell.
 

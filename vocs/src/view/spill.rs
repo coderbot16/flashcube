@@ -1,8 +1,8 @@
-use position::{ChunkPosition, LayerPosition, Offset};
-use mask::{Mask, LayerMask};
-use view::Directional;
+use crate::position::{ChunkPosition, LayerPosition, Offset};
+use crate::mask::{Mask, LayerMask};
+use crate::view::Directional;
 use std::ops::IndexMut;
-use component::{Component, ChunkStorage, LayerStorage};
+use crate::component::{Component, ChunkStorage, LayerStorage};
 
 pub type SpillChunkMask = SpillChunk<bool>;
 
