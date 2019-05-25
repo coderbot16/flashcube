@@ -212,7 +212,7 @@ fn main() {
 		}
 	});
 
-	decorators.push (::i73_decorator::Dispatcher {
+	/*decorators.push (::i73_decorator::Dispatcher {
 		decorator: Box::new(::i73_decorator::vein::SeasideVeinDecorator {
 			vein: ::i73_decorator::vein::VeinDecorator {
 				blocks: ::i73_decorator::vein::VeinBlocks {
@@ -239,11 +239,11 @@ fn main() {
 			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		}
-	});
+	});*/
 
 	//decorators.push (gravel_config.into_dispatcher(&decorator_registry).unwrap());
 
-	decorators.push (::i73_decorator::Dispatcher {
+	/*decorators.push (::i73_decorator::Dispatcher {
 		decorator: Box::new(::i73_decorator::clump::Clump {
 			iterations: 64,
 			horizontal: 8,
@@ -265,12 +265,12 @@ fn main() {
 		rarity: ::i73_base::distribution::Chance {
 			base: i73_base::distribution::Baseline::Linear(i73_base::distribution::Linear {
 				min: 0,
-				max: 90
+				max: 10
 			}),
 			ordering: i73_base::distribution::ChanceOrdering::AlwaysGeneratePayload,
 			chance: 1
 		}
-	});
+	});*/
 
 	/*use large_tree::{LargeTreeSettings, LargeTree};
 	let settings = LargeTreeSettings::default();
@@ -419,6 +419,10 @@ fn main() {
 				}
 
 				TreeDecorator::default().generate(&mut quad, &mut decoration_rng, position.offset(dir::Up).unwrap_or(position)).unwrap();
+			}
+
+			for dispatcher in &decorators {
+				dispatcher.generate(&mut quad, &mut decoration_rng).unwrap();
 			}
 		}
 	}
