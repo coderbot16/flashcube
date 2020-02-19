@@ -4,7 +4,7 @@ extern crate i73_image;
 extern crate i73_biome;
 
 use image::{Rgb, RgbImage};
-use std::fs;
+use std::{fs, i32};
 use std::io::BufReader;
 
 use i73_image::colorizer::{colorize_grass, coordinates_to_climate};
