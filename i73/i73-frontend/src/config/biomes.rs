@@ -3,10 +3,10 @@ use i73_base::distribution::{Baseline, Chance};
 use i73_base::Block;
 use i73_biome::{Biome, Followup, Grid, Surface};
 use i73_decorator::Dispatcher;
-use serde_json;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::num::ParseIntError;
+use serde_json;
 
 #[derive(Debug)]
 pub enum Error {
@@ -20,9 +20,8 @@ impl From<ParseIntError> for Error {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct BiomesConfig {
-	#[serde(default)]
 	pub decorator_sets: HashMap<String, Vec<DecoratorConfig>>,
 	pub biomes: HashMap<String, BiomeConfig>,
 	pub default: String,
@@ -55,11 +54,10 @@ impl BiomesConfig {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct BiomeConfig {
 	pub debug_name: String,
 	pub surface: SurfaceConfig,
-	#[serde(default)]
 	pub decorators: Vec<String>,
 }
 
@@ -69,7 +67,7 @@ impl BiomeConfig {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct SurfaceConfig {
 	pub top: String,
 	pub fill: String,
@@ -90,7 +88,7 @@ impl SurfaceConfig {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct FollowupConfig {
 	pub block: String,
 	pub max_depth: u32,
@@ -102,7 +100,7 @@ impl FollowupConfig {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct DecoratorConfig {
 	pub decorator: String,
 	pub settings: serde_json::Value,
@@ -128,7 +126,7 @@ impl DecoratorConfig {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct RectConfig {
 	pub temperature: (f64, f64),
 	pub rainfall: (f64, f64),

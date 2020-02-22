@@ -2,179 +2,179 @@ use cgmath::Vector3;
 use i73_shape::height::HeightSettings81;
 use i73_shape::volume::TriNoiseSettings;
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Customized {
-	#[serde(rename = "coordinateScale")]
+	// #[serde(rename = "coordinateScale")]
 	pub coordinate_scale: f64,
-	#[serde(rename = "heightScale")]
+	// #[serde(rename = "heightScale")]
 	pub height_scale: f64,
 
-	#[serde(rename = "lowerLimitScale")]
+	// #[serde(rename = "lowerLimitScale")]
 	pub lower_limit_scale: f64,
-	#[serde(rename = "upperLimitScale")]
+	// #[serde(rename = "upperLimitScale")]
 	pub upper_limit_scale: f64,
 
-	#[serde(rename = "mainNoiseScaleX")]
+	// #[serde(rename = "mainNoiseScaleX")]
 	pub main_noise_scale_x: f64,
-	#[serde(rename = "mainNoiseScaleY")]
+	// #[serde(rename = "mainNoiseScaleY")]
 	pub main_noise_scale_y: f64,
-	#[serde(rename = "mainNoiseScaleZ")]
+	// #[serde(rename = "mainNoiseScaleZ")]
 	pub main_noise_scale_z: f64,
 
-	#[serde(rename = "depthNoiseScaleX")]
+	// #[serde(rename = "depthNoiseScaleX")]
 	pub depth_noise_scale_x: f64,
-	#[serde(rename = "depthNoiseScaleZ")]
+	// #[serde(rename = "depthNoiseScaleZ")]
 	pub depth_noise_scale_z: f64,
-	#[serde(rename = "depthNoiseScaleExponent")]
+	// #[serde(rename = "depthNoiseScaleExponent")]
 	pub depth_noise_scale_exponent: f64, // Unused.
 
-	#[serde(rename = "baseSize")]
+	// #[serde(rename = "baseSize")]
 	pub depth_base: f64,
-	#[serde(rename = "stretchY")]
+	// #[serde(rename = "stretchY")]
 	pub height_stretch: f64,
 
-	#[serde(rename = "biomeDepthWeight")]
+	// #[serde(rename = "biomeDepthWeight")]
 	pub biome_depth_weight: f64,
-	#[serde(rename = "biomeDepthOffset")]
+	// #[serde(rename = "biomeDepthOffset")]
 	pub biome_depth_offset: f64,
-	#[serde(rename = "biomeScaleWeight")]
+	// #[serde(rename = "biomeScaleWeight")]
 	pub biome_scale_weight: f64,
-	#[serde(rename = "biomeScaleOffset")]
+	// #[serde(rename = "biomeScaleOffset")]
 	pub biome_scale_offset: f64,
 
-	#[serde(rename = "seaLevel")]
+	// #[serde(rename = "seaLevel")]
 	pub sea_level: i32,
-	#[serde(rename = "useCaves")]
+	// #[serde(rename = "useCaves")]
 	pub use_caves: bool,
-	#[serde(rename = "useDungeons")]
+	// #[serde(rename = "useDungeons")]
 	pub use_dungeons: bool,
-	#[serde(rename = "dungeonChance")]
+	// #[serde(rename = "dungeonChance")]
 	pub dungeon_chance: i32,
-	#[serde(rename = "useStrongholds")]
+	// #[serde(rename = "useStrongholds")]
 	pub use_strongholds: bool,
-	#[serde(rename = "useVillages")]
+	// #[serde(rename = "useVillages")]
 	pub use_villages: bool,
-	#[serde(rename = "useMineShafts")]
+	// #[serde(rename = "useMineShafts")]
 	pub use_mineshafts: bool,
-	#[serde(rename = "useTemples")]
+	// #[serde(rename = "useTemples")]
 	pub use_temples: bool,
-	#[serde(rename = "useRavines")]
+	// #[serde(rename = "useRavines")]
 	pub use_ravines: bool,
-	#[serde(rename = "useWaterLakes")]
+	// #[serde(rename = "useWaterLakes")]
 	pub use_water_lakes: bool,
-	#[serde(rename = "waterLakeChance")]
+	// #[serde(rename = "waterLakeChance")]
 	pub water_lake_chance: i32,
-	#[serde(rename = "useLavaLakes")]
+	// #[serde(rename = "useLavaLakes")]
 	pub use_lava_lakes: bool,
-	#[serde(rename = "lavaLakeChance")]
+	// #[serde(rename = "lavaLakeChance")]
 	pub lava_lake_chance: i32,
-	#[serde(rename = "useLavaOceans")]
+	// #[serde(rename = "useLavaOceans")]
 	pub use_lava_oceans: bool,
 
-	#[serde(rename = "fixedBiome")]
+	// #[serde(rename = "fixedBiome")]
 	pub fixed_biome: i32,
-	#[serde(rename = "biomeSize")]
+	// #[serde(rename = "biomeSize")]
 	pub biome_size: i32,
-	#[serde(rename = "riverSize")]
+	// #[serde(rename = "riverSize")]
 	pub river_size: i32,
 
-	#[serde(rename = "dirtSize")]
+	// #[serde(rename = "dirtSize")]
 	pub dirt_size: i32,
-	#[serde(rename = "dirtCount")]
+	// #[serde(rename = "dirtCount")]
 	pub dirt_count: i32,
-	#[serde(rename = "dirtMinHeight")]
+	// #[serde(rename = "dirtMinHeight")]
 	pub dirt_min_height: i32,
-	#[serde(rename = "dirtMaxHeight")]
+	// #[serde(rename = "dirtMaxHeight")]
 	pub dirt_max_height: i32,
 
-	#[serde(rename = "gravelSize")]
+	// #[serde(rename = "gravelSize")]
 	pub gravel_size: i32,
-	#[serde(rename = "gravelCount")]
+	// #[serde(rename = "gravelCount")]
 	pub gravel_count: i32,
-	#[serde(rename = "gravelMinHeight")]
+	// #[serde(rename = "gravelMinHeight")]
 	pub gravel_min_height: i32,
-	#[serde(rename = "gravelMaxHeight")]
+	// #[serde(rename = "gravelMaxHeight")]
 	pub gravel_max_height: i32,
 
-	#[serde(rename = "graniteSize")]
+	// #[serde(rename = "graniteSize")]
 	pub granite_size: i32,
-	#[serde(rename = "graniteCount")]
+	// #[serde(rename = "graniteCount")]
 	pub granite_count: i32,
-	#[serde(rename = "graniteMinHeight")]
+	// #[serde(rename = "graniteMinHeight")]
 	pub granite_min_height: i32,
-	#[serde(rename = "graniteMaxHeight")]
+	// #[serde(rename = "graniteMaxHeight")]
 	pub granite_max_height: i32,
 
-	#[serde(rename = "dioriteSize")]
+	// #[serde(rename = "dioriteSize")]
 	pub diorite_size: i32,
-	#[serde(rename = "dioriteCount")]
+	// #[serde(rename = "dioriteCount")]
 	pub diorite_count: i32,
-	#[serde(rename = "dioriteMinHeight")]
+	// #[serde(rename = "dioriteMinHeight")]
 	pub diorite_min_height: i32,
-	#[serde(rename = "dioriteMaxHeight")]
+	// #[serde(rename = "dioriteMaxHeight")]
 	pub diorite_max_height: i32,
 
-	#[serde(rename = "andesiteSize")]
+	// #[serde(rename = "andesiteSize")]
 	pub andesite_size: i32,
-	#[serde(rename = "andesiteCount")]
+	// #[serde(rename = "andesiteCount")]
 	pub andesite_count: i32,
-	#[serde(rename = "andesiteMinHeight")]
+	// #[serde(rename = "andesiteMinHeight")]
 	pub andesite_min_height: i32,
-	#[serde(rename = "andesiteMaxHeight")]
+	// #[serde(rename = "andesiteMaxHeight")]
 	pub andesite_max_height: i32,
 
-	#[serde(rename = "coalSize")]
+	// #[serde(rename = "coalSize")]
 	pub coal_size: i32,
-	#[serde(rename = "coalCount")]
+	// #[serde(rename = "coalCount")]
 	pub coal_count: i32,
-	#[serde(rename = "coalMinHeight")]
+	// #[serde(rename = "coalMinHeight")]
 	pub coal_min_height: i32,
-	#[serde(rename = "coalMaxHeight")]
+	// #[serde(rename = "coalMaxHeight")]
 	pub coal_max_height: i32,
 
-	#[serde(rename = "ironSize")]
+	// #[serde(rename = "ironSize")]
 	pub iron_size: i32,
-	#[serde(rename = "ironCount")]
+	// #[serde(rename = "ironCount")]
 	pub iron_count: i32,
-	#[serde(rename = "ironMinHeight")]
+	// #[serde(rename = "ironMinHeight")]
 	pub iron_min_height: i32,
-	#[serde(rename = "ironMaxHeight")]
+	// #[serde(rename = "ironMaxHeight")]
 	pub iron_max_height: i32,
 
-	#[serde(rename = "goldSize")]
+	// #[serde(rename = "goldSize")]
 	pub gold_size: i32,
-	#[serde(rename = "goldCount")]
+	// #[serde(rename = "goldCount")]
 	pub gold_count: i32,
-	#[serde(rename = "goldMinHeight")]
+	// #[serde(rename = "goldMinHeight")]
 	pub gold_min_height: i32,
-	#[serde(rename = "goldMaxHeight")]
+	// #[serde(rename = "goldMaxHeight")]
 	pub gold_max_height: i32,
 
-	#[serde(rename = "redstoneSize")]
+	// #[serde(rename = "redstoneSize")]
 	pub redstone_size: i32,
-	#[serde(rename = "redstoneCount")]
+	// #[serde(rename = "redstoneCount")]
 	pub redstone_count: i32,
-	#[serde(rename = "redstoneMinHeight")]
+	// #[serde(rename = "redstoneMinHeight")]
 	pub redstone_min_height: i32,
-	#[serde(rename = "redstoneMaxHeight")]
+	// #[serde(rename = "redstoneMaxHeight")]
 	pub redstone_max_height: i32,
 
-	#[serde(rename = "diamondSize")]
+	// #[serde(rename = "diamondSize")]
 	pub diamond_size: i32,
-	#[serde(rename = "diamondCount")]
+	// #[serde(rename = "diamondCount")]
 	pub diamond_count: i32,
-	#[serde(rename = "diamondMinHeight")]
+	// #[serde(rename = "diamondMinHeight")]
 	pub diamond_min_height: i32,
-	#[serde(rename = "diamondMaxHeight")]
+	// #[serde(rename = "diamondMaxHeight")]
 	pub diamond_max_height: i32,
 
-	#[serde(rename = "lapisSize")]
+	// #[serde(rename = "lapisSize")]
 	pub lapis_size: i32,
-	#[serde(rename = "lapisCount")]
+	// #[serde(rename = "lapisCount")]
 	pub lapis_count: i32,
-	#[serde(rename = "lapisCenterHeight")]
+	// #[serde(rename = "lapisCenterHeight")]
 	pub lapis_center_height: i32,
-	#[serde(rename = "lapisSpread")]
+	// #[serde(rename = "lapisSpread")]
 	pub lapis_spread: i32,
 }
 

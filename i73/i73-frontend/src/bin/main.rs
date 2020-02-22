@@ -41,8 +41,12 @@ use i73_noise::sample::Sample;
 use i73_shape::height::HeightSettings81;
 use i73_shape::volume::TriNoiseSettings;
 use std::collections::HashMap;
+use vocs::world::shared::{NoPack, SharedWorld};
+use vocs::nibbles::ChunkNibbles;
 
 fn main() {
+	let main_start = ::std::time::Instant::now();
+
 	let profile_name = match ::std::env::args().skip(1).next() {
 		Some(name) => name,
 		None => {
@@ -706,11 +710,9 @@ fn main() {
 	use vocs::component::*;
 	use vocs::mask::ChunkMask;
 	use vocs::mask::LayerMask;
-	use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
+	use vocs::nibbles::{u4, BulkNibbles};
 	use vocs::position::{dir, Offset};
 	use vocs::view::{Directional, SplitDirectional};
-
-	use vocs::world::shared::{NoPack, SharedWorld};
 
 	let mut sky_light = SharedWorld::<NoPack<ChunkNibbles>>::new();
 	let mut incomplete = World::<ChunkMask>::new();
@@ -979,66 +981,32 @@ fn main() {
 	println!("Writing region (0, 0)");
 	let writing_start = ::std::time::Instant::now();
 
-	// use rs25::level::manager::{Manager, RegionPool};
-	// let pool = RegionPool::new(PathBuf::from("out/region/"), 512);
-	// let mut manager = Manager::manage(pool);
+	write_region(&world, &mut sky_light, &mut heightmaps);
 
-	/*
-	use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
-	use rs25::level::region::RegionWriter;
-	use rs25::level::anvil::ColumnRoot;
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(writing_start);
 
-	let file = File::create("out/region/r.0.0.mca").unwrap();
-	let mut writer = RegionWriter::start(file).unwrap();
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
-	for z in 0..32 {
-		println!("{}", z);
-		for x in 0..32 {
-			let column_position = GlobalColumnPosition::new(x, z);
-
-			let heightmap = heightmaps.remove(&(x, z)).unwrap();
-
-			let mut snapshot = ColumnSnapshot {
-				chunks: vec![None; 16],
-				last_update: 0,
-				light_populated: true,
-				terrain_populated: true,
-				inhabited_time: 0,
-				biomes: vec![0; 256],
-				heightmap,
-				entities: vec![],
-				tile_entities: vec![],
-				tile_ticks: vec![]
-			};
-
-			for y in 0..16 {
-				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
-
-				let chunk = world.get(chunk_position).unwrap();
-
-				/*if chunk.anvil_empty() {
-					continue;
-				}*/
-
-				let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
-
-				snapshot.chunks[y as usize] = Some(ChunkSnapshot {
-					blocks: chunk.clone(),
-					block_light: ChunkNibbles::default(),
-					sky_light: sky_light.0
-				});
-			};
-
-			let root = ColumnRoot::from(snapshot.to_column(x as i32, z as i32).unwrap());
-
-			writer.chunk(x as u8, z as u8, &root).unwrap();
-		}
+		println!("Writing done in {}us ({}us per column)", us, us / 1024);
+		println!();
 	}
 
-	writer.finish().unwrap();*/
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(main_start);
 
-	// CW writing
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
+		println!("i73 done in {}us ({}us per column)", us, us / 1024);
+		println!();
+	}
+}
+
+fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 	let mut blocks = vec![0; 512 * 128 * 512];
 	for z in 0..32 {
 		println!("{}", z);
@@ -1049,7 +1017,6 @@ fn main() {
 				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
 
 				let chunk = world.get(chunk_position).unwrap();
-				// TODO: unused: let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
 
 				fn index(x: u32, y: u32, z: u32) -> u32 {
 					(y * 512 + z) * 512 + x
@@ -1101,15 +1068,57 @@ fn main() {
 	let mut gzip = GzEncoder::new(file, Compression::Fast);
 	gzip.write_all(&buffer).unwrap();
 	gzip.finish().unwrap();
+}
 
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(writing_start);
+fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>, heightmaps: &mut HashMap<(i32, i32), Vec<u32>>) {
+	use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
+	use rs25::level::region::RegionWriter;
+	use rs25::level::anvil::ColumnRoot;
 
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+	let file = File::create("out/region/r.0.0.mca").unwrap();
+	let mut writer = RegionWriter::start(file).unwrap();
 
-		println!("Writing done in {}us ({}us per column)", us, us / 1024);
-		println!();
+	for z in 0..32 {
+		println!("{}", z);
+		for x in 0..32 {
+			let column_position = GlobalColumnPosition::new(x, z);
+
+			let heightmap = heightmaps.remove(&(x, z)).unwrap();
+
+			let mut snapshot = ColumnSnapshot {
+				chunks: vec![None; 16],
+				last_update: 0,
+				light_populated: true,
+				terrain_populated: true,
+				inhabited_time: 0,
+				biomes: vec![0; 256],
+				heightmap,
+				tile_ticks: vec![]
+			};
+
+			for y in 0..16 {
+				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
+
+				let chunk = world.get(chunk_position).unwrap();
+
+				/*if chunk.anvil_empty() {
+					continue;
+				}*/
+
+				let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
+
+				snapshot.chunks[y as usize] = Some(ChunkSnapshot {
+					blocks: chunk.clone(),
+					block_light: ChunkNibbles::default(),
+					sky_light: sky_light.0
+				});
+			};
+
+			let root = ColumnRoot::from(snapshot.to_column(x as i32, z as i32).unwrap());
+
+			writer.column(x as u8, z as u8, &root).unwrap();
+		}
 	}
+
+	writer.finish().unwrap();
 }
