@@ -30,7 +30,7 @@ use i73_terrain::overworld_173::{self, Settings};
 use cgmath::Vector3;
 
 use vocs::indexed::ChunkIndexed;
-use vocs::position::{ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, QuadPosition};
+use vocs::position::{ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, QuadPosition, LayerPosition};
 use vocs::view::ColumnMut;
 use vocs::world::world::World;
 
@@ -217,7 +217,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"seasonal_forest".to_string(),
 		BiomeConfig {
-			debug_name: "Seasonal Forest".to_string(),
+			debug_name: "seasonal_forest".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -229,7 +229,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"swampland".to_string(),
 		BiomeConfig {
-			debug_name: "Swampland".to_string(),
+			debug_name: "swampland".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -241,7 +241,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"rainforest".to_string(),
 		BiomeConfig {
-			debug_name: "Rainforest".to_string(),
+			debug_name: "rainforest".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -253,7 +253,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"desert".to_string(),
 		BiomeConfig {
-			debug_name: "Desert".to_string(),
+			debug_name: "desert".to_string(),
 			surface: SurfaceConfig {
 				top: "12:0".to_string(),
 				fill: "12:0".to_string(),
@@ -265,7 +265,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"savanna".to_string(),
 		BiomeConfig {
-			debug_name: "Savanna".to_string(),
+			debug_name: "savanna".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -277,7 +277,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"plains".to_string(),
 		BiomeConfig {
-			debug_name: "Plains".to_string(),
+			debug_name: "plains".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -289,7 +289,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"tundra".to_string(),
 		BiomeConfig {
-			debug_name: "Tundra".to_string(),
+			debug_name: "tundra".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -301,7 +301,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"shrubland".to_string(),
 		BiomeConfig {
-			debug_name: "Shrubland".to_string(),
+			debug_name: "shrubland".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -313,7 +313,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"taiga".to_string(),
 		BiomeConfig {
-			debug_name: "Taiga".to_string(),
+			debug_name: "taiga".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -325,7 +325,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"forest".to_string(),
 		BiomeConfig {
-			debug_name: "Forest".to_string(),
+			debug_name: "forest".to_string(),
 			surface: SurfaceConfig {
 				top: "2:0".to_string(),
 				fill: "3:0".to_string(),
@@ -337,7 +337,7 @@ fn main() {
 	biomes_config.biomes.insert(
 		"ice_desert".to_string(),
 		BiomeConfig {
-			debug_name: "Ice Desert".to_string(),
+			debug_name: "ice_desert".to_string(),
 			surface: SurfaceConfig {
 				top: "12:0".to_string(),
 				fill: "12:0".to_string(),
@@ -579,6 +579,7 @@ fn main() {
 	let (_, paint) = overworld_173::passes(-160654125608861039, fake_settings);*/
 
 	let mut world = World::<ChunkIndexed<Block>>::new();
+	let mut world_biomes = HashMap::<(i32, i32), Vec<u8>>::new();
 
 	println!("Generating region (0, 0)");
 	let gen_start = ::std::time::Instant::now();
@@ -607,10 +608,37 @@ fn main() {
 				ChunkIndexed::<Block>::new(4, Block::air()),
 			];
 
+			let climate = climates
+				.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
+			let lookup = paint.biome_lookup();
+			let mut biomes = Vec::with_capacity(256);
+
+			for position in LayerPosition::enumerate() {
+				let climate = climate.get(position);
+				let biome = lookup.lookup(climate);
+
+				let id = match biome.name.as_ref() {
+					"rainforest" => 21, // jungle
+					"seasonal_forest" => 23, // jungle_edge
+					"forest" => 4, // forest
+					"swampland" => 3, // mountains
+					"savanna" => 35, // savanna
+					"shrubland" => 1, // plains
+					"taiga" => 30, // cold_taiga
+					"desert" => 2, // desert
+					"plains" => 1, // plains
+					"tundra" => 12, // ice_plains
+					"ice_desert" => 12, // ice_plains
+					unknown => panic!("Unknown biome {}", unknown)
+				};
+
+				biomes.push(id);
+			}
+
+			world_biomes.insert((x, z), biomes);
+
 			{
 				let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
-				let climate = climates
-					.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
 
 				shape.apply(&mut column, &climate, column_position);
 				paint.apply(&mut column, &climate, column_position);
@@ -716,12 +744,13 @@ fn main() {
 
 	let mut sky_light = SharedWorld::<NoPack<ChunkNibbles>>::new();
 	let mut incomplete = World::<ChunkMask>::new();
-	let mut heightmaps = ::std::collections::HashMap::<(i32, i32), Vec<u32>>::new(); // TODO: Better vocs integration.
+	let mut heightmaps = HashMap::<(i32, i32), Vec<u32>>::new(); // TODO: Better vocs integration.
 
 	let mut lighting_info = HashMap::new()/*SparseStorage::<u4>::with_default(u4::new(15))*/;
 	lighting_info.insert(Block::air(), u4::new(0));
 	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
 	lighting_info.insert(Block::from_anvil_id(9 * 16), u4::new(2));
+	lighting_info.insert(Block::from_anvil_id(18 * 16), u4::new(1));
 
 	let empty_lighting = ChunkNibbles::default();
 
@@ -981,7 +1010,7 @@ fn main() {
 	println!("Writing region (0, 0)");
 	let writing_start = ::std::time::Instant::now();
 
-	write_region(&world, &mut sky_light, &mut heightmaps);
+	write_region(&world, &mut sky_light, &mut heightmaps, &mut world_biomes);
 
 	{
 		let end = ::std::time::Instant::now();
@@ -1070,7 +1099,7 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 	gzip.finish().unwrap();
 }
 
-fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>, heightmaps: &mut HashMap<(i32, i32), Vec<u32>>) {
+fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>, heightmaps: &mut HashMap<(i32, i32), Vec<u32>>, world_biomes: &mut HashMap<(i32, i32), Vec<u8>>) {
 	use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
 	use rs25::level::region::RegionWriter;
 	use rs25::level::anvil::ColumnRoot;
@@ -1091,7 +1120,7 @@ fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<
 				light_populated: true,
 				terrain_populated: true,
 				inhabited_time: 0,
-				biomes: vec![0; 256],
+				biomes: world_biomes.remove(&(x, z)).unwrap(),
 				heightmap,
 				tile_ticks: vec![]
 			};
