@@ -59,11 +59,11 @@ impl TotalMetrics for BasicTotalMetrics {
 }
 
 impl AddAssign<BasicTimeMetrics> for BasicTotalMetrics {
-	fn add_assign(&mut self, other: BasicTimeMetrics) {}
+	fn add_assign(&mut self, _other: BasicTimeMetrics) {}
 }
 
 impl Display for BasicTotalMetrics {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
 		Ok(())
 	}
 }

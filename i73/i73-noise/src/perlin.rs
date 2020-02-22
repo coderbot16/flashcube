@@ -1,7 +1,7 @@
 use java_rand::Random;
 use cgmath::{Point2, Vector2, Vector3};
-use Permutations;
-use sample::Sample;
+use crate::Permutations;
+use crate::sample::Sample;
 use i73_base::math;
 
 const GRAD_TABLE: [(f64, f64, f64); 16] = [

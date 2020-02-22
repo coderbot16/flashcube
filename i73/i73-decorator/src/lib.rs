@@ -28,7 +28,7 @@ pub type Result = ::std::result::Result<(), Spilled>;
 pub struct Dispatcher<H, R> where H: Distribution, R: Distribution {
 	pub height_distribution: H,
 	pub rarity: R,
-	pub decorator: Box<Decorator>
+	pub decorator: Box<dyn Decorator>
 }
 
 impl<H, R> Dispatcher<H, R> where H: Distribution, R: Distribution {

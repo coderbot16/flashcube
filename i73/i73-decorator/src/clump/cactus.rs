@@ -1,7 +1,7 @@
 use vocs::position::{QuadPosition, Offset, dir};
 use vocs::view::QuadMut;
 use i73_base::matcher::BlockMatcher;
-use {Decorator, Result};
+use crate::{Decorator, Result};
 use java_rand::Random;
 use i73_base::Block;
 

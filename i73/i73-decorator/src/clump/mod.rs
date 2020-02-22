@@ -1,7 +1,7 @@
 use java_rand::Random;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset};
-use super::{Decorator, Result};
+use crate::{Decorator, Result};
 use i73_base::Block;
 
 pub mod cactus;

@@ -2,8 +2,9 @@ use i73_base::Block;
 use i73_base::matcher::BlockMatcher;
 use vocs::view::QuadMut;
 use vocs::position::{QuadPosition, Offset, dir};
-use {Decorator, Result};
+use crate::{Decorator, Result};
 use java_rand::Random;
+use std::i32;
 
 pub struct TreeDecorator {
 	blocks: TreeBlocks,
@@ -12,7 +13,7 @@ pub struct TreeDecorator {
 
 impl Decorator for TreeDecorator {
 	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
-		let tree = self.settings.tree(rng, position);
+		let tree = self.settings.tree(rng, position.y());
 		
 		if tree.leaves_max_y > 128 {
 			return Ok(());
@@ -44,7 +45,7 @@ impl Decorator for TreeDecorator {
 			
 			for z_offset in -radius..=radius {
 				for x_offset in -radius..=radius {
-					if z_offset.abs() != radius || x_offset.abs() != radius || (rng.next_u32_bound(self.settings.foliage_corner_chance) != 0 && y < tree.trunk_top) {
+					if i32::abs(z_offset) != radius || i32::abs(x_offset) != radius || (rng.next_u32_bound(self.settings.foliage_corner_chance) != 0 && y < tree.trunk_top) {
 
 						let position = match position.offset((x_offset as i8, 0, z_offset as i8)) {
 							Some(position) => position,
@@ -111,14 +112,13 @@ struct TreeSettings {
 }
 
 impl TreeSettings {
-	fn tree(&self, rng: &mut Random, orgin: QuadPosition) -> Tree {
+	fn tree(&self, rng: &mut Random, origin_y: u8) -> Tree {
 		let trunk_height = self.min_trunk_height + rng.next_u32_bound(self.add_trunk_height + 1);
-		let trunk_top = (orgin.y() as u32) + trunk_height;
+		let trunk_top = (origin_y as u32) + trunk_height;
 		
 		Tree {
-			orgin,
-			full_height: trunk_height + self.foliage_layers_off_trunk,
-			trunk_height,
+			// full_height: trunk_height + self.foliage_layers_off_trunk,
+			// trunk_height,
 			trunk_top,
 			leaves_min_y: trunk_top - self.foliage_layers_on_trunk,
 			leaves_max_y: trunk_top + self.foliage_layers_off_trunk,
@@ -143,11 +143,10 @@ impl Default for TreeSettings {
 }
 
 struct Tree {
-	orgin: QuadPosition,
-	/// Trunk Height + number of foliage layers above the trunk
-	full_height: u32,
-	/// Height of the trunk. Can be considered the length of the line that defines the trunk.
-	trunk_height: u32,
+	// Trunk Height + number of foliage layers above the trunk
+	// full_height: u32,
+	// Height of the trunk. Can be considered the length of the line that defines the trunk.
+	// trunk_height: u32,
 	/// Coordinates of the block above the last block of the trunk.
 	trunk_top: u32,
 	/// Minimum Y value for foliage layers (Inclusive).
@@ -166,8 +165,8 @@ impl Tree {
 		(self.leaves_radius_base + self.trunk_top + 1 - y) / self.leaves_slope
 	}
 	
-	/// Radius of the bounding box for the foliage at a given level. 0 for just checking the trunk.
-	fn bounding_radius(&self, y: u32) -> u32 {
+	// Radius of the bounding box for the foliage at a given level. 0 for just checking the trunk.
+	/*fn bounding_radius(&self, y: u32) -> u32 {
 		if y == (self.orgin.y() as u32) {
 			0
 		} else if y > self.trunk_top {
@@ -175,5 +174,5 @@ impl Tree {
 		} else {
 			1
 		}
-	}
+	}*/
 }

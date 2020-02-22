@@ -12,7 +12,7 @@ use vocs::view::{ColumnMut, ColumnBlocks, ColumnPalettes, ColumnAssociation};
 use i73_base::matcher::BlockMatcher;
 use i73_base::Block;
 
-use overworld::shape::{ShapeBlocks, ShapePass};
+use crate::overworld::shape::{ShapeBlocks, ShapePass};
 
 pub struct Settings {
 	pub shape_blocks: ShapeBlocks,

@@ -6,8 +6,8 @@ use i73_biome::{Lookup, Biome};
 use i73_shape::height::{HeightSettings, HeightSource};
 use i73_shape::volume::{TriNoiseSettings, TriNoiseSource, ShapeSettings};
 
-use overworld::shape::{ShapeBlocks, ShapePass};
-use overworld::paint::{PaintBlocks, PaintPass};
+use crate::overworld::shape::{ShapeBlocks, ShapePass};
+use crate::overworld::paint::{PaintBlocks, PaintPass};
 
 pub struct Settings {
 	pub shape_blocks: ShapeBlocks,

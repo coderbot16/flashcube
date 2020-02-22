@@ -14,7 +14,6 @@ extern crate vocs;
 use image::{Rgb, RgbImage};
 use std::fs;
 
-use i73_image::colorizer::colorize_grass;
 use i73_biome::climate::{ClimateSource, ClimateSettings};
 use i73_noise::sample::Sample;
 use i73_shape::height::{HeightSource, HeightSettings};
@@ -46,7 +45,7 @@ fn main() {
 		let height = height_source.sample(point, climate);
 
 		let scaled_center = ((height.center / 17.0) * 255.0) as u8;
-		let scaled_chaos = ((height.chaos - 0.5) * 255.0) as u8;
+		// let scaled_chaos = ((height.chaos - 0.5) * 255.0) as u8;
 
 		Rgb {
 			data: [

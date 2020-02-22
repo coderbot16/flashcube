@@ -741,7 +741,7 @@ fn main() {
 				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
 
 				let chunk = world.get(chunk_position).unwrap();
-				let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
+				// TODO: unused: let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
 
 				fn index(x: u32, y: u32, z: u32) -> u32 {
 					(y * 512 + z) * 512 + x

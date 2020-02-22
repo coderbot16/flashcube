@@ -1,7 +1,7 @@
-use renderer::{duration_us, Renderer, BasicTimeMetrics, BasicTotalMetrics};
+use crate::renderer::{duration_us, Renderer, BasicTimeMetrics, BasicTotalMetrics};
 use i73_biome::climate::{ClimateSource, ClimateSettings, Climate};
 use i73_noise::sample::Sample;
-use image::{Rgb, RgbImage, SubImage};
+use image::{Rgb, RgbImage};
 use vocs::position::{GlobalSectorPosition, LayerPosition, GlobalColumnPosition};
 
 pub trait Mapper: Send + Sync {

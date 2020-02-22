@@ -4,7 +4,7 @@ use std::thread;
 use std::cmp;
 use std::sync::mpsc;
 
-use renderer::{duration_us, Renderer, TotalMetrics};
+use crate::renderer::{duration_us, Renderer, TotalMetrics};
 use vocs::position::GlobalSectorPosition;
 use std::path::Path;
 

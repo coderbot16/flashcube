@@ -11,7 +11,7 @@ use std::str::FromStr;
 use i73_image::stitcher;
 use i73_image::renderer::full::create_renderer;
 use i73_image::renderer::climate::{ClimateRenderer, Mapper};
-use i73_image::colorizer::{colorize_grass, RAINFOREST, COLDEST, DESERT};
+use i73_image::colorizer::{colorize_grass, DESERT};
 
 use i73_biome::{Grid, Lookup};
 

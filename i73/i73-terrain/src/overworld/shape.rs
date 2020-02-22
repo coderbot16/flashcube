@@ -69,7 +69,7 @@ impl Pass<Climate> for ShapePass {
 			chunk.ensure_available(self.blocks.air.clone());
 			chunk.ensure_available(self.blocks.solid.clone());
 
-			let (mut blocks, palette) = chunk.freeze_palette();
+			let (blocks, palette) = chunk.freeze_palette();
 
 			let air   = palette.reverse_lookup(&self.blocks.air).unwrap();
 			let solid = palette.reverse_lookup(&self.blocks.solid).unwrap();

@@ -12,11 +12,11 @@ use vocs::position::{GlobalColumnPosition, ColumnPosition, LayerPosition, Global
 use std::collections::HashMap;
 use i73_terrain::overworld_173::Settings;
 use frontend::config::biomes::{BiomesConfig, RectConfig, BiomeConfig, SurfaceConfig, FollowupConfig};
-use colorizer::colorize_grass;
+use crate::colorizer::colorize_grass;
 use i73_terrain::overworld::shape::ShapePass;
 use i73_terrain::overworld::paint::PaintPass;
 use image::{RgbImage, SubImage, Rgb, GenericImage};
-use renderer::{self, duration_us, Renderer};
+use crate::renderer::{self, duration_us, Renderer};
 
 // Block types
 const AIR: Block = Block::air();
@@ -256,7 +256,7 @@ impl FullRenderer {
 			let mut ice = false;
 
 			for cy in (0..128).rev() {
-				let mut column_position = ColumnPosition::from_layer(cy, layer_position);
+				let column_position = ColumnPosition::from_layer(cy, layer_position);
 				let block = *column.get(column_position);
 
 				let ocean = block == OCEAN || block == ICE;

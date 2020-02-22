@@ -1,7 +1,7 @@
 use i73_base::matcher::BlockMatcher;
 use vocs::position::{QuadPosition, Offset};
 use vocs::view::QuadMut;
-use super::{Decorator, Result};
+use crate::{Decorator, Result};
 use java_rand::Random;
 use i73_trig as trig;
 use i73_base::{Block, math};

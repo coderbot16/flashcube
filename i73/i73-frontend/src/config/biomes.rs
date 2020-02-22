@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::borrow::Cow;
 use i73_decorator::Dispatcher;
-use config::decorator::DecoratorFactory;
+use crate::config::decorator::DecoratorFactory;
 use i73_base::Block;
 
 #[derive(Debug)]
@@ -109,7 +109,7 @@ pub struct DecoratorConfig {
 }
 
 impl DecoratorConfig {
-	pub fn into_dispatcher(self, registry: &HashMap<String, Box<DecoratorFactory>>) -> Result<Dispatcher<Chance<Baseline>, Chance<Baseline>>, String> {
+	pub fn into_dispatcher(self, registry: &HashMap<String, Box<dyn DecoratorFactory>>) -> Result<Dispatcher<Chance<Baseline>, Chance<Baseline>>, String> {
 		let factory = registry.get(&self.decorator).ok_or_else(|| format!("unknown decorator kind: {}", self.decorator))?;
 
 		let decorator =factory.configure(self.settings).map_err(|e| format!("{}", e))?;

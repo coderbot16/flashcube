@@ -1,6 +1,6 @@
 use java_rand::Random;
 use cgmath::Vector3;
-use height::Height;
+use crate::height::Height;
 use vocs::position::ColumnPosition;
 use i73_noise::octaves::PerlinOctavesVertical;
 use i73_base::math;

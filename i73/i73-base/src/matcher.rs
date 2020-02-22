@@ -4,7 +4,7 @@
 //! A component-based solution, in comparison, would be much more configurable.
 use fxhash::FxHashSet;
 use std::iter::{IntoIterator, FromIterator, Iterator};
-use Block;
+use crate::Block;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct BlockMatcher {
@@ -49,14 +49,14 @@ impl BlockMatcher where {
 
 	pub fn include<'a, I>(blocks: I) -> Self where I: IntoIterator<Item=&'a Block> {
 		BlockMatcher {
-			blocks: FxHashSet::from_iter(blocks.into_iter().map(|x| x.clone())),
+			blocks: FxHashSet::from_iter(blocks.into_iter().cloned()),
 			blacklist: false
 		}
 	}
 
 	pub fn exclude<'a, I>(blocks: I) -> Self where I: IntoIterator<Item=&'a Block> {
 		BlockMatcher {
-			blocks: FxHashSet::from_iter(blocks.into_iter().map(|x| x.clone())),
+			blocks: FxHashSet::from_iter(blocks.into_iter().cloned()),
 			blacklist: true
 		}
 	}

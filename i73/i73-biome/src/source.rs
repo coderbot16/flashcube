@@ -1,8 +1,8 @@
 use vocs::position::GlobalColumnPosition;
 use vocs::indexed::LayerIndexed;
-use climate::ClimateSource;
 use i73_noise::sample::Sample;
-use {Biome, Lookup};
+use crate::climate::ClimateSource;
+use crate::{Biome, Lookup};
 
 pub struct BiomeSource {
 	climate: ClimateSource,

@@ -4,9 +4,9 @@
 use java_rand::Random;
 use cgmath::{Point2, Vector2, Vector3};
 use i73_base::Layer;
-use sample::Sample;
-use simplex::Simplex;
-use perlin::Perlin;
+use crate::sample::Sample;
+use crate::simplex::Simplex;
+use crate::perlin::Perlin;
 
 #[derive(Debug, Clone)]
 pub struct SimplexOctaves(Vec<Simplex>);

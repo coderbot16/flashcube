@@ -4,7 +4,7 @@ use vocs::position::{ChunkPosition, ColumnPosition, QuadPosition};
 use vocs::view::QuadMut;
 use vocs::mask::ChunkMask;
 use vocs::component::*;
-use super::{Decorator, Result};
+use crate::{Decorator, Result};
 use i73_base::Block;
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
