@@ -1,13 +1,13 @@
-use vocs::position::{QuadPosition, Dir, Axis};
-use vocs::view::{QuadBlocks, QuadAssociation};
 use std::cmp;
+use vocs::position::{Axis, Dir, QuadPosition};
+use vocs::view::{QuadAssociation, QuadBlocks};
 
 // TODO: This should be close enough, but is unverified.
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Line {
 	pub from: QuadPosition,
-	pub to:   QuadPosition
+	pub to: QuadPosition,
 }
 
 impl Line {
@@ -16,20 +16,14 @@ impl Line {
 		(
 			(self.to.x() as i8) - (self.from.x() as i8),
 			(self.to.y() as i8) - (self.from.y() as i8),
-			(self.to.z() as i8) - (self.from.z() as i8)
+			(self.to.z() as i8) - (self.from.z() as i8),
 		)
 	}
 
 	pub fn trace(&self) -> LineTracer {
 		let diff = self.offset();
 
-		let max = cmp::max (
-			diff.0.abs(),
-			cmp::max (
-				diff.1.abs(),
-				diff.2.abs()
-			)
-		);
+		let max = cmp::max(diff.0.abs(), cmp::max(diff.1.abs(), diff.2.abs()));
 
 		let equal = (diff.0 == max, diff.1 == max, diff.2 == max);
 		let mask = (equal.0 as u8) | ((equal.1 as u8) << 1) | ((equal.2 as u8) << 2);
@@ -38,7 +32,14 @@ impl Line {
 			0 => Axis::X,
 			1 => Axis::Y,
 			2 => Axis::Z,
-			_ => unreachable!()
+			_ => unreachable!(),
+		};
+
+		// Get the signed version again
+		let max_signed = match axis {
+			Axis::X => diff.0,
+			Axis::Y => diff.1,
+			Axis::Z => diff.2,
 		};
 
 		LineTracer {
@@ -47,14 +48,10 @@ impl Line {
 			velocity: (
 				(diff.0 as f64) / (max as f64),
 				(diff.1 as f64) / (max as f64),
-				(diff.2 as f64) / (max as f64)
+				(diff.2 as f64) / (max as f64),
 			),
-			position: (
-				self.from.x() as f64,
-				self.from.y() as f64,
-				self.from.z() as f64
-			),
-			direction: if max > 0 { axis.plus() } else { axis.minus() }
+			position: (self.from.x() as f64, self.from.y() as f64, self.from.z() as f64),
+			direction: if max_signed > 0 { axis.plus() } else { axis.minus() },
 		}
 	}
 
@@ -70,7 +67,7 @@ pub struct LineTracer {
 	position: (f64, f64, f64),
 	steps: u32,
 	iterations: u32,
-	direction: Dir
+	direction: Dir,
 }
 
 impl Iterator for LineTracer {
@@ -84,17 +81,14 @@ impl Iterator for LineTracer {
 		let mut position = [
 			self.position.0 + self.velocity.0,
 			self.position.1 + self.velocity.1,
-			self.position.2 + self.velocity.2
+			self.position.2 + self.velocity.2,
 		];
 
-		let primary_offset = (self.iterations as i32) * ( if self.direction.plus() { 1 } else { -1 });
-
-		position[self.direction.axis() as usize] = self.position.0 + (primary_offset as f64);
-
+		self.position = (position[0], position[1], position[2]);
 		let position = QuadPosition::new(
 			(position[0] + 0.5).floor() as u8,
 			(position[1] + 0.5).floor() as u8,
-			(position[2] + 0.5).floor() as u8
+			(position[2] + 0.5).floor() as u8,
 		);
 
 		self.iterations += 1;

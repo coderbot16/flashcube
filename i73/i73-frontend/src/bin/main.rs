@@ -30,19 +30,21 @@ use i73_terrain::overworld_173::{self, Settings};
 use cgmath::Vector3;
 
 use vocs::indexed::ChunkIndexed;
-use vocs::position::{ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, QuadPosition, LayerPosition};
+use vocs::position::{
+	ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, LayerPosition, QuadPosition,
+};
 use vocs::view::ColumnMut;
 use vocs::world::world::World;
 
 use deflate::Compression;
-use i73_decorator::tree::TreeDecorator;
+use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
 use i73_shape::height::HeightSettings81;
 use i73_shape::volume::TriNoiseSettings;
 use std::collections::HashMap;
-use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::nibbles::ChunkNibbles;
+use vocs::world::shared::{NoPack, SharedWorld};
 
 fn main() {
 	let main_start = ::std::time::Instant::now();
@@ -618,18 +620,18 @@ fn main() {
 				let biome = lookup.lookup(climate);
 
 				let id = match biome.name.as_ref() {
-					"rainforest" => 21, // jungle
+					"rainforest" => 21,      // jungle
 					"seasonal_forest" => 23, // jungle_edge
-					"forest" => 4, // forest
-					"swampland" => 3, // mountains
-					"savanna" => 35, // savanna
-					"shrubland" => 1, // plains
-					"taiga" => 30, // cold_taiga
-					"desert" => 2, // desert
-					"plains" => 1, // plains
-					"tundra" => 12, // ice_plains
-					"ice_desert" => 12, // ice_plains
-					unknown => panic!("Unknown biome {}", unknown)
+					"forest" => 4,           // forest
+					"swampland" => 3,        // mountains
+					"savanna" => 35,         // savanna
+					"shrubland" => 1,        // plains
+					"taiga" => 30,           // cold_taiga
+					"desert" => 2,           // desert
+					"plains" => 1,           // plains
+					"tundra" => 12,          // ice_plains
+					"ice_desert" => 12,      // ice_plains
+					unknown => panic!("Unknown biome {}", unknown),
 				};
 
 				biomes.push(id);
@@ -692,7 +694,7 @@ fn main() {
 					};
 				}
 
-				TreeDecorator::default()
+				LargeTreeDecorator::default()
 					.generate(
 						&mut quad,
 						&mut decoration_rng,
@@ -1099,10 +1101,14 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 	gzip.finish().unwrap();
 }
 
-fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>, heightmaps: &mut HashMap<(i32, i32), Vec<u32>>, world_biomes: &mut HashMap<(i32, i32), Vec<u8>>) {
-	use rs25::level::manager::{ColumnSnapshot, ChunkSnapshot};
-	use rs25::level::region::RegionWriter;
+fn write_region(
+	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,
+	heightmaps: &mut HashMap<(i32, i32), Vec<u32>>,
+	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
+) {
 	use rs25::level::anvil::ColumnRoot;
+	use rs25::level::manager::{ChunkSnapshot, ColumnSnapshot};
+	use rs25::level::region::RegionWriter;
 
 	let file = File::create("out/region/r.0.0.mca").unwrap();
 	let mut writer = RegionWriter::start(file).unwrap();
@@ -1122,7 +1128,7 @@ fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<
 				inhabited_time: 0,
 				biomes: world_biomes.remove(&(x, z)).unwrap(),
 				heightmap,
-				tile_ticks: vec![]
+				tile_ticks: vec![],
 			};
 
 			for y in 0..16 {
@@ -1139,9 +1145,9 @@ fn write_region(world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<
 				snapshot.chunks[y as usize] = Some(ChunkSnapshot {
 					blocks: chunk.clone(),
 					block_light: ChunkNibbles::default(),
-					sky_light: sky_light.0
+					sky_light: sky_light.0,
 				});
-			};
+			}
 
 			let root = ColumnRoot::from(snapshot.to_column(x as i32, z as i32).unwrap());
 

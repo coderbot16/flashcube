@@ -11,10 +11,11 @@ use java_rand::Random;
 use vocs::position::{ColumnPosition, QuadPosition};
 use vocs::view::QuadMut;
 
+mod line;
+
 pub mod clump;
 pub mod dungeon;
 pub mod vein;
-// TODO: pub mod large_tree;
 pub mod exposed;
 pub mod lake;
 pub mod tree;

@@ -1,3 +1,4 @@
+use super::TreeBlocks;
 use crate::{Decorator, Result};
 use i73_base::matcher::BlockMatcher;
 use i73_base::Block;
@@ -6,12 +7,13 @@ use std::i32;
 use vocs::position::{dir, Offset, QuadPosition};
 use vocs::view::QuadMut;
 
-pub struct TreeDecorator {
+#[derive(Default)]
+pub struct NormalTreeDecorator {
 	blocks: TreeBlocks,
 	settings: TreeSettings,
 }
 
-impl Decorator for TreeDecorator {
+impl Decorator for NormalTreeDecorator {
 	fn generate(
 		&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition,
 	) -> Result {
@@ -74,34 +76,6 @@ impl Decorator for TreeDecorator {
 		}
 
 		Ok(())
-	}
-}
-
-impl Default for TreeDecorator {
-	fn default() -> Self {
-		TreeDecorator { blocks: TreeBlocks::default(), settings: TreeSettings::default() }
-	}
-}
-
-struct TreeBlocks {
-	log: Block,
-	foliage: Block,
-	replace: BlockMatcher,
-	soil: BlockMatcher,
-	new_soil: Block,
-}
-
-impl Default for TreeBlocks {
-	fn default() -> Self {
-		TreeBlocks {
-			log: Block::from_anvil_id(17 * 16),
-			foliage: Block::from_anvil_id(18 * 16),
-			replace: BlockMatcher::include([Block::air(), Block::from_anvil_id(18 * 16)].iter()),
-			soil: BlockMatcher::include(
-				[Block::from_anvil_id(2 * 16), Block::from_anvil_id(3 * 16)].iter(),
-			),
-			new_soil: Block::from_anvil_id(3 * 16),
-		}
 	}
 }
 
