@@ -4,7 +4,7 @@
 /// Note: `t` may be outside of [0, 1], in which case it will continue the line.
 #[inline]
 pub fn lerp(a: f64, b: f64, t: f64) -> f64 {
-	a + t*(b - a)
+	a + t * (b - a)
 }
 
 /// Performs linear interpolation between two values based on a 3rd control value.
@@ -13,7 +13,7 @@ pub fn lerp(a: f64, b: f64, t: f64) -> f64 {
 /// Note: `t` may be outside of [0, 1], in which case it will continue the line.
 #[inline]
 pub fn lerp_precise(a: f64, b: f64, t: f64) -> f64 {
-	(1.0 - t)*a + t*b
+	(1.0 - t) * a + t * b
 }
 
 /// Performs linear interpolation between two values based on a 3rd control value, represented as a
@@ -21,7 +21,7 @@ pub fn lerp_precise(a: f64, b: f64, t: f64) -> f64 {
 /// due to a different operation order.
 #[inline]
 pub fn lerp_fraction(a: f64, b: f64, tn: f64, td: f64) -> f64 {
-	a + (b - a) * tn/td
+	a + (b - a) * tn / td
 }
 
 /// Ensures that `x` is within the range `[min, max]`. Large values change to `max`, and small

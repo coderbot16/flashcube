@@ -16,11 +16,14 @@ fn default_ordering() -> ChanceOrdering {
 #[derive(Debug, Copy, Clone, Deserialize, Eq, PartialEq)]
 pub enum ChanceOrdering {
 	AlwaysGeneratePayload,
-	CheckChanceBeforePayload
+	CheckChanceBeforePayload,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Chance<D> where D: Distribution {
+pub struct Chance<D>
+where
+	D: Distribution,
+{
 	/// Chance for this distribution to return its value instead of 0.
 	/// Represented as probability = 1 / chance.
 	/// A chance of "1" does not call the Chance RNG, and acts as if it passed.
@@ -28,10 +31,13 @@ pub struct Chance<D> where D: Distribution {
 	pub chance: u32,
 	#[serde(default = "default_ordering")]
 	pub ordering: ChanceOrdering,
-	pub base: D
+	pub base: D,
 }
 
-impl<D> Distribution for Chance<D> where D: Distribution {
+impl<D> Distribution for Chance<D>
+where
+	D: Distribution,
+{
 	fn next(&self, rng: &mut Random) -> u32 {
 		match self.ordering {
 			ChanceOrdering::AlwaysGeneratePayload => {
@@ -44,7 +50,7 @@ impl<D> Distribution for Chance<D> where D: Distribution {
 				} else {
 					0
 				}
-			},
+			}
 			ChanceOrdering::CheckChanceBeforePayload => {
 				if self.chance <= 1 {
 					self.base.next(rng)
@@ -66,7 +72,7 @@ pub enum Baseline {
 	Linear(Linear),
 	Packed2(Packed2),
 	Packed3(Packed3),
-	Centered(Centered)
+	Centered(Centered),
 }
 
 impl Distribution for Baseline {
@@ -76,7 +82,7 @@ impl Distribution for Baseline {
 			Baseline::Linear(ref linear) => linear.next(rng),
 			Baseline::Packed2(ref packed2) => packed2.next(rng),
 			Baseline::Packed3(ref packed3) => packed3.next(rng),
-			Baseline::Centered(ref centered) => centered.next(rng)
+			Baseline::Centered(ref centered) => centered.next(rng),
 		}
 	}
 }
@@ -91,7 +97,7 @@ impl Distribution for u32 {
 #[derive(Debug, Deserialize)]
 pub struct Linear {
 	pub min: u32,
-	pub max: u32
+	pub max: u32,
 }
 
 impl Distribution for Linear {
@@ -106,7 +112,7 @@ pub struct Packed2 {
 	pub min: u32,
 	/// Minimum height passed to the second RNG call (the linear call).
 	pub linear_start: u32,
-	pub max: u32
+	pub max: u32,
 }
 
 impl Distribution for Packed2 {
@@ -121,7 +127,7 @@ impl Distribution for Packed2 {
 /// The average is around `(max+1)/8 - 1`, a simplified form of `(max+1)/2³ - 1`.
 #[derive(Debug, Deserialize)]
 pub struct Packed3 {
-	pub max: u32
+	pub max: u32,
 }
 
 impl Distribution for Packed3 {
@@ -136,11 +142,12 @@ impl Distribution for Packed3 {
 #[derive(Debug, Deserialize)]
 pub struct Centered {
 	pub center: u32,
-	pub radius: u32
+	pub radius: u32,
 }
 
 impl Distribution for Centered {
 	fn next(&self, rng: &mut Random) -> u32 {
-		rng.next_u32_bound(self.radius) + rng.next_u32_bound(self.radius) + self.center - self.radius
+		rng.next_u32_bound(self.radius) + rng.next_u32_bound(self.radius) + self.center
+			- self.radius
 	}
 }

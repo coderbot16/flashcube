@@ -12,10 +12,7 @@ pub const DESERT: Rgb<u8> = Rgb { data: [0xBF, 0xB7, 0x55] };
 pub const COLDEST: Rgb<u8> = Rgb { data: [0x80, 0xB4, 0x97] };
 
 pub fn coordinates_to_climate(x: u32, y: u32) -> Climate {
-	Climate::new (
-		1.0 - (x as f64) / 255.0,
-		1.0 - (y as f64) / 255.0
-	)
+	Climate::new(1.0 - (x as f64) / 255.0, 1.0 - (y as f64) / 255.0)
 }
 
 pub fn color_coordinates(climate: Climate) -> (u32, u32) {
@@ -39,9 +36,21 @@ pub fn colorize_grass(climate: Climate) -> Rgb<u8> {
 
 	Rgb {
 		data: [
-			lerp_color_final(lerp_color(COLDEST.data[0], DESERT.data[0], temperature), RAINFOREST.data[0], adjusted_rainfall),
-			lerp_color_final(lerp_color(COLDEST.data[1], DESERT.data[1], temperature), RAINFOREST.data[1], adjusted_rainfall),
-			lerp_color_final(lerp_color(COLDEST.data[2], DESERT.data[2], temperature), RAINFOREST.data[2], adjusted_rainfall),
-		]
+			lerp_color_final(
+				lerp_color(COLDEST.data[0], DESERT.data[0], temperature),
+				RAINFOREST.data[0],
+				adjusted_rainfall,
+			),
+			lerp_color_final(
+				lerp_color(COLDEST.data[1], DESERT.data[1], temperature),
+				RAINFOREST.data[1],
+				adjusted_rainfall,
+			),
+			lerp_color_final(
+				lerp_color(COLDEST.data[2], DESERT.data[2], temperature),
+				RAINFOREST.data[2],
+				adjusted_rainfall,
+			),
+		],
 	}
 }

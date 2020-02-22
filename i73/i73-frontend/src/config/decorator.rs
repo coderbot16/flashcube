@@ -1,5 +1,5 @@
-use serde_json;
 use i73_decorator::Decorator;
+use serde_json;
 
 pub trait DecoratorFactory {
 	fn configure(&self, config: serde_json::Value) -> serde_json::Result<Box<dyn Decorator>>;
@@ -8,7 +8,7 @@ pub trait DecoratorFactory {
 /// Vein decorator factories
 pub mod vein {
 	use super::*;
-	use i73_decorator::vein::{VeinDecorator, SeasideVeinDecorator};
+	use i73_decorator::vein::{SeasideVeinDecorator, VeinDecorator};
 
 	#[derive(Default)]
 	pub struct VeinDecoratorFactory;
@@ -30,7 +30,7 @@ pub mod vein {
 /// Lake decorator factories
 pub mod lake {
 	use super::*;
-	use i73_decorator::lake::{LakeDecorator};
+	use i73_decorator::lake::LakeDecorator;
 
 	#[derive(Default)]
 	pub struct LakeDecoratorFactory;

@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate vocs;
-extern crate java_rand;
 extern crate fxhash;
+extern crate java_rand;
+extern crate vocs;
 
 pub mod distribution;
 pub mod matcher;
@@ -11,8 +11,8 @@ pub mod math;
 mod layer;
 pub use layer::Layer;
 
-use vocs::view::ColumnMut;
 use vocs::position::GlobalColumnPosition;
+use vocs::view::ColumnMut;
 
 pub trait Pass<C: Copy> {
 	fn apply(&self, target: &mut ColumnMut<Block>, climate: &Layer<C>, chunk: GlobalColumnPosition);

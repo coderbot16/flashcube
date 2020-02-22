@@ -1,5 +1,5 @@
-mod trig;
 #[cfg(test)]
 mod test;
+mod trig;
 
-pub use trig::{sin, cos};
+pub use trig::{cos, sin};

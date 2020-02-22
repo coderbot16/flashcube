@@ -1,39 +1,39 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate java_rand;
 extern crate cgmath;
-extern crate vocs;
-extern crate i73_noise;
 extern crate i73_base;
+extern crate i73_noise;
+extern crate java_rand;
+extern crate vocs;
 
 pub mod climate;
-pub mod source;
 pub mod segmented;
+pub mod source;
 
 use climate::Climate;
-use std::borrow::Cow;
-use segmented::Segmented;
 use i73_base::{Block, Layer};
-use vocs::indexed::{Target, LayerIndexed};
+use segmented::Segmented;
+use std::borrow::Cow;
+use vocs::indexed::{LayerIndexed, Target};
 use vocs::position::LayerPosition;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Biome {
 	pub surface: Surface,
-	pub name: Cow<'static, str>
+	pub name: Cow<'static, str>,
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Surface {
-	pub top:  Block,
+	pub top: Block,
 	pub fill: Block,
-	pub chain: Vec<Followup>
+	pub chain: Vec<Followup>,
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Followup {
-	pub block:     Block,
-	pub max_depth: u32
+	pub block: Block,
+	pub max_depth: u32,
 }
 
 #[derive(Debug)]
@@ -42,27 +42,37 @@ impl<B: Clone> Grid<B> {
 	fn new_temperatures(biome: B) -> Segmented<B> {
 		let mut temperatures = Segmented::new(biome.clone());
 		temperatures.add_boundary(1.0, biome.clone());
-		
+
 		temperatures
 	}
-	
+
 	pub fn new(default: B) -> Self {
 		let temperatures = Self::new_temperatures(default);
-		
+
 		let mut grid = Segmented::new(temperatures.clone());
 		grid.add_boundary(1.0, temperatures.clone());
-		
+
 		Grid(grid)
 	}
-	
+
 	pub fn add(&mut self, temperature: (f64, f64), rainfall: (f64, f64), biome: B) {
-		self.0.for_all_aligned(rainfall.0, rainfall.1, &|| Self::new_temperatures(biome.clone()), &|temperatures| {
-			temperatures.for_all_aligned(temperature.0, temperature.1, &|| biome.clone(), &|existing| {
-				*existing = biome.clone();
-			})
-		})
+		self.0.for_all_aligned(
+			rainfall.0,
+			rainfall.1,
+			&|| Self::new_temperatures(biome.clone()),
+			&|temperatures| {
+				temperatures.for_all_aligned(
+					temperature.0,
+					temperature.1,
+					&|| biome.clone(),
+					&|existing| {
+						*existing = biome.clone();
+					},
+				)
+			},
+		)
 	}
-	
+
 	pub fn lookup(&self, climate: Climate) -> &B {
 		self.0.get(climate.adjusted_rainfall()).get(climate.temperature())
 	}
@@ -99,7 +109,10 @@ impl<B: Clone> Lookup<B> {
 	}
 
 	pub fn lookup(&self, climate: Climate) -> &B {
-		self.lookup_raw((climate.temperature() * 63.0) as usize, (climate.rainfall() * 63.0) as usize)
+		self.lookup_raw(
+			(climate.temperature() * 63.0) as usize,
+			(climate.rainfall() * 63.0) as usize,
+		)
 	}
 }
 

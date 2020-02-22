@@ -1,22 +1,22 @@
 extern crate clap;
-extern crate num_cpus;
-extern crate i73_image;
 extern crate i73_biome;
+extern crate i73_image;
 extern crate image;
+extern crate num_cpus;
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 use std::cmp;
 use std::str::FromStr;
 
-use i73_image::stitcher;
-use i73_image::renderer::full::create_renderer;
-use i73_image::renderer::climate::{ClimateRenderer, Mapper};
 use i73_image::colorizer::{colorize_grass, DESERT};
+use i73_image::renderer::climate::{ClimateRenderer, Mapper};
+use i73_image::renderer::full::create_renderer;
+use i73_image::stitcher;
 
 use i73_biome::{Grid, Lookup};
 
-use image::Rgb;
 use i73_biome::climate::Climate;
+use image::Rgb;
 
 #[derive(Default)]
 struct MapperOptions {
@@ -27,7 +27,7 @@ struct MapperOptions {
 	threads: u32,
 	world: Option<String>,
 	biome: Option<String>,
-	grass: Option<String>
+	grass: Option<String>,
 }
 
 fn parse_seed(seed: &str) -> u64 {
@@ -39,20 +39,20 @@ fn parse_seed(seed: &str) -> u64 {
 
 	match seed {
 		Ok(number) => number,
-		Err(_) => {
-			unimplemented!("cannot parse string seeds yet")
-		}
+		Err(_) => unimplemented!("cannot parse string seeds yet"),
 	}
 }
 
 fn validate_number(number: String) -> Result<(), String> {
 	match number.parse::<u32>() {
-		Ok(x) => if x == 0 {
-			Err("zero values are not a valid argument".to_owned())
-		} else {
-			Ok(())
-		},
-		Err(parse) => Err(parse.to_string())
+		Ok(x) => {
+			if x == 0 {
+				Err("zero values are not a valid argument".to_owned())
+			} else {
+				Ok(())
+			}
+		}
+		Err(parse) => Err(parse.to_string()),
 	}
 }
 
@@ -126,11 +126,16 @@ fn main() {
 
 	options.quiet = matches.is_present("quiet");
 	options.seed = parse_seed(matches.value_of("seed").unwrap());
-	options.width = matches.value_of("width").map(|value| u32::from_str(value).unwrap()).unwrap_or(4);
-	options.height = matches.value_of("height").map(|value| u32::from_str(value).unwrap()).unwrap_or(4);
+	options.width =
+		matches.value_of("width").map(|value| u32::from_str(value).unwrap()).unwrap_or(4);
+	options.height =
+		matches.value_of("height").map(|value| u32::from_str(value).unwrap()).unwrap_or(4);
 
 	let default_threads = cmp::min(options.width * options.height, num_cpus::get() as u32);
-	options.threads = matches.value_of("threads").map(|value| u32::from_str(value).unwrap()).unwrap_or(default_threads);
+	options.threads = matches
+		.value_of("threads")
+		.map(|value| u32::from_str(value).unwrap())
+		.unwrap_or(default_threads);
 
 	options.world = matches.value_of("world").map(str::to_owned);
 	options.biome = matches.value_of("biome").map(str::to_owned);
@@ -140,35 +145,34 @@ fn main() {
 }
 
 fn execute(options: MapperOptions) {
-	println!("[=======] Configured image size: {} sectors x {} sectors ({} pixels x {} pixels)",
+	println!(
+		"[=======] Configured image size: {} sectors x {} sectors ({} pixels x {} pixels)",
 		options.width,
 		options.height,
 		options.width * 256,
 		options.height * 256
 	);
 
-	println!("[=======] Rendering images using {} thread(s) with a seed of {}",
-		options.threads,
-		options.seed
+	println!(
+		"[=======] Rendering images using {} thread(s) with a seed of {}",
+		options.threads, options.seed
 	);
 
 	let mut any_mappers = false;
 
-	let MapperOptions {
-		quiet,
-		width,
-		height,
-		threads,
-		seed,
-		world,
-		biome,
-		grass
-	} = options;
+	let MapperOptions { quiet, width, height, threads, seed, world, biome, grass } = options;
 
 	if let Some(world) = world {
 		any_mappers = true;
 
-		stitcher::generate_stitched_image(move || { create_renderer(seed) }, world, (width, height), (0, 0), threads, quiet);
+		stitcher::generate_stitched_image(
+			move || create_renderer(seed),
+			world,
+			(width, height),
+			(0, 0),
+			threads,
+			quiet,
+		);
 	}
 
 	if let Some(biome) = biome {
@@ -180,7 +184,14 @@ fn execute(options: MapperOptions) {
 	if let Some(grass) = grass {
 		any_mappers = true;
 
-		stitcher::generate_stitched_image(move || { ClimateRenderer::new(seed, colorize_grass) }, grass, (width, height), (0, 0), threads, quiet);
+		stitcher::generate_stitched_image(
+			move || ClimateRenderer::new(seed, colorize_grass),
+			grass,
+			(width, height),
+			(0, 0),
+			threads,
+			quiet,
+		);
 	}
 
 	if !any_mappers {
@@ -189,7 +200,10 @@ fn execute(options: MapperOptions) {
 	}
 }
 
-fn execute_biome(seed: u64, name: String, sector_size: (u32, u32), offset: (u32, u32), thread_count: u32, quiet: bool) {
+fn execute_biome(
+	seed: u64, name: String, sector_size: (u32, u32), offset: (u32, u32), thread_count: u32,
+	quiet: bool,
+) {
 	#[derive(Copy, Clone)]
 	enum Biome {
 		Tundra,
@@ -201,22 +215,22 @@ fn execute_biome(seed: u64, name: String, sector_size: (u32, u32), offset: (u32,
 		Desert,
 		Plains,
 		SeasonalForest,
-		Rainforest
+		Rainforest,
 	}
 
 	impl Biome {
 		fn color(self) -> Rgb<u8> {
 			match self {
-				Biome::Tundra         => Rgb { data: [245, 255, 255] },
-				Biome::Taiga          => Rgb { data: [175, 255, 255] },
-				Biome::Swampland      => Rgb { data: [40,  70,   40] },
-				Biome::Savanna        => DESERT,
-				Biome::Shrubland      => Rgb { data: [150, 185,  50] },
-				Biome::Forest         => Rgb { data: [70,  185,  50] },
-				Biome::Desert         => Rgb { data: [255, 240, 127] },
-				Biome::Plains         => Rgb { data: [150, 220,  90] },
-				Biome::SeasonalForest => Rgb { data: [70,  220,  50] },
-				Biome::Rainforest     => Rgb { data: [70,  255,  50] }
+				Biome::Tundra => Rgb { data: [245, 255, 255] },
+				Biome::Taiga => Rgb { data: [175, 255, 255] },
+				Biome::Swampland => Rgb { data: [40, 70, 40] },
+				Biome::Savanna => DESERT,
+				Biome::Shrubland => Rgb { data: [150, 185, 50] },
+				Biome::Forest => Rgb { data: [70, 185, 50] },
+				Biome::Desert => Rgb { data: [255, 240, 127] },
+				Biome::Plains => Rgb { data: [150, 220, 90] },
+				Biome::SeasonalForest => Rgb { data: [70, 220, 50] },
+				Biome::Rainforest => Rgb { data: [70, 255, 50] },
 			}
 		}
 	}
@@ -243,5 +257,12 @@ fn execute_biome(seed: u64, name: String, sector_size: (u32, u32), offset: (u32,
 		}
 	}
 
-	stitcher::generate_stitched_image(move || { ClimateRenderer::new(seed, BiomeMapper(Lookup::generate(&grid))) }, name, sector_size, offset, thread_count, quiet);
+	stitcher::generate_stitched_image(
+		move || ClimateRenderer::new(seed, BiomeMapper(Lookup::generate(&grid))),
+		name,
+		sector_size,
+		offset,
+		thread_count,
+		quiet,
+	);
 }

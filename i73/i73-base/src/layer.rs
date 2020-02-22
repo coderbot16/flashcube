@@ -1,8 +1,13 @@
 use std::ops::{Add, AddAssign};
 use vocs::position::LayerPosition;
 
-pub struct Layer<T>([T; 256]) where T: Copy;
-impl<T> Layer<T> where T: Copy {
+pub struct Layer<T>([T; 256])
+where
+	T: Copy;
+impl<T> Layer<T>
+where
+	T: Copy,
+{
 	pub fn fill(fill: T) -> Self {
 		Layer([fill; 256])
 	}
@@ -16,7 +21,10 @@ impl<T> Layer<T> where T: Copy {
 	}
 }
 
-impl<T> Add for Layer<T> where T: Copy + AddAssign {
+impl<T> Add for Layer<T>
+where
+	T: Copy + AddAssign,
+{
 	type Output = Self;
 
 	fn add(mut self, rhs: Self) -> Self::Output {
@@ -29,7 +37,10 @@ impl<T> Add for Layer<T> where T: Copy + AddAssign {
 	}
 }
 
-impl<T> AddAssign for Layer<T> where T: Copy + AddAssign {
+impl<T> AddAssign for Layer<T>
+where
+	T: Copy + AddAssign,
+{
 	fn add_assign(&mut self, rhs: Self) {
 		for x in 0..256 {
 			// TODO: Iterators.

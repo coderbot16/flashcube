@@ -1,33 +1,35 @@
+use i73_base::Block;
+use i73_base::{Layer, Pass};
 use i73_biome::climate::{self, Climate};
-use i73_base::{Pass, Layer};
+use vocs::component::LayerStorage;
 use vocs::position::{ChunkPosition, GlobalColumnPosition, LayerPosition};
 use vocs::view::ColumnMut;
-use i73_base::Block;
-use vocs::component::LayerStorage;
 
 pub struct OceanBlocks {
-	pub air:   Block,
+	pub air: Block,
 	pub ocean: Block,
-	pub ice:   Block
+	pub ice: Block,
 }
 
 impl Default for OceanBlocks {
 	fn default() -> Self {
 		OceanBlocks {
-			air:   Block::air(),
-			ocean: Block::from_anvil_id( 9 * 16),
-			ice:   Block::from_anvil_id(79 * 16)
+			air: Block::air(),
+			ocean: Block::from_anvil_id(9 * 16),
+			ice: Block::from_anvil_id(79 * 16),
 		}
 	}
 }
 
 pub struct OceanPass {
-	pub blocks:  OceanBlocks,
-	pub sea_top: usize
+	pub blocks: OceanBlocks,
+	pub sea_top: usize,
 }
 
 impl Pass<Climate> for OceanPass {
-	fn apply(&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, _: GlobalColumnPosition) {
+	fn apply(
+		&self, target: &mut ColumnMut<Block>, climates: &Layer<Climate>, _: GlobalColumnPosition,
+	) {
 		if self.sea_top == 0 {
 			return;
 		}
@@ -42,14 +44,14 @@ impl Pass<Climate> for OceanPass {
 		}
 
 		if chunk_base > 15 {
-			return
+			return;
 		}
 
 		let chunk = &mut target.0[chunk_base];
 
 		// Check if chunk has air at all!
 		if chunk.palette().reverse_lookup(&self.blocks.air).is_none() {
-			return
+			return;
 		}
 
 		chunk.ensure_available(self.blocks.ocean);
@@ -60,13 +62,14 @@ impl Pass<Climate> for OceanPass {
 
 		let (chunk, palette) = chunk.freeze_palette();
 		let ocean = palette.reverse_lookup(&self.blocks.ocean).unwrap();
-		let ice = if has_ice { Some(palette.reverse_lookup(&self.blocks.ice).unwrap()) } else { None };
+		let ice =
+			if has_ice { Some(palette.reverse_lookup(&self.blocks.ice).unwrap()) } else { None };
 		let air = palette.reverse_lookup(&self.blocks.air).unwrap();
 
 		// Calculate how many layers of the chunk will have ocean.
 		let sea_layers = (self.sea_top - has_ice as usize) % 16;
 
-		for index in 0..((sea_layers*256) as u16) {
+		for index in 0..((sea_layers * 256) as u16) {
 			let position = ChunkPosition::from_yzx(index);
 
 			if chunk.get(position) == air {

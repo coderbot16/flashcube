@@ -1,17 +1,18 @@
-extern crate image;
 extern crate i73_base;
-extern crate i73_image;
 extern crate i73_biome;
+extern crate i73_image;
+extern crate image;
 
 use image::{Rgb, RgbImage};
-use std::{fs, i32};
 use std::io::BufReader;
+use std::{fs, i32};
 
 use i73_image::colorizer::{colorize_grass, coordinates_to_climate};
 
 fn main() {
 	let reference_file = fs::File::open("out/image/grasscolor.png").unwrap();
-	let reference = image::load(BufReader::new(reference_file), image::ImageFormat::PNG).unwrap().to_rgb();
+	let reference =
+		image::load(BufReader::new(reference_file), image::ImageFormat::PNG).unwrap().to_rgb();
 	let mut map = RgbImage::new(256, 256);
 	let mut diff = RgbImage::new(256, 256);
 
@@ -45,13 +46,17 @@ fn main() {
 			let ref_pixel = *reference.get_pixel(x, y);
 			let map_pixel = *map.get_pixel(x, y);
 
-			diff.put_pixel(x, y, Rgb {
-				data: [
-					i32::abs(ref_pixel.data[0] as i32 - map_pixel.data[0] as i32) as u8,
-					i32::abs(ref_pixel.data[1] as i32 - map_pixel.data[1] as i32) as u8,
-					i32::abs(ref_pixel.data[2] as i32 - map_pixel.data[2] as i32) as u8
-				]
-			});
+			diff.put_pixel(
+				x,
+				y,
+				Rgb {
+					data: [
+						i32::abs(ref_pixel.data[0] as i32 - map_pixel.data[0] as i32) as u8,
+						i32::abs(ref_pixel.data[1] as i32 - map_pixel.data[1] as i32) as u8,
+						i32::abs(ref_pixel.data[2] as i32 - map_pixel.data[2] as i32) as u8,
+					],
+				},
+			);
 		}
 	}
 

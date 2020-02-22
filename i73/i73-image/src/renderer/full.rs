@@ -1,22 +1,24 @@
+use crate::colorizer::colorize_grass;
+use crate::renderer::{self, duration_us, Renderer};
+use frontend::config::biomes::{
+	BiomeConfig, BiomesConfig, FollowupConfig, RectConfig, SurfaceConfig,
+};
+use i73_base::{math, Block, Layer, Pass};
+use i73_biome::climate::{Climate, ClimateSource};
+use i73_biome::Lookup;
+use i73_noise::sample::Sample;
+use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
+use i73_terrain::overworld::paint::PaintPass;
+use i73_terrain::overworld::shape::ShapePass;
+use i73_terrain::overworld_173;
+use i73_terrain::overworld_173::Settings;
+use image::{GenericImage, Rgb, RgbImage, SubImage};
+use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::ops::AddAssign;
-use i73_biome::climate::{Climate, ClimateSource};
-use i73_noise::sample::Sample;
-use i73_terrain::overworld::ocean::{OceanPass, OceanBlocks};
-use i73_terrain::overworld_173;
-use i73_biome::Lookup;
-use i73_base::{Block, Pass, Layer, math};
 use vocs::indexed::ChunkIndexed;
+use vocs::position::{ColumnPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 use vocs::view::ColumnMut;
-use vocs::position::{GlobalColumnPosition, ColumnPosition, LayerPosition, GlobalSectorPosition};
-use std::collections::HashMap;
-use i73_terrain::overworld_173::Settings;
-use frontend::config::biomes::{BiomesConfig, RectConfig, BiomeConfig, SurfaceConfig, FollowupConfig};
-use crate::colorizer::colorize_grass;
-use i73_terrain::overworld::shape::ShapePass;
-use i73_terrain::overworld::paint::PaintPass;
-use image::{RgbImage, SubImage, Rgb, GenericImage};
-use crate::renderer::{self, duration_us, Renderer};
 
 // Block types
 const AIR: Block = Block::air();
@@ -37,7 +39,7 @@ pub struct TimeMetrics {
 	pub climates: u64,
 	pub shape: u64,
 	pub paint: u64,
-	pub ocean: u64
+	pub ocean: u64,
 }
 
 impl TimeMetrics {
@@ -60,13 +62,15 @@ impl TimeMetrics {
 
 impl Display for TimeMetrics {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{:8.3}ms, {:5.3}ms/column | {:5.2}% / {:5.2}% / {:5.2}% / {:5.2}%",
-			   (self.total as f64) / 1000.0,
-			   (self.total / 256) as f64 / 1000.0,
-			   self.climates_percentage(),
-			   self.shape_percentage(),
-			   self.paint_percentage(),
-			   self.ocean_percentage()
+		write!(
+			f,
+			"{:8.3}ms, {:5.3}ms/column | {:5.2}% / {:5.2}% / {:5.2}% / {:5.2}%",
+			(self.total as f64) / 1000.0,
+			(self.total / 256) as f64 / 1000.0,
+			self.climates_percentage(),
+			self.shape_percentage(),
+			self.paint_percentage(),
+			self.ocean_percentage()
 		)
 	}
 }
@@ -78,7 +82,7 @@ pub struct TotalMetrics {
 	pub paint: u64,
 	pub ocean: u64,
 	pub total: u64,
-	pub thread_count: u32
+	pub thread_count: u32,
 }
 
 impl TotalMetrics {
@@ -120,11 +124,13 @@ impl AddAssign<TimeMetrics> for TotalMetrics {
 
 impl Display for TotalMetrics {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{:5.2}% / {:5.2}% / {:5.2}% / {:5.2}%",
-			   self.climates_percentage() / (self.thread_count as f64),
-			   self.shape_percentage() / (self.thread_count as f64),
-			   self.paint_percentage() / (self.thread_count as f64),
-			   self.ocean_percentage() / (self.thread_count as f64)
+		write!(
+			f,
+			"{:5.2}% / {:5.2}% / {:5.2}% / {:5.2}%",
+			self.climates_percentage() / (self.thread_count as f64),
+			self.shape_percentage() / (self.thread_count as f64),
+			self.paint_percentage() / (self.thread_count as f64),
+			self.ocean_percentage() / (self.thread_count as f64)
 		)
 	}
 }
@@ -132,18 +138,205 @@ impl Display for TotalMetrics {
 pub fn create_renderer(seed: u64) -> FullRenderer {
 	let settings = Settings::default();
 
-	let mut biomes_config = BiomesConfig { decorator_sets: HashMap::new(), biomes: HashMap::new(), default: "plains".to_string(), grid: vec![RectConfig { temperature: (0.0, 0.1), rainfall: (0.0, 1.0), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.0, 0.2), biome: "tundra".to_string() }, RectConfig { temperature: (0.1, 0.5), rainfall: (0.2, 0.5), biome: "taiga".to_string() }, RectConfig { temperature: (0.1, 0.7), rainfall: (0.5, 1.0), biome: "swampland".to_string() }, RectConfig { temperature: (0.5, 0.95), rainfall: (0.0, 0.2), biome: "savanna".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.2, 0.35), biome: "shrubland".to_string() }, RectConfig { temperature: (0.5, 0.97), rainfall: (0.35, 0.5), biome: "forest".to_string() }, RectConfig { temperature: (0.7, 0.97), rainfall: (0.5, 1.0), biome: "forest".to_string() }, RectConfig { temperature: (0.95, 1.0), rainfall: (0.0, 0.2), biome: "desert".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.2, 0.45), biome: "plains".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.45, 0.9), biome: "seasonal_forest".to_string() }, RectConfig { temperature: (0.97, 1.0), rainfall: (0.9, 1.0), biome: "rainforest".to_string() }] };
-	biomes_config.biomes.insert("seasonal_forest".to_string(), BiomeConfig { debug_name: "Seasonal Forest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("swampland".to_string(), BiomeConfig { debug_name: "Swampland".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("rainforest".to_string(), BiomeConfig { debug_name: "Rainforest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("desert".to_string(), BiomeConfig { debug_name: "Desert".to_string(), surface: SurfaceConfig { top: "12:0".to_string(), fill: "12:0".to_string(), chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }] }, decorators: vec![] });
-	biomes_config.biomes.insert("savanna".to_string(), BiomeConfig { debug_name: "Savanna".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("plains".to_string(), BiomeConfig { debug_name: "Plains".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("tundra".to_string(), BiomeConfig { debug_name: "Tundra".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("shrubland".to_string(), BiomeConfig { debug_name: "Shrubland".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("taiga".to_string(), BiomeConfig { debug_name: "Taiga".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("forest".to_string(), BiomeConfig { debug_name: "Forest".to_string(), surface: SurfaceConfig { top: "2:0".to_string(), fill: "3:0".to_string(), chain: vec![] }, decorators: vec![] });
-	biomes_config.biomes.insert("ice_desert".to_string(), BiomeConfig { debug_name: "Ice Desert".to_string(), surface: SurfaceConfig { top: "12:0".to_string(), fill: "12:0".to_string(), chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }] }, decorators: vec![] });
+	let mut biomes_config = BiomesConfig {
+		decorator_sets: HashMap::new(),
+		biomes: HashMap::new(),
+		default: "plains".to_string(),
+		grid: vec![
+			RectConfig {
+				temperature: (0.0, 0.1),
+				rainfall: (0.0, 1.0),
+				biome: "tundra".to_string(),
+			},
+			RectConfig {
+				temperature: (0.1, 0.5),
+				rainfall: (0.0, 0.2),
+				biome: "tundra".to_string(),
+			},
+			RectConfig {
+				temperature: (0.1, 0.5),
+				rainfall: (0.2, 0.5),
+				biome: "taiga".to_string(),
+			},
+			RectConfig {
+				temperature: (0.1, 0.7),
+				rainfall: (0.5, 1.0),
+				biome: "swampland".to_string(),
+			},
+			RectConfig {
+				temperature: (0.5, 0.95),
+				rainfall: (0.0, 0.2),
+				biome: "savanna".to_string(),
+			},
+			RectConfig {
+				temperature: (0.5, 0.97),
+				rainfall: (0.2, 0.35),
+				biome: "shrubland".to_string(),
+			},
+			RectConfig {
+				temperature: (0.5, 0.97),
+				rainfall: (0.35, 0.5),
+				biome: "forest".to_string(),
+			},
+			RectConfig {
+				temperature: (0.7, 0.97),
+				rainfall: (0.5, 1.0),
+				biome: "forest".to_string(),
+			},
+			RectConfig {
+				temperature: (0.95, 1.0),
+				rainfall: (0.0, 0.2),
+				biome: "desert".to_string(),
+			},
+			RectConfig {
+				temperature: (0.97, 1.0),
+				rainfall: (0.2, 0.45),
+				biome: "plains".to_string(),
+			},
+			RectConfig {
+				temperature: (0.97, 1.0),
+				rainfall: (0.45, 0.9),
+				biome: "seasonal_forest".to_string(),
+			},
+			RectConfig {
+				temperature: (0.97, 1.0),
+				rainfall: (0.9, 1.0),
+				biome: "rainforest".to_string(),
+			},
+		],
+	};
+	biomes_config.biomes.insert(
+		"seasonal_forest".to_string(),
+		BiomeConfig {
+			debug_name: "Seasonal Forest".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"swampland".to_string(),
+		BiomeConfig {
+			debug_name: "Swampland".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"rainforest".to_string(),
+		BiomeConfig {
+			debug_name: "Rainforest".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"desert".to_string(),
+		BiomeConfig {
+			debug_name: "Desert".to_string(),
+			surface: SurfaceConfig {
+				top: "12:0".to_string(),
+				fill: "12:0".to_string(),
+				chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"savanna".to_string(),
+		BiomeConfig {
+			debug_name: "Savanna".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"plains".to_string(),
+		BiomeConfig {
+			debug_name: "Plains".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"tundra".to_string(),
+		BiomeConfig {
+			debug_name: "Tundra".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"shrubland".to_string(),
+		BiomeConfig {
+			debug_name: "Shrubland".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"taiga".to_string(),
+		BiomeConfig {
+			debug_name: "Taiga".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"forest".to_string(),
+		BiomeConfig {
+			debug_name: "Forest".to_string(),
+			surface: SurfaceConfig {
+				top: "2:0".to_string(),
+				fill: "3:0".to_string(),
+				chain: vec![],
+			},
+			decorators: vec![],
+		},
+	);
+	biomes_config.biomes.insert(
+		"ice_desert".to_string(),
+		BiomeConfig {
+			debug_name: "Ice Desert".to_string(),
+			surface: SurfaceConfig {
+				top: "12:0".to_string(),
+				fill: "12:0".to_string(),
+				chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }],
+			},
+			decorators: vec![],
+		},
+	);
 
 	//println!("{:?}", biomes_config);
 
@@ -153,22 +346,19 @@ pub fn create_renderer(seed: u64) -> FullRenderer {
 		blocks: OceanBlocks {
 			ocean: Block::from_anvil_id(9 * 16),
 			air: Block::air(),
-			ice: Block::from_anvil_id(79 * 16)
+			ice: Block::from_anvil_id(79 * 16),
 		},
-		sea_top: (settings.sea_coord + 1) as usize
+		sea_top: (settings.sea_coord + 1) as usize,
 	};
 
 	let passes = overworld_173::passes(seed, settings, Lookup::generate(&grid));
 
-	FullRenderer {
-		passes,
-		ocean
-	}
+	FullRenderer { passes, ocean }
 }
 
 pub struct FullRenderer {
 	passes: OverworldPasses,
-	ocean: OceanPass
+	ocean: OceanPass,
 }
 
 impl Renderer for FullRenderer {
@@ -202,16 +392,14 @@ impl Renderer for FullRenderer {
 				ChunkIndexed::<Block>::new(4, Block::air()),
 				ChunkIndexed::<Block>::new(4, Block::air()),
 				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air())
+				ChunkIndexed::<Block>::new(4, Block::air()),
 			];
 
 			let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
 
 			let pass_start = ::std::time::Instant::now();
-			let climates = climates.chunk((
-				(column_position.x() * 16) as f64,
-				(column_position.z() * 16) as f64
-			));
+			let climates = climates
+				.chunk(((column_position.x() * 16) as f64, (column_position.z() * 16) as f64));
 			metrics.climates += duration_us(&pass_start);
 
 			//metrics("initial", &column, x, z);
@@ -233,7 +421,7 @@ impl Renderer for FullRenderer {
 				layer_position.x() as u32 * 16,
 				layer_position.z() as u32 * 16,
 				16,
-				16
+				16,
 			);
 
 			self.render_column(&column, target, &climates);
@@ -249,7 +437,10 @@ impl Renderer for FullRenderer {
 }
 
 impl FullRenderer {
-	fn render_column(&self, column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>, climates: &Layer<Climate>) {
+	fn render_column(
+		&self, column: &ColumnMut<Block>, mut target: SubImage<&mut RgbImage>,
+		climates: &Layer<Climate>,
+	) {
 		for layer_position in LayerPosition::enumerate() {
 			let mut height = 0;
 			let mut ocean_height = 0;
@@ -308,20 +499,20 @@ impl FullRenderer {
 						data: [
 							(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
 							(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
-							math::lerp(color.data[2] as f64, 255.0, shade) as u8
-						]
+							math::lerp(color.data[2] as f64, 255.0, shade) as u8,
+						],
 					}
 				} else {
 					Rgb {
 						data: [
 							math::lerp(color.data[1] as f64 * 0.5 + 63.0, 63.0, shade) as u8,
 							math::lerp(color.data[1] as f64 * 0.5 + 63.0, 63.0, shade) as u8,
-							math::lerp(color.data[2] as f64, 255.0, shade) as u8
-						]
+							math::lerp(color.data[2] as f64, 255.0, shade) as u8,
+						],
 					}
 				}
 			} else {
-				let shade = math::clamp(((height as f64) / 127.0) * 0.6 + 0.4, 0.0, 1.0) ;
+				let shade = math::clamp(((height as f64) / 127.0) * 0.6 + 0.4, 0.0, 1.0);
 
 				let (color, shade) = if climate.freezing() {
 					(Rgb { data: [255, 255, 255] }, 1.0 - (1.0 - shade).powi(2))
@@ -333,16 +524,12 @@ impl FullRenderer {
 					data: [
 						(color.data[0] as f64 * shade) as u8,
 						(color.data[1] as f64 * shade) as u8,
-						(color.data[2] as f64 * shade) as u8
-					]
+						(color.data[2] as f64 * shade) as u8,
+					],
 				}
 			};
 
-			target.put_pixel(
-				layer_position.x() as u32,
-				layer_position.z() as u32,
-				shaded_color
-			);
+			target.put_pixel(layer_position.x() as u32, layer_position.z() as u32, shaded_color);
 		}
 	}
 }

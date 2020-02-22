@@ -1,14 +1,20 @@
 use image::RgbImage;
-use std::fs;
-use std::thread;
 use std::cmp;
+use std::fs;
 use std::sync::mpsc;
+use std::thread;
 
 use crate::renderer::{duration_us, Renderer, TotalMetrics};
-use vocs::position::GlobalSectorPosition;
 use std::path::Path;
+use vocs::position::GlobalSectorPosition;
 
-pub fn generate_stitched_image<F, R>(create_renderer: F, name: String, sector_size: (u32, u32), offset: (u32, u32), thread_count: u32, quiet: bool) where F: 'static + Send + Sync + Fn() -> R, R: 'static + Renderer + Sync {
+pub fn generate_stitched_image<F, R>(
+	create_renderer: F, name: String, sector_size: (u32, u32), offset: (u32, u32),
+	thread_count: u32, quiet: bool,
+) where
+	F: 'static + Send + Sync + Fn() -> R,
+	R: 'static + Renderer + Sync,
+{
 	println!("[=======] Generating {} map...", name);
 	let gen_start = ::std::time::Instant::now();
 	let mut map = RgbImage::new(sector_size.0 * 256, sector_size.1 * 256);
@@ -36,7 +42,7 @@ pub fn generate_stitched_image<F, R>(create_renderer: F, name: String, sector_si
 
 				let position = GlobalSectorPosition::new(
 					x as i32 + offset.0 as i32,
-					z as i32 + offset.1 as i32
+					z as i32 + offset.1 as i32,
 				);
 
 				let (sector, metrics) = renderer.process_sector(position);
@@ -54,11 +60,7 @@ pub fn generate_stitched_image<F, R>(create_renderer: F, name: String, sector_si
 	while let Ok((x, z, sector, metrics)) = receiver.recv() {
 		for iz in 0..256 {
 			for ix in 0..256 {
-				map.put_pixel(
-					x * 256 + ix,
-					z * 256 + iz,
-					*sector.get_pixel(ix, iz)
-				);
+				map.put_pixel(x * 256 + ix, z * 256 + iz, *sector.get_pixel(ix, iz));
 			}
 		}
 
@@ -84,11 +86,12 @@ pub fn generate_stitched_image<F, R>(create_renderer: F, name: String, sector_si
 	let total = duration_us(&gen_start);
 	total_metrics.set_duration_us(total);
 
-	println!("[=======] Generation complete in {:.3}ms, {:.3}ms/sector, {:.3}ms/column | {}",
-			 (total as f64) / 1000.0,
-			 (total * thread_count as u64 / (sector_count as u64)) as f64 / 1000.0,
-			 (total * thread_count as u64/ (sector_count as u64 * 256)) as f64 / 1000.0,
-			 total_metrics
+	println!(
+		"[=======] Generation complete in {:.3}ms, {:.3}ms/sector, {:.3}ms/column | {}",
+		(total as f64) / 1000.0,
+		(total * thread_count as u64 / (sector_count as u64)) as f64 / 1000.0,
+		(total * thread_count as u64 / (sector_count as u64 * 256)) as f64 / 1000.0,
+		total_metrics
 	);
 
 	println!("[=======] Saving image...");

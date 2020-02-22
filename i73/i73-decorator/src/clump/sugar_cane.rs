@@ -1,9 +1,9 @@
-use java_rand::Random;
-use vocs::view::QuadMut;
-use vocs::position::{QuadPosition, Offset, dir};
 use crate::{Decorator, Result};
 use i73_base::matcher::BlockMatcher;
 use i73_base::Block;
+use java_rand::Random;
+use vocs::position::{dir, Offset, QuadPosition};
+use vocs::view::QuadMut;
 
 pub struct SugarCaneDecorator {
 	pub block: Block,
@@ -11,23 +11,25 @@ pub struct SugarCaneDecorator {
 	pub liquid: BlockMatcher,
 	pub replace: BlockMatcher,
 	pub base_height: u32,
-	pub add_height: u32
+	pub add_height: u32,
 }
 
 impl Decorator for SugarCaneDecorator {
-	fn generate(&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition) -> Result {
+	fn generate(
+		&self, quad: &mut QuadMut<Block>, rng: &mut Random, position: QuadPosition,
+	) -> Result {
 		if !self.replace.matches(quad.get(position)) {
 			return Ok(());
 		}
 
 		let below = match position.offset(dir::Down) {
 			Some(below) => below,
-			None => return Ok(())
+			None => return Ok(()),
 		};
-		
+
 		if *quad.get(below) != self.block {
 			if !self.base.matches(quad.get(below)) {
-				return Ok(())
+				return Ok(());
 			}
 
 			let mut valid = false;
