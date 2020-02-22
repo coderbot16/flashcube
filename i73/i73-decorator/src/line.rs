@@ -1,5 +1,5 @@
 use std::cmp;
-use vocs::position::{Axis, Dir, QuadPosition};
+use vocs::position::QuadPosition;
 use vocs::view::{QuadAssociation, QuadBlocks};
 
 // TODO: This should be close enough, but is unverified.
@@ -25,23 +25,6 @@ impl Line {
 
 		let max = cmp::max(diff.0.abs(), cmp::max(diff.1.abs(), diff.2.abs()));
 
-		let equal = (diff.0 == max, diff.1 == max, diff.2 == max);
-		let mask = (equal.0 as u8) | ((equal.1 as u8) << 1) | ((equal.2 as u8) << 2);
-
-		let axis = match mask.trailing_zeros() & 3 {
-			0 => Axis::X,
-			1 => Axis::Y,
-			2 => Axis::Z,
-			_ => unreachable!(),
-		};
-
-		// Get the signed version again
-		let max_signed = match axis {
-			Axis::X => diff.0,
-			Axis::Y => diff.1,
-			Axis::Z => diff.2,
-		};
-
 		LineTracer {
 			steps: max as u32,
 			iterations: 0,
@@ -51,7 +34,6 @@ impl Line {
 				(diff.2 as f64) / (max as f64),
 			),
 			position: (self.from.x() as f64, self.from.y() as f64, self.from.z() as f64),
-			direction: if max_signed > 0 { axis.plus() } else { axis.minus() },
 		}
 	}
 
@@ -67,7 +49,6 @@ pub struct LineTracer {
 	position: (f64, f64, f64),
 	steps: u32,
 	iterations: u32,
-	direction: Dir,
 }
 
 impl Iterator for LineTracer {
@@ -78,7 +59,7 @@ impl Iterator for LineTracer {
 			return None;
 		}
 
-		let mut position = [
+		let position = [
 			self.position.0 + self.velocity.0,
 			self.position.1 + self.velocity.1,
 			self.position.2 + self.velocity.2,

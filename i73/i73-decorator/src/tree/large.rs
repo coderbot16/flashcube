@@ -1,5 +1,4 @@
 use super::TreeBlocks;
-use crate::line;
 use crate::line::Line;
 use crate::{Decorator, Result};
 use i73_base::matcher::BlockMatcher;

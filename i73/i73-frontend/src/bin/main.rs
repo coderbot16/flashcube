@@ -37,7 +37,7 @@ use vocs::view::ColumnMut;
 use vocs::world::world::World;
 
 use deflate::Compression;
-use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
+use i73_decorator::tree::LargeTreeDecorator;
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
 use i73_shape::height::HeightSettings81;

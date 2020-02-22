@@ -15,10 +15,10 @@ mod line;
 
 pub mod clump;
 pub mod dungeon;
-pub mod vein;
 pub mod exposed;
 pub mod lake;
 pub mod tree;
+pub mod vein;
 
 // TODO: MultiDispatcher
 

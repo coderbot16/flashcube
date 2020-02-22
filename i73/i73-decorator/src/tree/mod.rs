@@ -1,15 +1,10 @@
 mod large;
 mod normal;
 
-use crate::{Decorator, Result};
 use i73_base::matcher::BlockMatcher;
 use i73_base::Block;
-use java_rand::Random;
 pub use large::LargeTreeDecorator;
 pub use normal::NormalTreeDecorator;
-use std::i32;
-use vocs::position::{dir, Offset, QuadPosition};
-use vocs::view::QuadMut;
 
 struct TreeBlocks {
 	log: Block,
