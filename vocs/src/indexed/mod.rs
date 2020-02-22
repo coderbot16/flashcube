@@ -39,7 +39,7 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		mem::replace(&mut self.storage, replacement_storage)
 	}
 	
-	/// Makes sure that a future lookup for the target will succeed, unless the entry has changed since this call.
+	/// Makes sure that a future lookup for the target will succeed, unless the entry has been removed since this call.
 	pub fn ensure_available(&mut self, target: B) {
 		 if let Err(target) = self.palette.try_insert(target) {
 		 	self.reserve_bits(1);
@@ -85,16 +85,13 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 	}
 
 	/// Configures a setter to set a certain block in this storage.
-	/// This has the same performance cost as set_immediate for a single set,
-	/// but is cheaper for multiple sets.
+	/// This has the same performance cost as set_immediate for a single `set`,
+	/// but is cheaper for multiple `set` operations.
 	pub fn setter(&mut self, target: B) -> (Setter<P>, &[Option<B>]) {
-		let value = match self.palette.try_insert(target) {
-			Err(target) => {
-				self.reserve_bits(1);
-				self.palette.try_insert(target).expect("There should be room for a new entry, we just made some!")
-			},
-			Ok(value) => value
-		};
+		let value = self.palette.try_insert(target).unwrap_or_else(|target| {
+			self.reserve_bits(1);
+			self.palette.try_insert(target).expect("There should be room for a new entry, we just made some!")
+		});
 
 		(self.storage.setter(value), self.palette.entries())
 	}
@@ -148,7 +145,8 @@ impl ChunkIndexed<u16> {
 		let bits = self.bits();
 
 		if bits > 8 {
-			return Err(bits); // Only support 8 bits or less, because the palette may be scrambled at higher levels.
+			// Only support 8 bits or less, because the palette may be scrambled at higher levels.
+			return Err(bits);
 		}
 
 		let mut palette = Vec::with_capacity(self.palette.entries().len());
