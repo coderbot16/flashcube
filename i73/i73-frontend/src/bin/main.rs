@@ -37,7 +37,7 @@ use vocs::view::ColumnMut;
 use vocs::world::world::World;
 
 use deflate::Compression;
-use i73_decorator::tree::LargeTreeDecorator;
+use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
 use i73_shape::height::HeightSettings81;
@@ -694,13 +694,23 @@ fn main() {
 					};
 				}
 
-				LargeTreeDecorator::default()
-					.generate(
-						&mut quad,
-						&mut decoration_rng,
-						position.offset(dir::Up).unwrap_or(position),
-					)
-					.unwrap();
+				if decoration_rng.next_bool() {
+					LargeTreeDecorator::default()
+						.generate(
+							&mut quad,
+							&mut decoration_rng,
+							position.offset(dir::Up).unwrap_or(position),
+						)
+						.unwrap();
+				} else {
+					NormalTreeDecorator::default()
+						.generate(
+							&mut quad,
+							&mut decoration_rng,
+							position.offset(dir::Up).unwrap_or(position),
+						)
+						.unwrap();
+				}
 			}
 
 			for dispatcher in &decorators {

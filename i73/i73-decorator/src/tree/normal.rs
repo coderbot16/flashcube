@@ -1,8 +1,7 @@
-use super::TreeBlocks;
+use super::{FoliageLayer, TreeBlocks};
 use crate::{Decorator, Result};
 use i73_base::Block;
 use java_rand::Random;
-use std::i32;
 use vocs::position::{dir, Offset, QuadPosition};
 use vocs::view::QuadMut;
 
@@ -44,26 +43,16 @@ impl Decorator for NormalTreeDecorator {
 		let foliage = palette.reverse_lookup(&self.blocks.foliage).unwrap();
 
 		for y in tree.leaves_min_y..=tree.leaves_max_y {
-			let radius = tree.foliage_radius(y) as i32;
+			let radius = tree.foliage_radius(y);
 
-			for z_offset in -radius..=radius {
-				for x_offset in -radius..=radius {
-					if i32::abs(z_offset) != radius
-						|| i32::abs(x_offset) != radius
-						|| (rng.next_u32_bound(self.settings.foliage_corner_chance) != 0
-							&& y < tree.trunk_top)
-					{
-						let position = match position.offset((x_offset as i8, 0, z_offset as i8)) {
-							Some(position) => position,
-							None => continue,
-						};
+			let position = QuadPosition::new(position.x(), y as u8, position.z());
+			let layer = FoliageLayer { position, radius: radius as u8 };
 
-						let position = QuadPosition::new(position.x(), y as u8, position.z());
-
-						blocks.set(position, &foliage);
-					}
-				}
-			}
+			layer.place(&mut blocks, &foliage, &palette, &self.blocks.replace);
+			layer.place_corners(&mut blocks, &foliage, &palette, &self.blocks.replace, |y| {
+				rng.next_u32_bound(self.settings.foliage_corner_chance) != 0
+					&& y < tree.trunk_top as u8
+			});
 		}
 
 		for y in position.y()..(tree.trunk_top as u8) {
