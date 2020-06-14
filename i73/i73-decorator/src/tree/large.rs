@@ -1,4 +1,4 @@
-use super::TreeBlocks;
+use super::{FoliageLayer, TreeBlocks};
 use crate::line::Line;
 use crate::{Decorator, Result};
 use i73_base::matcher::BlockMatcher;
@@ -151,37 +151,15 @@ impl Foilage {
 	) {
 		let mut position = self.base;
 
-		Self::layer(1, position, blocks, foliage, palette, replace);
+		FoliageLayer { radius: 1, position }.place(blocks, foliage, palette, replace);
 
 		for _ in 0..3 {
 			position = position.offset(dir::Up).unwrap();
-			Self::layer(2, position, blocks, foliage, palette, replace);
+			FoliageLayer { radius: 2, position }.place(blocks, foliage, palette, replace);
 		}
 
 		position = position.offset(dir::Up).unwrap();
-		Self::layer(1, position, blocks, foliage, palette, replace);
-	}
-
-	fn layer(
-		radius: i32, position: QuadPosition, blocks: &mut QuadBlocks, foliage: &QuadAssociation,
-		palette: &QuadPalettes<Block>, replace: &BlockMatcher,
-	) {
-		for z_offset in -radius..=radius {
-			for x_offset in -radius..=radius {
-				if i32::abs(z_offset) == radius && i32::abs(x_offset) == radius {
-					continue;
-				}
-
-				let position = match position.offset((x_offset as i8, 0, z_offset as i8)) {
-					Some(position) => position,
-					None => continue,
-				};
-
-				if replace.matches(blocks.get(position, palette)) {
-					blocks.set(position, foliage);
-				}
-			}
-		}
+		FoliageLayer { radius: 1, position }.place(blocks, foliage, palette, replace);
 	}
 }
 
