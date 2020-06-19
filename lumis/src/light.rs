@@ -129,7 +129,7 @@ pub struct SkyLightSources {
 }
 
 impl SkyLightSources {
-	pub fn build(chunk: &ChunkPacked, matches: &BitVec, mut no_light: LayerMask) -> Self {
+	pub fn build(chunk: &ChunkPacked, matches: &BitVec, no_light: LayerMask) -> Self {
 		SkyLightSources {
 			heightmap: ChunkHeightMap::build(chunk, matches, no_light)
 		}
@@ -143,7 +143,7 @@ impl SkyLightSources {
 		self.heightmap.is_filled()
 	} 
 
-	pub fn into_mask(mut self) -> LayerMask {
+	pub fn into_mask(self) -> LayerMask {
 		self.heightmap.into_mask()
 	}
 }
@@ -193,17 +193,14 @@ impl LightSources for SkyLightSources {
 			// First, determine the maximum value in the heightmap.
 			// This is the Y value where it is safe to fill it and above with 100% light.
 
-			for index in 0..=255 {
-				let position = LayerPosition::from_zx(index);
+			for position in LayerPosition::enumerate() {
 				max_heightmap = max(max_heightmap, self.heightmap().get(position).raw());
 			}
 
 			// Fill the common area between all of the height maps.
 
 			for y in max_heightmap..16 {
-				for index in 0..=255 {
-					let position = LayerPosition::from_zx(index);
-
+				for position in LayerPosition::enumerate() {
 					data.set(ChunkPosition::from_layer(y, position), u4::new(15));
 				}
 			}
