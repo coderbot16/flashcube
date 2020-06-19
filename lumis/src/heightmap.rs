@@ -72,13 +72,13 @@ impl ChunkHeightMap {
 	}
 }
 
-pub struct FullHeightMap {
+pub struct ColumnHeightMap {
 	heights: Box<[u32; 256]>
 }
 
-impl FullHeightMap {
+impl ColumnHeightMap {
 	fn new () -> Self {
-		FullHeightMap {
+		ColumnHeightMap {
 			heights: Box::new([0; 256])
 		}
 	}
@@ -112,7 +112,7 @@ impl FullHeightMap {
 	}
 }
 
-impl Index<LayerPosition> for FullHeightMap {
+impl Index<LayerPosition> for ColumnHeightMap {
 	type Output = u32;
 
 	fn index(&self, index: LayerPosition) -> &u32 {
@@ -120,21 +120,21 @@ impl Index<LayerPosition> for FullHeightMap {
 	}
 }
 
-impl IndexMut<LayerPosition> for FullHeightMap {
+impl IndexMut<LayerPosition> for ColumnHeightMap {
 	fn index_mut(&mut self, index: LayerPosition) -> &mut u32 {
 		&mut self.heights[index.zx() as usize]
 	}
 }
 
 pub struct HeightMapBuilder {
-	heightmap: FullHeightMap,
+	heightmap: ColumnHeightMap,
 	chunk_y: u8
 }
 
 impl HeightMapBuilder {
 	pub fn new() -> Self {
 		HeightMapBuilder {
-			heightmap: FullHeightMap::new(),
+			heightmap: ColumnHeightMap::new(),
 			chunk_y: 15
 		}
 	}
@@ -168,7 +168,7 @@ impl HeightMapBuilder {
 		slice.into_mask()
 	}
 
-	pub fn build(self) -> FullHeightMap {
+	pub fn build(self) -> ColumnHeightMap {
 		assert_eq!(self.chunk_y, 255, "HeightMapBuilder::build called before all ChunkHeightMap slices were provided");
 
 		self.heightmap
