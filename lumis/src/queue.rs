@@ -1,6 +1,6 @@
 use vocs::mask::{Mask, ChunkMask, LayerMask};
 use vocs::position::{ChunkPosition, dir};
-use vocs::component::*;
+use vocs::component::{ChunkStorage, LayerStorage};
 use vocs::view::{SpillChunkMask, MaskOffset, SplitDirectional, Directional};
 use std::mem;
 
