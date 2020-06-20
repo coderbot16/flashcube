@@ -48,6 +48,7 @@ use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::position::{dir, Offset};
 
 use i73::lighting;
+use lumis::heightmap::ColumnHeightMap;
 
 fn main() {
 	let main_start = ::std::time::Instant::now();
@@ -845,7 +846,7 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 
 fn write_region(
 	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,
-	heightmaps: &mut HashMap<(i32, i32), Vec<u32>>,
+	heightmaps: &mut HashMap<(i32, i32), ColumnHeightMap>,
 	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
 ) {
 	use rs25::level::anvil::ColumnRoot;
@@ -860,7 +861,7 @@ fn write_region(
 		for x in 0..32 {
 			let column_position = GlobalColumnPosition::new(x, z);
 
-			let heightmap = heightmaps.remove(&(x, z)).unwrap();
+			let heightmap: Box<[u32]> = heightmaps.remove(&(x, z)).unwrap().into_inner();
 
 			let mut snapshot = ColumnSnapshot {
 				chunks: vec![None; 16],
@@ -869,7 +870,7 @@ fn write_region(
 				terrain_populated: true,
 				inhabited_time: 0,
 				biomes: world_biomes.remove(&(x, z)).unwrap(),
-				heightmap,
+				heightmap: heightmap.into_vec(),
 				tile_ticks: vec![],
 			};
 
