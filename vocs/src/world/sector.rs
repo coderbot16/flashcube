@@ -113,6 +113,12 @@ impl<T> Sector<T> {
 
 	pub fn columns(&self) -> SectorColumns<T> {
 		SectorColumns {
+			iterator: self.enumerate_columns()
+		}
+	}
+
+	pub fn enumerate_columns(&self) -> SectorEnumerateColumns<T> {
+		SectorEnumerateColumns {
 			sector: &self,
 			column: LayerPosition::from_zx(0),
 			done: false
@@ -294,13 +300,25 @@ impl<T> Index<ChunkPosition> for Sector<T> {
 }
 
 pub struct SectorColumns<'a, T> where T: 'a {
+	iterator: SectorEnumerateColumns<'a, T>
+}
+
+impl<'a, T> Iterator for SectorColumns<'a, T> where T: 'a {
+	type Item = [Option<&'a T>; 16];
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.iterator.next().map(|pair| pair.1)
+	}
+}
+
+pub struct SectorEnumerateColumns<'a, T> where T: 'a {
 	sector: &'a Sector<T>,
 	column: LayerPosition,
 	done:   bool
 }
 
-impl<'a, T> Iterator for SectorColumns<'a, T> where T: 'a {
-	type Item = [Option<&'a T>; 16];
+impl<'a, T> Iterator for SectorEnumerateColumns<'a, T> where T: 'a {
+	type Item = (LayerPosition, [Option<&'a T>; 16]);
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.done {
@@ -315,13 +333,15 @@ impl<'a, T> Iterator for SectorColumns<'a, T> where T: 'a {
 			chunks[y as usize] = self.sector[position].as_ref();
 		}
 
+		let position = self.column;
+
 		if self.column == LayerPosition::from_zx(255) {
 			self.done = true;
 		} else {
 			self.column = LayerPosition::from_zx(self.column.zx() + 1);
 		}
 
-		Some(chunks)
+		Some((position, chunks))
 	}
 }
 
