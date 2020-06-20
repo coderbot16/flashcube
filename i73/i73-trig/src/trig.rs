@@ -30,7 +30,7 @@ fn sin_index(idx: u32) -> f32 {
 mod test {
 	#[test]
 	fn test_sin() {
-		let java = ::test::read_u32s("JavaSinTable");
+		let java = crate::test::read_u32s("JavaSinTable");
 
 		assert_eq!(java.len(), 65536);
 
