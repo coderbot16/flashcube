@@ -22,34 +22,47 @@ use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
 use vocs::position::{dir, Offset, ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
 use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
-use vocs::world::shared::{NoPack, SharedSector, SharedWorld};
+use vocs::world::shared::{NoPack, SharedSector, SharedWorld, Guard};
 use vocs::world::world::World;
 
 struct SectorSpills<'a> {
-	spills: &'a mut Sector<ChunkMask>,
-	neighbors: Directional<&'a mut Sector<ChunkMask>>
+	spills: &'a SharedSector<NoPack<ChunkMask>>,
+	neighbors: Directional<&'a SharedSector<NoPack<ChunkMask>>>
 }
 
 impl<'a> SectorSpills<'a> {
 	fn spill_out(&mut self, origin: ChunkPosition, spills: Directional<LayerMask>) {
-
 		if !spills[dir::Up].is_filled(false) {
 			self.mask(origin, dir::Up, origin.with_y(0)).layer_zx_mut(0).combine(&spills[dir::Up]);
 		}
 		
 		if !spills[dir::Down].is_filled(false) {
-			self.mask(origin, dir::Down, origin.with_y(0)).layer_zx_mut(15).combine(&spills[dir::Down]);
+			self.mask(origin, dir::Down, origin.with_y(15)).layer_zx_mut(15).combine(&spills[dir::Down]);
 		}
 
-		// TODO: rest of directions
+		if !spills[dir::PlusX].is_filled(false) {
+			self.mask(origin, dir::PlusX, origin.with_x(0)).layer_zy_mut(0).combine(&spills[dir::PlusX]);
+		}
+	
+		if !spills[dir::MinusX].is_filled(false) {
+			self.mask(origin, dir::MinusX, origin.with_x(15)).layer_zy_mut(15).combine(&spills[dir::MinusX]);
+		}
+	
+		if !spills[dir::PlusZ].is_filled(false) {
+			self.mask(origin, dir::PlusZ, origin.with_z(0)).layer_yx_mut(0).combine(&spills[dir::PlusZ]);
+		}
+	
+		if !spills[dir::MinusZ].is_filled(false) {
+			self.mask(origin, dir::MinusZ, origin.with_z(15)).layer_yx_mut(15).combine(&spills[dir::MinusZ]);
+		}
 	}
 
-	fn mask<D>(&mut self, origin: ChunkPosition, dir: D, wrapped: ChunkPosition) -> &mut ChunkMask
-		where ChunkPosition: Offset<D>, Directional<&'a mut Sector<ChunkMask>>: IndexMut<D, Output=&'a mut Sector<ChunkMask>> {
+	fn mask<D>(&mut self, origin: ChunkPosition, dir: D, wrapped: ChunkPosition) -> Guard<NoPack<ChunkMask>>
+		where ChunkPosition: Offset<D>, Directional<&'a SharedSector<NoPack<ChunkMask>>>: IndexMut<D, Output=&'a SharedSector<NoPack<ChunkMask>>>, D: Copy {
 		
 		match origin.offset(dir) {
-			Some(internal) => self.spills.get_or_create_mut(internal),
-			None => self.neighbors[dir].get_or_create_mut(wrapped)
+			Some(internal) => self.spills.get_or_create(internal),
+			None => self.neighbors[dir].get_or_create(wrapped)
 		}
 	}
 
@@ -63,7 +76,7 @@ impl<'a> SectorSpills<'a> {
 }
 
 fn spill_out(
-	chunk_position: GlobalChunkPosition, incomplete: &mut World<ChunkMask>,
+	chunk_position: GlobalChunkPosition, incomplete: &mut SharedWorld<NoPack<ChunkMask>>,
 	old_spills: Directional<LayerMask>,
 ) {
 	if let Some(up) = chunk_position.plus_y() {
@@ -126,7 +139,7 @@ fn lighting_info() -> HashMap<Block, u4> {
 	lighting_info
 }
 
-fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut SharedSector<NoPack<ChunkNibbles>>) -> Box<[ColumnHeightMap]> {
+fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut SharedSector<NoPack<ChunkNibbles>>, spills: SectorSpills) -> Box<[ColumnHeightMap]> {
 	let heightmaps: Vec<ColumnHeightMap> = Vec::with_capacity(256);
 
 	let lighting_info = lighting_info();
@@ -178,10 +191,9 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut Sh
 
 			let old_spills = queue.reset_spills();
 
-			spill_out(chunk_position, &mut incomplete, old_spills);
-
-
 			let chunk_position = ChunkPosition::from_layer(y as u8, position);
+
+			spills.spill_out(chunk_position, old_spills);
 			sky_light.set(chunk_position, NoPack(light_data));
 		}
 	}
@@ -191,12 +203,14 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut Sh
 
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<(i32, i32), ColumnHeightMap>) {
 	let mut sky_light = SharedWorld::<NoPack<ChunkNibbles>>::new();
-	let mut incomplete = World::<ChunkMask>::new();
+	let mut incomplete = SharedWorld::<NoPack<ChunkMask>>::new();
 	let mut heightmaps = HashMap::<(i32, i32), ColumnHeightMap>::new(); // TODO: Better vocs integration.
 
 	let lighting_info = lighting_info();
 
 	let empty_lighting = ChunkNibbles::default();
+	let mut void_sector_above: SharedSector<NoPack<ChunkMask>> = SharedSector::new();
+	let mut void_sector_below: SharedSector<NoPack<ChunkMask>> = SharedSector::new();
 
 	let mut queue = Queue::default();
 
@@ -214,7 +228,27 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 			let sky_light = sky_light.get_or_create_sector_mut(position);
 
-			let heightmaps = initial_sector(block_sector, sky_light);
+			incomplete.get_or_create_sector_mut(position);
+			incomplete.get_or_create_sector_mut(GlobalSectorPosition::new(sector_x + 1, sector_z));
+			incomplete.get_or_create_sector_mut(GlobalSectorPosition::new(sector_x - 1, sector_z));
+			incomplete.get_or_create_sector_mut(GlobalSectorPosition::new(sector_x, sector_z + 1));
+			incomplete.get_or_create_sector_mut(GlobalSectorPosition::new(sector_x, sector_z - 1));
+
+			let spill_neighbors = SplitDirectional {
+				up: &void_sector_above,
+				down: &void_sector_below,
+				plus_x: incomplete.get_sector(GlobalSectorPosition::new(sector_x + 1, sector_z)).unwrap(),
+				minus_x: incomplete.get_sector(GlobalSectorPosition::new(sector_x - 1, sector_z)).unwrap(),
+				plus_z: incomplete.get_sector(GlobalSectorPosition::new(sector_x, sector_z + 1)).unwrap(),
+				minus_z: incomplete.get_sector(GlobalSectorPosition::new(sector_x, sector_z - 1)).unwrap()
+			};
+
+			let spills = SectorSpills {
+				spills: incomplete.get_sector(position).unwrap(),
+				neighbors: Directional::combine(spill_neighbors)
+			};
+
+			let heightmaps = initial_sector(block_sector, sky_light, spills);
 
 			unimplemented!()
 		}
@@ -302,7 +336,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	let complete_lighting_start = ::std::time::Instant::now();
 
 	while incomplete.sectors().len() > 0 {
-		let incomplete_front = ::std::mem::replace(&mut incomplete, World::new());
+		let incomplete_front = ::std::mem::replace(&mut incomplete, SharedWorld::new());
 
 		for (sector_position, mut sector) in incomplete_front.into_sectors() {
 			println!("Completing sector @ {} - {} queued", sector_position, sector.count_sectors());
