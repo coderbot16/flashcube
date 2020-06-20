@@ -15,6 +15,7 @@ bit-vec = "0.4.4"
 nom = "3.2.1"
 rs25 = { path = "../../rs25" }
 vocs = { path = "../../vocs" }
+lumis = { path = "../../lumis" }
 java-rand = "0.2.0"
 nbt-turbo = { git = "https://gitlab.com/coderbot16/nbt-turbo" }
 
