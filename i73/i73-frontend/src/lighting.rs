@@ -11,6 +11,7 @@ use lumis::sources::SkyLightSources;
 use lumis::queue::Queue;
 
 use std::collections::HashMap;
+use std::ops::IndexMut;
 use std::time::Instant;
 
 use vocs::component::LayerStorage;
@@ -18,10 +19,48 @@ use vocs::indexed::ChunkIndexed;
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
-use vocs::position::{dir, Offset, GlobalChunkPosition, GlobalColumnPosition};
+use vocs::position::{dir, Offset, ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
 use vocs::view::{Directional, SplitDirectional};
-use vocs::world::shared::{NoPack, SharedWorld};
+use vocs::world::sector::Sector;
+use vocs::world::shared::{NoPack, SharedSector, SharedWorld};
 use vocs::world::world::World;
+
+struct SectorSpills<'a> {
+	spills: &'a mut Sector<ChunkMask>,
+	neighbors: Directional<&'a mut Sector<ChunkMask>>
+}
+
+impl<'a> SectorSpills<'a> {
+	fn spill_out(&mut self, origin: ChunkPosition, spills: Directional<LayerMask>) {
+
+		if !spills[dir::Up].is_filled(false) {
+			self.mask(origin, dir::Up, origin.with_y(0)).layer_zx_mut(0).combine(&spills[dir::Up]);
+		}
+		
+		if !spills[dir::Down].is_filled(false) {
+			self.mask(origin, dir::Down, origin.with_y(0)).layer_zx_mut(15).combine(&spills[dir::Down]);
+		}
+
+		// TODO: rest of directions
+	}
+
+	fn mask<D>(&mut self, origin: ChunkPosition, dir: D, wrapped: ChunkPosition) -> &mut ChunkMask
+		where ChunkPosition: Offset<D>, Directional<&'a mut Sector<ChunkMask>>: IndexMut<D, Output=&'a mut Sector<ChunkMask>> {
+		
+		match origin.offset(dir) {
+			Some(internal) => self.spills.get_or_create_mut(internal),
+			None => self.neighbors[dir].get_or_create_mut(wrapped)
+		}
+	}
+
+	/*fn spill_in_direction<D, F>(&mut self, origin: ChunkPosition, spills: &Directional<LayerMask>, dir: D, wrapped: ChunkPosition, mapper: F) 
+		where ChunkPosition: Offset<D>, Directional<LayerMask>: Index<D>, F: FnOnce(&mut ChunkMask) ->  {
+		
+		match origin.offset(dir) {
+			Some(internal) => self.spills.get_or_create_mut(internal).layer_TODO-mut().combine(&old_spills);
+		}
+	}*/
+}
 
 fn spill_out(
 	chunk_position: GlobalChunkPosition, incomplete: &mut World<ChunkMask>,
@@ -76,16 +115,86 @@ fn spill_out(
 	}
 }
 
+fn lighting_info() -> HashMap<Block, u4> {
+	let mut lighting_info = HashMap::new()/*SparseStorage::<u4>::with_default(u4::new(15))*/;
+
+	lighting_info.insert(Block::air(), u4::new(0));
+	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
+	lighting_info.insert(Block::from_anvil_id(9 * 16), u4::new(2));
+	lighting_info.insert(Block::from_anvil_id(18 * 16), u4::new(1));
+
+	lighting_info
+}
+
+fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut SharedSector<NoPack<ChunkNibbles>>) -> Box<[ColumnHeightMap]> {
+	let heightmaps: Vec<ColumnHeightMap> = Vec::with_capacity(256);
+
+	let lighting_info = lighting_info();
+	let empty_lighting = ChunkNibbles::default();
+	let mut queue = Queue::default();
+
+	for (position, column) in block_sector.enumerate_columns() {
+		let mut mask = LayerMask::default();
+		let mut heightmap_builder = HeightMapBuilder::new();
+
+		for (y, chunk) in column.into_iter().enumerate().rev() {
+			let (blocks, palette) = match chunk {
+				&Some(chunk) => chunk.freeze(),
+				&None => unimplemented!()
+			};
+
+			let mut opacity = BulkNibbles::new(palette.len());
+			let mut obstructs = BitVec::new();
+
+			for (index, value) in palette.iter().enumerate() {
+				let opacity_value = value
+				.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
+				.unwrap_or(u4::new(15));
+				
+				opacity.set(index, opacity_value);
+
+				obstructs.push(opacity_value != u4::new(0));
+			}
+
+			let chunk_heightmap = ChunkHeightMap::build(blocks, &obstructs, mask);
+			let sources = SkyLightSources::new(&chunk_heightmap);
+
+			let mut light_data = ChunkNibbles::default();
+			let neighbors = Directional::combine(SplitDirectional {
+				minus_x: &empty_lighting,
+				plus_x: &empty_lighting,
+				minus_z: &empty_lighting,
+				plus_z: &empty_lighting,
+				down: &empty_lighting,
+				up: &empty_lighting,
+			});
+
+			let mut light = Lighting::new(&mut light_data, neighbors, sources, opacity);
+
+			light.initial(&mut queue);
+			light.apply(blocks, &mut queue);
+
+			mask = heightmap_builder.add(chunk_heightmap);
+
+			let old_spills = queue.reset_spills();
+
+			spill_out(chunk_position, &mut incomplete, old_spills);
+
+
+			let chunk_position = ChunkPosition::from_layer(y as u8, position);
+			sky_light.set(chunk_position, NoPack(light_data));
+		}
+	}
+
+	heightmaps.into_boxed_slice()
+}
+
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<(i32, i32), ColumnHeightMap>) {
 	let mut sky_light = SharedWorld::<NoPack<ChunkNibbles>>::new();
 	let mut incomplete = World::<ChunkMask>::new();
 	let mut heightmaps = HashMap::<(i32, i32), ColumnHeightMap>::new(); // TODO: Better vocs integration.
 
-	let mut lighting_info = HashMap::new()/*SparseStorage::<u4>::with_default(u4::new(15))*/;
-	lighting_info.insert(Block::air(), u4::new(0));
-	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
-	lighting_info.insert(Block::from_anvil_id(9 * 16), u4::new(2));
-	lighting_info.insert(Block::from_anvil_id(18 * 16), u4::new(1));
+	let lighting_info = lighting_info();
 
 	let empty_lighting = ChunkNibbles::default();
 
@@ -93,6 +202,23 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	println!("Performing initial sky lighting for region (0, 0)");
 	let lighting_start = Instant::now();
+
+	for sector_z in 0..2 {
+		for sector_x in 0..2 {
+			let position = GlobalSectorPosition::new(sector_x, sector_z);
+
+			let block_sector = match world.get_sector(position) {
+				Some(sector) => sector,
+				None => continue
+			};
+
+			let sky_light = sky_light.get_or_create_sector_mut(position);
+
+			let heightmaps = initial_sector(block_sector, sky_light);
+
+			unimplemented!()
+		}
+	}
 
 	for x in 0..32 {
 		println!("{}", x);
@@ -213,7 +339,6 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 				let chunk_heightmap = heightmap.slice(u4::new(position.y()));
 				let sources = SkyLightSources::new(&chunk_heightmap);
-				// let sources = SkyLightSources::slice(&heightmap, position.y());
 
 				// TODO: cross-sector lighting
 
