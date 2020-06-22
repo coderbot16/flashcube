@@ -65,71 +65,10 @@ impl<'a> SectorSpills<'a> {
 			None => self.neighbors[dir].get_or_create(wrapped)
 		}
 	}
-
-	/*fn spill_in_direction<D, F>(&mut self, origin: ChunkPosition, spills: &Directional<LayerMask>, dir: D, wrapped: ChunkPosition, mapper: F) 
-		where ChunkPosition: Offset<D>, Directional<LayerMask>: Index<D>, F: FnOnce(&mut ChunkMask) ->  {
-		
-		match origin.offset(dir) {
-			Some(internal) => self.spills.get_or_create_mut(internal).layer_TODO-mut().combine(&old_spills);
-		}
-	}*/
 }
 
-/*fn spill_out(
-	chunk_position: GlobalChunkPosition, incomplete: &mut SharedWorld<NoPack<ChunkMask>>,
-	old_spills: Directional<LayerMask>,
-) {
-	if let Some(up) = chunk_position.plus_y() {
-		if !old_spills[dir::Up].is_filled(false) {
-			incomplete.get_or_create_mut(up).layer_zx_mut(0).combine(&old_spills[dir::Up]);
-		}
-	}
-
-	if let Some(down) = chunk_position.minus_y() {
-		if !old_spills[dir::Down].is_filled(false) {
-			incomplete.get_or_create_mut(down).layer_zx_mut(15).combine(&old_spills[dir::Down]);
-		}
-	}
-
-	if let Some(plus_x) = chunk_position.plus_x() {
-		if !old_spills[dir::PlusX].is_filled(false) {
-			incomplete
-				.get_or_create_mut(plus_x)
-				.layer_zy_mut(0)
-				.combine(&old_spills[dir::PlusX]);
-		}
-	}
-
-	if let Some(minus_x) = chunk_position.minus_x() {
-		if !old_spills[dir::MinusX].is_filled(false) {
-			incomplete
-				.get_or_create_mut(minus_x)
-				.layer_zy_mut(15)
-				.combine(&old_spills[dir::MinusX]);
-		}
-	}
-
-	if let Some(plus_z) = chunk_position.plus_z() {
-		if !old_spills[dir::PlusZ].is_filled(false) {
-			incomplete
-				.get_or_create_mut(plus_z)
-				.layer_yx_mut(0)
-				.combine(&old_spills[dir::PlusZ]);
-		}
-	}
-
-	if let Some(minus_z) = chunk_position.minus_z() {
-		if !old_spills[dir::MinusZ].is_filled(false) {
-			incomplete
-				.get_or_create_mut(minus_z)
-				.layer_yx_mut(15)
-				.combine(&old_spills[dir::MinusZ]);
-		}
-	}
-}*/
-
 fn lighting_info() -> HashMap<Block, u4> {
-	let mut lighting_info = HashMap::new()/*SparseStorage::<u4>::with_default(u4::new(15))*/;
+	let mut lighting_info = HashMap::new();
 
 	lighting_info.insert(Block::air(), u4::new(0));
 	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
@@ -264,74 +203,6 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			}
 		}
 	}
-
-	/*for x in 0..32 {
-		println!("{}", x);
-		for z in 0..32 {
-			let column_position = GlobalColumnPosition::new(x, z);
-
-			let mut mask = LayerMask::default();
-			let mut heightmap = HeightMapBuilder::new();
-
-			for y in (0..16).rev() {
-				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
-
-				let (blocks, palette) = world.get(chunk_position).unwrap().freeze();
-
-				let mut opacity = BulkNibbles::new(palette.len());
-				let mut obstructs = BitVec::new();
-
-				for (index, value) in palette.iter().enumerate() {
-					let opacity_value = value
-					.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
-					.unwrap_or(u4::new(15));
-					
-					opacity.set(index, opacity_value);
-
-					obstructs.push(opacity_value != u4::new(0));
-				}
-
-				let chunk_heightmap = ChunkHeightMap::build(blocks, &obstructs, mask);
-				let sources = SkyLightSources::new(&chunk_heightmap);
-
-				let mut light_data = ChunkNibbles::default();
-				let neighbors = Directional::combine(SplitDirectional {
-					minus_x: &empty_lighting,
-					plus_x: &empty_lighting,
-					minus_z: &empty_lighting,
-					plus_z: &empty_lighting,
-					down: &empty_lighting,
-					up: &empty_lighting,
-				});
-
-				let mut light = Lighting::new(&mut light_data, neighbors, sources, opacity);
-
-				light.initial(&mut queue);
-				light.apply(blocks, &mut queue);
-
-				mask = heightmap.add(chunk_heightmap);
-
-				let old_spills = queue.reset_spills();
-
-				spill_out(chunk_position, &mut incomplete, old_spills);
-
-				sky_light.set(chunk_position, NoPack(light_data));
-			}
-
-			let heightmap = heightmap.build();
-
-			/*for (index, part) in heightmap_sections.iter().enumerate() {
-				let part = part.as_ref().unwrap().clone();
-
-				assert_eq!(SkyLightSources::slice(&heightmap, index as u8), part);
-			}*/
-
-			// let heightmap: Box<[u32]> = heightmap.into_inner();
-			// heightmaps.insert((x, z), heightmap.into_vec());
-
-			heightmaps.insert((x, z), heightmap);
-		}
-	}*/
 
 	{
 		let end = ::std::time::Instant::now();
