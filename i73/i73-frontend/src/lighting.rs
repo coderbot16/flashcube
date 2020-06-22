@@ -19,7 +19,7 @@ use vocs::indexed::ChunkIndexed;
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
-use vocs::position::{dir, Offset, ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
+use vocs::position::{dir, Offset, ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
 use vocs::world::shared::{NoPack, SharedSector, SharedWorld, Guard};
@@ -75,7 +75,7 @@ impl<'a> SectorSpills<'a> {
 	}*/
 }
 
-fn spill_out(
+/*fn spill_out(
 	chunk_position: GlobalChunkPosition, incomplete: &mut SharedWorld<NoPack<ChunkMask>>,
 	old_spills: Directional<LayerMask>,
 ) {
@@ -126,7 +126,7 @@ fn spill_out(
 				.combine(&old_spills[dir::MinusZ]);
 		}
 	}
-}
+}*/
 
 fn lighting_info() -> HashMap<Block, u4> {
 	let mut lighting_info = HashMap::new()/*SparseStorage::<u4>::with_default(u4::new(15))*/;
@@ -139,8 +139,8 @@ fn lighting_info() -> HashMap<Block, u4> {
 	lighting_info
 }
 
-fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut SharedSector<NoPack<ChunkNibbles>>, spills: SectorSpills) -> Box<[ColumnHeightMap]> {
-	let heightmaps: Vec<ColumnHeightMap> = Vec::with_capacity(256);
+fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut SharedSector<NoPack<ChunkNibbles>>, mut spills: SectorSpills) -> Box<[ColumnHeightMap]> {
+	let mut heightmaps: Vec<ColumnHeightMap> = Vec::with_capacity(256);
 
 	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
@@ -150,7 +150,7 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut Sh
 		let mut mask = LayerMask::default();
 		let mut heightmap_builder = HeightMapBuilder::new();
 
-		for (y, chunk) in column.into_iter().enumerate().rev() {
+		for (y, chunk) in column.iter().enumerate().rev() {
 			let (blocks, palette) = match chunk {
 				&Some(chunk) => chunk.freeze(),
 				&None => unimplemented!()
@@ -196,6 +196,9 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &mut Sh
 			spills.spill_out(chunk_position, old_spills);
 			sky_light.set(chunk_position, NoPack(light_data));
 		}
+
+		let heightmap = heightmap_builder.build();
+		heightmaps.push(heightmap);
 	}
 
 	heightmaps.into_boxed_slice()
@@ -209,8 +212,8 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	let lighting_info = lighting_info();
 
 	let empty_lighting = ChunkNibbles::default();
-	let mut void_sector_above: SharedSector<NoPack<ChunkMask>> = SharedSector::new();
-	let mut void_sector_below: SharedSector<NoPack<ChunkMask>> = SharedSector::new();
+	let void_sector_above: SharedSector<NoPack<ChunkMask>> = SharedSector::new();
+	let void_sector_below: SharedSector<NoPack<ChunkMask>> = SharedSector::new();
 
 	let mut queue = Queue::default();
 
@@ -219,6 +222,8 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	for sector_z in 0..2 {
 		for sector_x in 0..2 {
+			println!("Performing initial sky lighting for sector ({}, {})", sector_x, sector_z);
+
 			let position = GlobalSectorPosition::new(sector_x, sector_z);
 
 			let block_sector = match world.get_sector(position) {
@@ -248,13 +253,19 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 				neighbors: Directional::combine(spill_neighbors)
 			};
 
-			let heightmaps = initial_sector(block_sector, sky_light, spills);
+			let sector_heightmaps = initial_sector(block_sector, sky_light, spills);
 
-			unimplemented!()
+			for (index, heightmap) in sector_heightmaps.into_vec().drain(..).enumerate() {
+				let layer = LayerPosition::from_zx(index as u8);
+				let column_position = GlobalColumnPosition::combine(position, layer);
+
+				println!("{} {}", column_position.x(), column_position.z());
+				heightmaps.insert((column_position.x(), column_position.z()), heightmap);
+			}
 		}
 	}
 
-	for x in 0..32 {
+	/*for x in 0..32 {
 		println!("{}", x);
 		for z in 0..32 {
 			let column_position = GlobalColumnPosition::new(x, z);
@@ -320,7 +331,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 			heightmaps.insert((x, z), heightmap);
 		}
-	}
+	}*/
 
 	{
 		let end = ::std::time::Instant::now();
@@ -338,8 +349,10 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	while incomplete.sectors().len() > 0 {
 		let incomplete_front = ::std::mem::replace(&mut incomplete, SharedWorld::new());
 
-		for (sector_position, mut sector) in incomplete_front.into_sectors() {
-			println!("Completing sector @ {} - {} queued", sector_position, sector.count_sectors());
+		for (sector_position, sector) in incomplete_front.into_sectors() {
+			// TODO: println!("Completing sector @ {} - {} queued", sector_position, sector.count_sectors());
+
+			println!("Completing sector @ {} - <unknown> queued", sector_position);
 
 			let block_sector = match world.get_sector(sector_position) {
 				Some(sector) => sector,
@@ -350,7 +363,13 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 			let light_sector = sky_light.get_or_create_sector_mut(sector_position);
 
-			while let Some((position, incomplete)) = sector.pop_first() {
+			// TODO: while let Some((position, incomplete)) = sector.pop_first() {
+			for position in ChunkPosition::enumerate() {
+				let incomplete = match sector.remove(position) {
+					Some(incomplete) => incomplete.0,
+					None => continue
+				};
+
 				// use vocs::mask::Mask;
 				// println!("Completing chunk: {} / {} queued blocks", position, incomplete.count_ones());
 
