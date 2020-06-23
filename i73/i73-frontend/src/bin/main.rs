@@ -749,8 +749,22 @@ fn main() {
 		println!("Decoration done in {}us ({}us per column)", us, us / 1024);
 	}
 
+	println!("Performing sky lighting");
+
+	let lighting_start = std::time::Instant::now();
+
 	// Also logs timing messages
 	let (mut sky_light, mut heightmaps) = lighting::compute_skylight(&world);
+
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(lighting_start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("Sky lighting done in {}us ({}us per column)", us, us / 1024);
+	}
 
 	println!("Writing region (0, 0)");
 	let writing_start = ::std::time::Instant::now();
