@@ -41,7 +41,7 @@ impl DirectionSpills {
 		self.masks.push(spill);
 	}
 
-	pub fn get(&self, position: ChunkPosition) -> LayerMask {
+	pub fn get(&self, position: ChunkPosition) -> Option<LayerMask> {
 		let index = self.indices[position.yzx() as usize];
 
 		if index == 0 {
@@ -49,12 +49,14 @@ impl DirectionSpills {
 
 			if self.filled[position] {
 				mask.fill(true);
-			}
 
-			return mask;
+				return Some(mask);
+			} else {
+				return None;
+			}
 		}
 
-		self.masks[index as usize - 1].clone()
+		Some(self.masks[index as usize - 1].clone())
 	}
 
 	pub fn reset(&mut self) {
