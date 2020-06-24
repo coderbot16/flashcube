@@ -7,7 +7,11 @@ use lumis::light::Lighting;
 use lumis::sources::SkyLightSources;
 use lumis::queue::{DirectionSpills, Queue};
 
+use rayon::iter::ParallelBridge;
+use rayon::prelude::ParallelIterator;
+
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Instant;
 
 use vocs::component::LayerStorage;
@@ -128,16 +132,17 @@ fn lighting_info() -> HashMap<Block, u4> {
 }
 
 fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>) -> (SectorSpills, Box<[ColumnHeightMap]>) {
-	let mut heightmaps: Vec<ColumnHeightMap> = Vec::with_capacity(256);
-
 	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
-	let mut queue = Queue::default();
-	let mut spills = SectorSpills::new();
+	let spills = Mutex::new(SectorSpills::new());
 
-	for (position, column) in block_sector.enumerate_columns() {
+	let unordered_heightmaps: Vec<(LayerPosition, ColumnHeightMap)> = 
+		block_sector.enumerate_columns().par_bridge().map(|(position, column)| {
+
 		let mut mask = LayerMask::default();
 		let mut heightmap_builder = HeightMapBuilder::new();
+		// TODO: Reuse this!
+		let mut queue = Queue::default();
 
 		for (y, chunk) in column.iter().enumerate().rev() {
 			let (blocks, palette) = match chunk {
@@ -182,15 +187,31 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 
 			let chunk_position = ChunkPosition::from_layer(y as u8, position);
 
-			spills.spill_out(chunk_position, old_spills);
+			spills.lock().unwrap().spill_out(chunk_position, old_spills);
 			sky_light.set(chunk_position, NoPack(light_data));
 		}
 
-		let heightmap = heightmap_builder.build();
-		heightmaps.push(heightmap);
+		(position, heightmap_builder.build())
+	}).collect();
+
+	// We've received an unordered list of heightmaps from the parallel iterator.
+	// It's necessary to properly sort them before returning.
+	// First, we order them with the ordered_heightmaps Vec...
+	let mut ordered_heightmaps = Vec::with_capacity(256);
+
+	for _ in LayerPosition::enumerate() {
+		ordered_heightmaps.push(None);
 	}
 
-	(spills, heightmaps.into_boxed_slice())
+	for (position, heightmap) in unordered_heightmaps {
+		ordered_heightmaps[position.zx() as usize] = Some(heightmap);
+	}
+
+	// ... then, we unwrap all of the heightmaps, since at this point every slot should
+	// be occupied by a Some value.
+	let heightmaps: Vec<ColumnHeightMap> = ordered_heightmaps.drain(..).map(Option::unwrap).collect();
+
+	(spills.into_inner().unwrap(), heightmaps.into_boxed_slice())
 }
 
 fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>) -> Box<[ColumnHeightMap]> {
