@@ -860,7 +860,7 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 
 fn write_region(
 	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,
-	heightmaps: &mut HashMap<(i32, i32), ColumnHeightMap>,
+	heightmaps: &mut HashMap<GlobalColumnPosition, ColumnHeightMap>,
 	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
 ) {
 	use rs25::level::anvil::ColumnRoot;
@@ -875,7 +875,7 @@ fn write_region(
 		for x in 0..32 {
 			let column_position = GlobalColumnPosition::new(x, z);
 
-			let heightmap: Box<[u32]> = heightmaps.remove(&(x, z)).unwrap().into_inner();
+			let heightmap: Box<[u32]> = heightmaps.remove(&column_position).unwrap().into_inner();
 
 			let mut snapshot = ColumnSnapshot {
 				chunks: vec![None; 16],
