@@ -221,10 +221,6 @@ fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSec
 	
 	let mut new_spills = SectorSpills::new();
 
-	let lighting_info = lighting_info();
-	let empty_lighting = ChunkNibbles::default();
-	let mut queue = Queue::default();
-
 	{
 		let end = ::std::time::Instant::now();
 		let time = end.duration_since(initial_start);
@@ -246,82 +242,12 @@ fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSec
 		while let Some((position, incomplete)) = spills.pop() {
 			chunk_operations += 1;
 
-			let (blocks, palette) = block_sector[position].as_ref().unwrap().freeze();
+			let blocks = block_sector[position].as_ref().unwrap();
+			let column_heightmap = &heightmaps[position.layer().zx() as usize];
 
-			let mut opacity = BulkNibbles::new(palette.len());
+			let heightmap = column_heightmap.slice(u4::new(position.y()));
 
-			for (index, value) in palette.iter().enumerate() {
-				opacity.set(
-					index,
-					value
-						.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
-						.unwrap_or(u4::new(15)),
-				);
-			}
-
-			let heightmap = &heightmaps[position.layer().zx() as usize];
-
-			let chunk_heightmap = heightmap.slice(u4::new(position.y()));
-			let sources = SkyLightSources::new(&chunk_heightmap);
-
-			// TODO: cross-sector lighting
-
-			let mut central = sky_light.get_or_create(position);
-			let locks = SplitDirectional {
-				up: position.offset(dir::Up).map(|position| sky_light[position].read()),
-				down: position.offset(dir::Down).map(|position| sky_light[position].read()),
-				plus_x: position
-					.offset(dir::PlusX)
-					.map(|position| sky_light[position].read()),
-				minus_x: position
-					.offset(dir::MinusX)
-					.map(|position| sky_light[position].read()),
-				plus_z: position
-					.offset(dir::PlusZ)
-					.map(|position| sky_light[position].read()),
-				minus_z: position
-					.offset(dir::MinusZ)
-					.map(|position| sky_light[position].read()),
-			};
-
-			let neighbors = SplitDirectional {
-				up: locks
-					.up
-					.as_ref()
-					.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
-					.unwrap_or(&empty_lighting),
-				down: locks
-					.down
-					.as_ref()
-					.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
-					.unwrap_or(&empty_lighting),
-				plus_x: locks
-					.plus_x
-					.as_ref()
-					.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
-					.unwrap_or(&empty_lighting),
-				minus_x: locks
-					.minus_x
-					.as_ref()
-					.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
-					.unwrap_or(&empty_lighting),
-				plus_z: locks
-					.plus_z
-					.as_ref()
-					.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
-					.unwrap_or(&empty_lighting),
-				minus_z: locks
-					.minus_z
-					.as_ref()
-					.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
-					.unwrap_or(&empty_lighting),
-			};
-
-			let mut light =
-				Lighting::new(&mut central, Directional::combine(neighbors), sources, opacity);
-
-			queue.reset_from_mask(incomplete);
-			light.apply(blocks, &mut queue);
+			let mut queue = complete_chunk(position, blocks, sky_light, incomplete, &heightmap);
 
 			new_spills.spill_out(position, queue.reset_spills().split());
 		}
@@ -341,6 +267,89 @@ fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSec
 	}
 
 	heightmaps
+}
+
+fn complete_chunk(position: ChunkPosition, blocks: &ChunkIndexed<Block>, sky_light: &SharedSector<NoPack<ChunkNibbles>>, incomplete: ChunkMask, heightmap: &ChunkHeightMap) -> Queue {
+	// TODO: Cache these things!
+	let lighting_info = lighting_info();
+	let empty_lighting = ChunkNibbles::default();
+	let mut queue = Queue::default();
+
+	let (blocks, palette) = blocks.freeze();
+
+	let mut opacity = BulkNibbles::new(palette.len());
+
+	for (index, value) in palette.iter().enumerate() {
+		opacity.set(
+			index,
+			value
+				.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
+				.unwrap_or(u4::new(15)),
+		);
+	}
+
+	let sources = SkyLightSources::new(heightmap);
+
+	// TODO: cross-sector lighting
+
+	let mut central = sky_light.get_or_create(position);
+	let locks = SplitDirectional {
+		up: position.offset(dir::Up).map(|position| sky_light[position].read()),
+		down: position.offset(dir::Down).map(|position| sky_light[position].read()),
+		plus_x: position
+			.offset(dir::PlusX)
+			.map(|position| sky_light[position].read()),
+		minus_x: position
+			.offset(dir::MinusX)
+			.map(|position| sky_light[position].read()),
+		plus_z: position
+			.offset(dir::PlusZ)
+			.map(|position| sky_light[position].read()),
+		minus_z: position
+			.offset(dir::MinusZ)
+			.map(|position| sky_light[position].read()),
+	};
+
+	let neighbors = SplitDirectional {
+		up: locks
+			.up
+			.as_ref()
+			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.unwrap_or(&empty_lighting),
+		down: locks
+			.down
+			.as_ref()
+			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.unwrap_or(&empty_lighting),
+		plus_x: locks
+			.plus_x
+			.as_ref()
+			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.unwrap_or(&empty_lighting),
+		minus_x: locks
+			.minus_x
+			.as_ref()
+			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.unwrap_or(&empty_lighting),
+		plus_z: locks
+			.plus_z
+			.as_ref()
+			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.unwrap_or(&empty_lighting),
+		minus_z: locks
+			.minus_z
+			.as_ref()
+			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.unwrap_or(&empty_lighting),
+	};
+
+	let mut light =
+		Lighting::new(&mut central, Directional::combine(neighbors), sources, opacity);
+
+	queue.reset_from_mask(incomplete);
+	light.apply(blocks, &mut queue);
+
+	queue
 }
 
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<(i32, i32), ColumnHeightMap>) {
