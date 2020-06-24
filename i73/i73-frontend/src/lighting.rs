@@ -5,7 +5,7 @@ use i73_base::Block;
 use lumis::heightmap::{ChunkHeightMap, ColumnHeightMap, HeightMapBuilder};
 use lumis::light::Lighting;
 use lumis::sources::SkyLightSources;
-use lumis::queue::{DirectionSpills, Queue};
+use lumis::queue::Queue;
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::ParallelIterator;
@@ -20,7 +20,7 @@ use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
 use vocs::position::{dir, Offset, ChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
-use vocs::view::{Directional, SplitDirectional, SpillChunkMask, MaskOffset};
+use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
 use vocs::world::shared::{NoPack, SharedSector, SharedWorld};
 use vocs::world::world::World;
@@ -68,74 +68,75 @@ impl<T> std::ops::IndexMut<LayerPosition> for Layer<T> {
 }
 
 struct SectorSpills {
-	layers: SplitDirectional<DirectionSpills>,
-	queued: SpillChunkMask
+	local: Sector<ChunkMask>,
+	spills: Directional<Layer<Option<LayerMask>>>
 }
 
 impl SectorSpills {
 	fn new() -> Self {
 		SectorSpills {
-			layers: SplitDirectional {
-				plus_x:  DirectionSpills::new(),
-				minus_x: DirectionSpills::new(),
-				up:      DirectionSpills::new(),
-				down:    DirectionSpills::new(),
-				plus_z:  DirectionSpills::new(),
-				minus_z: DirectionSpills::new()
-			},
-			queued: SpillChunkMask::default()
+			local: Sector::new(),
+			spills: Directional::combine(SplitDirectional {
+				plus_x: Layer::default(),
+				minus_x: Layer::default(),
+				up: Layer::default(),
+				down: Layer::default(),
+				plus_z: Layer::default(),
+				minus_z: Layer::default()
+			})
+		}
+	}
+
+	fn spill<D, F>(&mut self, origin: ChunkPosition, dir: D, layer: LayerMask, mut f: F)
+		where ChunkPosition: Offset<D, Spill = LayerPosition>,
+			F: FnMut(&mut ChunkMask, LayerMask),
+			D: Copy,
+			Directional<Layer<Option<LayerMask>>>: std::ops::IndexMut<D, Output = Layer<Option<LayerMask>>> {
+
+		if layer.is_filled(false) {
+			return;
+		}
+
+		match origin.offset_spilling(dir) {
+			Ok(position) => f(self.local.get_or_create_mut(position), layer),
+			Err(spilled) => {
+				if self.spills[dir][spilled].is_none() {
+					todo!("Cannot merge spilled LayerMasks yet");
+				}
+
+				self.spills[dir][spilled] = Some(layer);
+			}
 		}
 	}
 
 	fn spill_out(&mut self, origin: ChunkPosition, spills: SplitDirectional<LayerMask>) {
-		if !spills.plus_x.is_filled(false) {
-			self.queued.set_offset_true(origin, dir::PlusX);
-			self.layers.plus_x.set(origin, spills.plus_x);
-		}
-
-		if !spills.minus_x.is_filled(false) {
-			self.queued.set_offset_true(origin, dir::MinusX);
-			self.layers.minus_x.set(origin, spills.minus_x);
-		}
-
-		if !spills.up.is_filled(false) {
-			self.queued.set_offset_true(origin, dir::Up);
-			self.layers.up.set(origin, spills.up);
-		}
-
-		if !spills.down.is_filled(false) {
-			self.queued.set_offset_true(origin, dir::Down);
-			self.layers.down.set(origin, spills.down);
-		}
-
-		if !spills.plus_z.is_filled(false) {
-			self.queued.set_offset_true(origin, dir::PlusZ);
-			self.layers.plus_z.set(origin, spills.plus_z);
-		}
-
-		if !spills.minus_z.is_filled(false) {
-			self.queued.set_offset_true(origin, dir::MinusZ);
-			self.layers.minus_z.set(origin, spills.minus_z);
-		}
+		self.spill(origin, dir::Up, spills.up, |mask, layer| mask.layer_zx_mut(0).combine(&layer));
+		self.spill(origin, dir::Down, spills.down, |mask, layer| mask.layer_zx_mut(15).combine(&layer));
+		self.spill(origin, dir::PlusX, spills.plus_x, |mask, layer| mask.layer_zy_mut(0).combine(&layer));
+		self.spill(origin, dir::MinusX, spills.minus_x, |mask, layer| mask.layer_zy_mut(15).combine(&layer));
+		self.spill(origin, dir::PlusZ, spills.plus_z, |mask, layer| mask.layer_yx_mut(0).combine(&layer));
+		self.spill(origin, dir::MinusZ, spills.minus_z, |mask, layer| mask.layer_yx_mut(15).combine(&layer));
 	}
 
-	fn reset(&mut self) {
-		assert!(self.queued.primary.empty());
+	fn reset(&mut self) -> SplitDirectional<Layer<Option<LayerMask>>> {
+		assert!(self.local.is_empty());
 
-		self.layers.plus_x.reset();
-		self.layers.minus_x.reset();
-		self.layers.up.reset();
-		self.layers.down.reset();
-		self.layers.plus_z.reset();
-		self.layers.minus_z.reset();
+		std::mem::replace(&mut self.spills, Directional::combine(SplitDirectional {
+			plus_x: Layer::default(),
+			minus_x: Layer::default(),
+			up: Layer::default(),
+			down: Layer::default(),
+			plus_z: Layer::default(),
+			minus_z: Layer::default()
+		})).split()
 	}
 
 	fn empty(&self) -> bool {
-		self.queued.primary.empty()
+		self.local.is_empty()
 	}
 
 	fn pop(&mut self) -> Option<(ChunkPosition, ChunkMask)> {
-		let position = match self.queued.primary.pop_first() {
+		/*let position = match self.queued.primary.pop_first() {
 			Some(position) => position,
 			None => return None
 		};
@@ -156,9 +157,9 @@ impl SectorSpills {
 		incoming.up.map(|layer| mask.layer_zx_mut(15).combine(&layer));
 		incoming.down.map(|layer| mask.layer_zx_mut(0).combine(&layer));
 		incoming.plus_z.map(|layer| mask.layer_yx_mut(15).combine(&layer));
-		incoming.minus_z.map(|layer| mask.layer_yx_mut(0).combine(&layer));
+		incoming.minus_z.map(|layer| mask.layer_yx_mut(0).combine(&layer));*/
 
-		Some((position, mask))
+		self.local.pop_first()
 	}
 }
 
