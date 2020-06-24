@@ -27,7 +27,7 @@ impl<T> Directional<T> {
 	}
 	
 	pub fn split(self) -> SplitDirectional<T> {
-		/*let [plus_x, minus_x, up, down, plus_z, minus_z] = self.0;
+		let [plus_x, minus_x, up, down, plus_z, minus_z] = self.0;
 
 		SplitDirectional {
 			plus_x,
@@ -36,10 +36,7 @@ impl<T> Directional<T> {
 			down,
 			plus_z,
 			minus_z
-		}*/
-
-		// TODO: doesn't compile for some reason?
-		unimplemented!()
+		}
 	}
 }
 
