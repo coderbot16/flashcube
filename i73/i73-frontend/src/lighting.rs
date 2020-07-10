@@ -93,18 +93,21 @@ impl SectorSpills {
 			D: Copy,
 			Directional<Layer<Option<LayerMask>>>: std::ops::IndexMut<D, Output = Layer<Option<LayerMask>>> {
 
+
+		// If the layer is empty, don't bother adding / merging it.
 		if layer.is_filled(false) {
 			return;
 		}
 
+		// Either merge it with a local chunk mask, or add it to the neighboring spills.
 		match origin.offset_spilling(dir) {
 			Ok(position) => f(self.local.get_or_create_mut(position), layer),
 			Err(spilled) => {
-				if self.spills[dir][spilled].is_none() {
+				let existing = self.spills[dir][spilled].replace(layer);
+
+				if existing.is_some() {
 					todo!("Cannot merge spilled LayerMasks yet");
 				}
-
-				self.spills[dir][spilled] = Some(layer);
 			}
 		}
 	}
