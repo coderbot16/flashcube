@@ -8,7 +8,7 @@ use lumis::sources::SkyLightSources;
 use lumis::queue::Queue;
 
 use rayon::iter::ParallelBridge;
-use rayon::prelude::ParallelIterator;
+use rayon::prelude::{ParallelIterator, IntoParallelRefIterator};
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -233,27 +233,17 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 	(spills.into_inner().unwrap(), heightmaps)
 }
 
-fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>, sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>) -> Layer<ColumnHeightMap> {
-	let initial_start = Instant::now();
-
-	let (mut spills, heightmaps) = initial_sector(block_sector, sky_light);
-	
-	let mut new_spills = SectorSpills::new();
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(initial_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Initial sky lighting done in {}us ({}us per column)", us, us / 256);
-	}
-
-	let full_start = Instant::now();
+fn full_sector(
+	block_sector: &Sector<ChunkIndexed<Block>>, 
+	sky_light: &SharedSector<NoPack<ChunkNibbles>>, 
+	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, 
+	mut spills: SectorSpills, 
+	heightmaps: &Layer<ColumnHeightMap>) -> (u32, u32) {
 
 	let mut iterations = 0;
 	let mut chunk_operations = 0;
+
+	let mut new_spills = SectorSpills::new();
 
 	while !spills.empty() {
 		iterations += 1;
@@ -275,17 +265,7 @@ fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSec
 		std::mem::swap(&mut spills, &mut new_spills);
 	}
 
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(full_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
-	}
-
-	heightmaps
+	(iterations, chunk_operations)
 }
 
 fn complete_chunk (
@@ -390,40 +370,102 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
 
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
-	let mut heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new(); // TODO: Better vocs integration.
+	let heightmaps: Mutex<HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>> = Mutex::new(HashMap::new());
+	let spills: Mutex<HashMap<GlobalSectorPosition, SectorSpills>> = Mutex::new(HashMap::new());
 
-	for sector_z in 0..2 {
-		for sector_x in 0..2 {
-			println!("Performing sky lighting for sector ({}, {})", sector_x, sector_z);
+	let positions = [
+		GlobalSectorPosition::new(0, 0),
+		GlobalSectorPosition::new(0, 1),
+		GlobalSectorPosition::new(1, 0),
+		GlobalSectorPosition::new(1, 1)
+	];
 
-			let position = GlobalSectorPosition::new(sector_x, sector_z);
+	for &position in &positions {
+		sky_light.get_or_create_sector_mut(position);
+	}
 
-			let block_sector = match world.get_sector(position) {
-				Some(sector) => sector,
-				None => continue
-			};
+	positions.par_iter().for_each(|position| {
+		let position = *position;
 
-			let sky_light = sky_light.get_or_create_sector_mut(position);
-			// TODO: Proper cross-sector lighting
-			let sky_light_neighbors = Directional::combine(SplitDirectional {
-				minus_x: &empty_sector,
-				plus_x: &empty_sector,
-				minus_z: &empty_sector,
-				plus_z: &empty_sector,
-				down: &empty_sector,
-				up: &empty_sector,
-			});
+		println!("Performing initial lighting for sector ({}, {})", position.x(), position.z());
+		let initial_start = Instant::now();
 
-			let sector_heightmaps = full_sector(block_sector, sky_light, sky_light_neighbors);
+		let block_sector = match world.get_sector(position) {
+			Some(sector) => sector,
+			None => return
+		};
 
-			for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
-				let layer = LayerPosition::from_zx(index as u8);
-				let column_position = GlobalColumnPosition::combine(position, layer);
+		let sky_light = sky_light.get_sector(position).unwrap();
 
-				heightmaps.insert(column_position, heightmap);
-			}
+		let (sector_spills, sector_heightmaps) = initial_sector(block_sector, sky_light);
+
+		spills.lock().unwrap().insert(position, sector_spills);
+		heightmaps.lock().unwrap().insert(position, sector_heightmaps);
+
+		{
+			let end = ::std::time::Instant::now();
+			let time = end.duration_since(initial_start);
+	
+			let secs = time.as_secs();
+			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+	
+			println!("Initial sky lighting done in {}us ({}us per column)", us, us / 256);
+		}
+	});
+
+	let mut heightmaps = heightmaps.into_inner().unwrap();
+
+	positions.par_iter().for_each(|position| {
+		let position = *position;
+
+		println!("Performing full sky lighting for sector ({}, {})", position.x(), position.z());
+		let full_start = Instant::now();
+
+		let block_sector = match world.get_sector(position) {
+			Some(sector) => sector,
+			None => return
+		};
+
+		let sky_light = sky_light.get_sector(position).unwrap();
+		// TODO: Proper cross-sector lighting
+		let sky_light_neighbors = Directional::combine(SplitDirectional {
+			minus_x: &empty_sector,
+			plus_x: &empty_sector,
+			minus_z: &empty_sector,
+			plus_z: &empty_sector,
+			down: &empty_sector,
+			up: &empty_sector,
+		});
+
+		let sector_spills = spills.lock().unwrap().remove(&position).unwrap();
+		let sector_heightmaps = heightmaps.get(&position).unwrap();
+
+		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, sky_light_neighbors, sector_spills, sector_heightmaps);
+
+		{
+			let end = ::std::time::Instant::now();
+			let time = end.duration_since(full_start);
+	
+			let secs = time.as_secs();
+			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+	
+			println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
+		}
+	});
+
+	// Split up the heightmaps into the format expected by the rest of i73
+	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
+
+	for &position in &positions {
+		let sector_heightmaps = heightmaps.remove(&position).unwrap();
+
+		for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
+			let layer = LayerPosition::from_zx(index as u8);
+			let column_position = GlobalColumnPosition::combine(position, layer);
+	
+			individual_heightmaps.insert(column_position, heightmap);
 		}
 	}
 
-	(sky_light, heightmaps)
+	(sky_light, individual_heightmaps)
 }
