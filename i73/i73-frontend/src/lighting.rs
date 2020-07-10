@@ -139,29 +139,6 @@ impl SectorSpills {
 	}
 
 	fn pop(&mut self) -> Option<(ChunkPosition, ChunkMask)> {
-		/*let position = match self.queued.primary.pop_first() {
-			Some(position) => position,
-			None => return None
-		};
-
-		let mut mask = ChunkMask::default();
-
-		let incoming = SplitDirectional {
-			plus_x:  position.offset(dir::PlusX ).and_then(|offset| self.layers.minus_x.get(offset)),
-			minus_x: position.offset(dir::MinusX).and_then(|offset| self.layers.plus_x.get(offset)),
-			down:    position.offset(dir::Down  ).and_then(|offset| self.layers.up.get(offset)),
-			up:      position.offset(dir::Up    ).and_then(|offset| self.layers.down.get(offset)),
-			plus_z:  position.offset(dir::PlusZ ).and_then(|offset| self.layers.minus_z.get(offset)),
-			minus_z: position.offset(dir::MinusZ).and_then(|offset| self.layers.plus_z.get(offset))
-		};
-		
-		incoming.plus_x.map(|layer| mask.layer_zy_mut(15).combine(&layer));
-		incoming.minus_x.map(|layer| mask.layer_zy_mut(0).combine(&layer));
-		incoming.up.map(|layer| mask.layer_zx_mut(15).combine(&layer));
-		incoming.down.map(|layer| mask.layer_zx_mut(0).combine(&layer));
-		incoming.plus_z.map(|layer| mask.layer_yx_mut(15).combine(&layer));
-		incoming.minus_z.map(|layer| mask.layer_yx_mut(0).combine(&layer));*/
-
 		self.local.pop_first()
 	}
 }
@@ -256,7 +233,7 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 	(spills.into_inner().unwrap(), heightmaps)
 }
 
-fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>) -> Layer<ColumnHeightMap> {
+fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>, sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>) -> Layer<ColumnHeightMap> {
 	let initial_start = Instant::now();
 
 	let (mut spills, heightmaps) = initial_sector(block_sector, sky_light);
@@ -289,7 +266,7 @@ fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSec
 
 			let heightmap = column_heightmap.slice(u4::new(position.y()));
 
-			let mut queue = complete_chunk(position, blocks, sky_light, incomplete, &heightmap);
+			let mut queue = complete_chunk(position, blocks, sky_light, sky_light_neighbors, incomplete, &heightmap);
 
 			new_spills.spill_out(position, queue.reset_spills().split());
 		}
@@ -311,7 +288,14 @@ fn full_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSec
 	heightmaps
 }
 
-fn complete_chunk(position: ChunkPosition, blocks: &ChunkIndexed<Block>, sky_light: &SharedSector<NoPack<ChunkNibbles>>, incomplete: ChunkMask, heightmap: &ChunkHeightMap) -> Queue {
+fn complete_chunk (
+	position: ChunkPosition, 
+	blocks: &ChunkIndexed<Block>, 
+	sky_light: &SharedSector<NoPack<ChunkNibbles>>, 
+	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, 
+	incomplete: ChunkMask, 
+	heightmap: &ChunkHeightMap) -> Queue {
+
 	// TODO: Cache these things!
 	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
@@ -332,56 +316,64 @@ fn complete_chunk(position: ChunkPosition, blocks: &ChunkIndexed<Block>, sky_lig
 
 	let sources = SkyLightSources::new(heightmap);
 
-	// TODO: cross-sector lighting
-
 	let mut central = sky_light.get_or_create(position);
 	let locks = SplitDirectional {
-		up: position.offset(dir::Up).map(|position| sky_light[position].read()),
-		down: position.offset(dir::Down).map(|position| sky_light[position].read()),
+		up: position
+			.offset(dir::Up)
+			.map(|position| sky_light[position].read())
+			.unwrap_or_else(|| sky_light_neighbors[dir::Up][position.offset_wrapping(dir::Up)].read()),
+		down: position
+			.offset(dir::Down)
+			.map(|position| sky_light[position].read())
+			.unwrap_or_else(|| sky_light_neighbors[dir::Down][position.offset_wrapping(dir::Down)].read()),
 		plus_x: position
 			.offset(dir::PlusX)
-			.map(|position| sky_light[position].read()),
+			.map(|position| sky_light[position].read())
+			.unwrap_or_else(|| sky_light_neighbors[dir::PlusX][position.offset_wrapping(dir::PlusX)].read()),
 		minus_x: position
 			.offset(dir::MinusX)
-			.map(|position| sky_light[position].read()),
+			.map(|position| sky_light[position].read())
+			.unwrap_or_else(|| sky_light_neighbors[dir::MinusX][position.offset_wrapping(dir::MinusX)].read()),
 		plus_z: position
 			.offset(dir::PlusZ)
-			.map(|position| sky_light[position].read()),
+			.map(|position| sky_light[position].read())
+			.unwrap_or_else(|| sky_light_neighbors[dir::PlusZ][position.offset_wrapping(dir::PlusZ)].read()),
 		minus_z: position
 			.offset(dir::MinusZ)
-			.map(|position| sky_light[position].read()),
+			.map(|position| sky_light[position].read())
+			.unwrap_or_else(|| sky_light_neighbors[dir::MinusZ][position.offset_wrapping(dir::MinusZ)].read())
 	};
 
 	let neighbors = SplitDirectional {
 		up: locks
 			.up
 			.as_ref()
-			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.map(|chunk| &chunk.0)
 			.unwrap_or(&empty_lighting),
 		down: locks
 			.down
 			.as_ref()
-			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.map(|chunk| &chunk.0)
 			.unwrap_or(&empty_lighting),
 		plus_x: locks
 			.plus_x
 			.as_ref()
-			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.map(|chunk| &chunk.0)
 			.unwrap_or(&empty_lighting),
 		minus_x: locks
 			.minus_x
 			.as_ref()
-			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.map(|chunk| &chunk.0)
 			.unwrap_or(&empty_lighting),
 		plus_z: locks
 			.plus_z
 			.as_ref()
-			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.map(|chunk| &chunk.0)
 			.unwrap_or(&empty_lighting),
 		minus_z: locks
 			.minus_z
 			.as_ref()
-			.and_then(|chunk| chunk.as_ref().map(|chunk| &chunk.0))
+			.map(|chunk| &chunk.0)
 			.unwrap_or(&empty_lighting),
 	};
 
@@ -395,6 +387,8 @@ fn complete_chunk(position: ChunkPosition, blocks: &ChunkIndexed<Block>, sky_lig
 }
 
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<GlobalColumnPosition, ColumnHeightMap>) {
+	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
+
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
 	let mut heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new(); // TODO: Better vocs integration.
 
@@ -410,8 +404,17 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			};
 
 			let sky_light = sky_light.get_or_create_sector_mut(position);
+			// TODO: Proper cross-sector lighting
+			let sky_light_neighbors = Directional::combine(SplitDirectional {
+				minus_x: &empty_sector,
+				plus_x: &empty_sector,
+				minus_z: &empty_sector,
+				plus_z: &empty_sector,
+				down: &empty_sector,
+				up: &empty_sector,
+			});
 
-			let sector_heightmaps = full_sector(block_sector, sky_light);
+			let sector_heightmaps = full_sector(block_sector, sky_light, sky_light_neighbors);
 
 			for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
 				let layer = LayerPosition::from_zx(index as u8);
