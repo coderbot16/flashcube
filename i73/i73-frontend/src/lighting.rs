@@ -415,10 +415,9 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut heightmaps = heightmaps.into_inner().unwrap();
 
-	positions.par_iter().for_each(|position| {
-		let position = *position;
-
+	let complete_sector = |position: GlobalSectorPosition| {
 		println!("Performing full sky lighting for sector ({}, {})", position.x(), position.z());
+
 		let full_start = Instant::now();
 
 		let block_sector = match world.get_sector(position) {
@@ -451,7 +450,12 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	
 			println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
 		}
-	});
+	};
+
+	positions.par_iter().copied().for_each(complete_sector);
+
+	/*rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
+	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));*/
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
