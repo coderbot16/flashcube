@@ -425,13 +425,13 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			None => return
 		};
 
-		let sky_light = sky_light.get_sector(position).unwrap();
-		// TODO: Proper cross-sector lighting
+		let sky_light_center = sky_light.get_sector(position).unwrap();
+
 		let sky_light_neighbors = Directional::combine(SplitDirectional {
-			minus_x: &empty_sector,
-			plus_x: &empty_sector,
-			minus_z: &empty_sector,
-			plus_z: &empty_sector,
+			minus_x: sky_light.get_sector(GlobalSectorPosition::new(position.x() - 1, position.z())).unwrap_or(&empty_sector),
+			plus_x: sky_light.get_sector(GlobalSectorPosition::new(position.x() + 1, position.z())).unwrap_or(&empty_sector),
+			minus_z: sky_light.get_sector(GlobalSectorPosition::new(position.x(), position.z() - 1)).unwrap_or(&empty_sector),
+			plus_z: sky_light.get_sector(GlobalSectorPosition::new(position.x(), position.z() + 1)).unwrap_or(&empty_sector),
 			down: &empty_sector,
 			up: &empty_sector,
 		});
@@ -439,7 +439,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		let sector_spills = spills.lock().unwrap().remove(&position).unwrap();
 		let sector_heightmaps = heightmaps.get(&position).unwrap();
 
-		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, sky_light_neighbors, sector_spills, sector_heightmaps);
+		let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, sector_spills, sector_heightmaps);
 
 		{
 			let end = ::std::time::Instant::now();
@@ -452,10 +452,8 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		}
 	};
 
-	positions.par_iter().copied().for_each(complete_sector);
-
-	/*rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
-	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));*/
+	rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
+	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
