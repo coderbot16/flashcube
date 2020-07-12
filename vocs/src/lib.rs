@@ -79,6 +79,9 @@ pub mod packed;
 
 pub mod indexed;
 
+/// Chunk & Layer sized arrays without packing.
+pub mod unpacked;
+
 /// Ways of viewing a collection of chunks.
 pub mod view;
 
