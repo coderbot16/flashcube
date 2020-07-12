@@ -404,10 +404,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 		let sky_light = sky_light.get_sector(position).unwrap();
 
-		let (sector_queue, sector_heightmaps) = initial_sector(block_sector, sky_light);
-
-		sector_queues.lock().unwrap().insert(position, sector_queue);
-		heightmaps.lock().unwrap().insert(position, sector_heightmaps);
+		let (mut sector_queue, sector_heightmaps) = initial_sector(block_sector, sky_light);
 
 		{
 			let end = ::std::time::Instant::now();
@@ -416,7 +413,34 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			let secs = time.as_secs();
 			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 	
-			println!("Initial sky lighting done in {}us ({}us per column)", us, us / 256);
+			println!("Initial sky lighting for ({}, {}) done in {}us ({}us per column)", position.x(), position.z(), us, us / 256);
+		}
+
+		println!("Performing inner full sky lighting for sector ({}, {})", position.x(), position.z());
+		let inner_start = Instant::now();
+
+		let sky_light_neighbors = Directional::combine(SplitDirectional {
+			minus_x: &empty_sector,
+			plus_x: &empty_sector,
+			minus_z: &empty_sector,
+			plus_z: &empty_sector,
+			down: &empty_sector,
+			up: &empty_sector
+		});
+
+		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, sky_light_neighbors, &mut sector_queue, &sector_heightmaps);
+
+		sector_queues.lock().unwrap().insert(position, sector_queue);
+		heightmaps.lock().unwrap().insert(position, sector_heightmaps);
+
+		{
+			let end = ::std::time::Instant::now();
+			let time = end.duration_since(inner_start);
+	
+			let secs = time.as_secs();
+			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+	
+			println!("Inner full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
 		}
 	});
 
