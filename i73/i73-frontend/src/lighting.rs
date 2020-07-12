@@ -378,7 +378,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
 	let heightmaps: Mutex<HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>> = Mutex::new(HashMap::new());
-	let sector_queues: Mutex<HashMap<GlobalSectorPosition, SectorQueue>> = Mutex::new(HashMap::new());
+	let spills: Mutex<HashMap<GlobalSectorPosition, SplitDirectional<Layer<Option<LayerMask>>>>> = Mutex::new(HashMap::new());
 
 	let positions = [
 		GlobalSectorPosition::new(0, 0),
@@ -430,7 +430,9 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, sky_light_neighbors, &mut sector_queue, &sector_heightmaps);
 
-		sector_queues.lock().unwrap().insert(position, sector_queue);
+		let sector_spills = sector_queue.reset_spills();
+
+		spills.lock().unwrap().insert(position, sector_spills);
 		heightmaps.lock().unwrap().insert(position, sector_heightmaps);
 
 		{
@@ -446,7 +448,9 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut heightmaps = heightmaps.into_inner().unwrap();
 
-	let complete_sector = |position: GlobalSectorPosition| {
+	// TODO: Convert sector spills into proper queues
+
+	/*let complete_sector = |position: GlobalSectorPosition| {
 		println!("Performing full sky lighting for sector ({}, {})", position.x(), position.z());
 
 		let full_start = Instant::now();
@@ -486,7 +490,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	};
 
 	rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
-	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
+	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));*/
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
