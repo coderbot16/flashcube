@@ -1,4 +1,4 @@
-use crate::queue::Queue;
+use crate::queue::ChunkQueue;
 use crate::sources::LightSources;
 use vocs::nibbles::{u4, ChunkNibbles, BulkNibbles};
 use vocs::packed::ChunkPacked;
@@ -29,11 +29,11 @@ impl<'n, S> Lighting<'n, S> where S: LightSources {
 		self.data.get(at)
 	}
 	
-	pub fn initial(&mut self, queue: &mut Queue) {
+	pub fn initial(&mut self, queue: &mut ChunkQueue) {
 		self.sources.initial(&mut self.data, queue.mask_mut())
 	}
 
-	fn update(&mut self, queue: &mut Queue, at: ChunkPosition, opacity: u4) {
+	fn update(&mut self, queue: &mut ChunkQueue, at: ChunkPosition, opacity: u4) {
 		let max_value = max(
 			max(
 				max(
@@ -62,9 +62,9 @@ impl<'n, S> Lighting<'n, S> where S: LightSources {
 		}
 	}
 	
-	pub fn apply(&mut self, chunk: &ChunkPacked, queue: &mut Queue) {
+	pub fn apply(&mut self, chunk: &ChunkPacked, queue: &mut ChunkQueue) {
 		while queue.flip() {
-			while let Some(at) = queue.next() {
+			while let Some(at) = queue.pop_first() {
 				let opacity = self.opacity.get(chunk.get(at) as usize);
 	
 				self.update(queue, at, opacity);

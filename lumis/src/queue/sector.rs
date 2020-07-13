@@ -1,67 +1,98 @@
-use std::convert::TryFrom;
-use vocs::component::{ChunkStorage, LayerStorage};
-use vocs::mask::{ChunkMask, LayerMask, Mask};
-use vocs::position::ChunkPosition;
+use crate::queue::ChunkSpills;
+use std::mem;
+use vocs::component::LayerStorage;
+use vocs::mask::ChunkMask;
+use vocs::mask::LayerMask;
+use vocs::position::{dir, Offset, ChunkPosition, LayerPosition};
+use vocs::unpacked::Layer;
+use vocs::view::{Directional, SplitDirectional};
+use vocs::world::sector::Sector;
 
-/// Effectively a write once, read once Sector tailored for storing LayerMasks.
-pub struct DirectionSpills {
-	indices: Box<[u16; 4096]>,
-	masks: Vec<LayerMask>,
-	filled: ChunkMask
+pub struct SectorQueue {
+	/// The queue currently being emptied.
+	front: Sector<ChunkMask>,
+	/// The queue currently being filled.
+	back: Sector<ChunkMask>,
+	spills: SectorSpills
 }
 
-impl DirectionSpills {
+impl SectorQueue {
 	pub fn new() -> Self {
-		DirectionSpills {
-			indices: Box::new([0u16; 4096]),
-			masks: Vec::with_capacity(128),
-			filled: ChunkMask::default()
+		SectorQueue {
+			front: Sector::new(),
+			back: Sector::new(),
+			spills: SectorSpills::default()
 		}
 	}
 
-	pub fn set(&mut self, position: ChunkPosition, spill: LayerMask) {
-		if spill.is_filled(false) {
-			return;
-		}
-
-		if spill.is_filled(true) {
-			self.filled.set_true(position);
-			return;
-		}
-
-		let index = u16::try_from(self.masks.len()).expect("Inserted too many directional spills without clearing!");
-
-		if index == u16::max_value() {
-			panic!("Inserted too many directional spills without clearing!");
-		}
-
-		// Add 1 because 0 indicates a "null" entry
-		self.indices[position.yzx() as usize] = index + 1;
-
-		self.masks.push(spill);
+	pub fn empty(&self) -> bool {
+		self.front.is_empty()
 	}
 
-	pub fn get(&self, position: ChunkPosition) -> Option<LayerMask> {
-		let index = self.indices[position.yzx() as usize];
+	pub fn reset_spills(&mut self) -> SectorSpills {
+		assert!(self.front.is_empty());
 
-		if index == 0 {
-			let mut mask = LayerMask::default();
+		std::mem::replace(&mut self.spills, SectorSpills::default())
+	}
 
-			if self.filled[position] {
-				mask.fill(true);
+	pub fn pop_first(&mut self) -> Option<(ChunkPosition, ChunkMask)> {
+		self.front.pop_first()
+	}
 
-				return Some(mask);
-			} else {
-				return None;
+	pub fn flip(&mut self) -> bool {
+		mem::swap(&mut self.front, &mut self.back);
+
+		!self.front.is_empty()
+	}
+
+	pub fn enqueue_spills(&mut self, origin: ChunkPosition, spills: ChunkSpills) {
+		let spills = spills.split();
+
+		self.spill(origin, dir::Up, spills.up, |mask, layer| mask.layer_zx_mut(0).combine(&layer));
+		self.spill(origin, dir::Down, spills.down, |mask, layer| mask.layer_zx_mut(15).combine(&layer));
+		self.spill(origin, dir::PlusX, spills.plus_x, |mask, layer| mask.layer_zy_mut(0).combine(&layer));
+		self.spill(origin, dir::MinusX, spills.minus_x, |mask, layer| mask.layer_zy_mut(15).combine(&layer));
+		self.spill(origin, dir::PlusZ, spills.plus_z, |mask, layer| mask.layer_yx_mut(0).combine(&layer));
+		self.spill(origin, dir::MinusZ, spills.minus_z, |mask, layer| mask.layer_yx_mut(15).combine(&layer));
+	}
+
+	fn spill<D, F>(&mut self, origin: ChunkPosition, dir: D, layer: LayerMask, mut f: F)
+		where ChunkPosition: Offset<D, Spill = LayerPosition>,
+			F: FnMut(&mut ChunkMask, LayerMask),
+			D: Copy,
+			Directional<Layer<Option<LayerMask>>>: std::ops::IndexMut<D, Output = Layer<Option<LayerMask>>> {
+
+		// If the layer is empty, don't bother adding / merging it.
+		if layer.is_filled(false) {
+			return;
+		}
+
+		// Either merge it with a local chunk mask, or add it to the neighboring spills.
+		match origin.offset_spilling(dir) {
+			Ok(position) => f(self.back.get_or_create_mut(position), layer),
+			Err(spilled) => {
+				let slot = &mut self.spills.0[dir][spilled];
+
+				match slot.as_mut() {
+					Some(existing) => *existing |= &layer,
+					None => *slot = Some(layer)
+				}
 			}
 		}
-
-		Some(self.masks[index as usize - 1].clone())
 	}
+}
 
-	pub fn reset(&mut self) {
-		*self.indices = [0u16; 4096];
-		self.masks.clear();
-		self.filled.fill(false);
+pub struct SectorSpills(Directional<Layer<Option<LayerMask>>>);
+
+impl Default for SectorSpills {
+	fn default() -> SectorSpills {
+		SectorSpills(Directional::combine(SplitDirectional {
+			plus_x: Layer::default(),
+			minus_x: Layer::default(),
+			up: Layer::default(),
+			down: Layer::default(),
+			plus_z: Layer::default(),
+			minus_z: Layer::default()
+		}))
 	}
 }
