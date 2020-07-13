@@ -5,155 +5,25 @@ use i73_base::Block;
 use lumis::heightmap::{ChunkHeightMap, ColumnHeightMap, HeightMapBuilder};
 use lumis::light::Lighting;
 use lumis::sources::SkyLightSources;
-use lumis::queue::Queue;
+use lumis::queue::{ChunkQueue, SectorQueue, SectorSpills};
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::{ParallelIterator, IntoParallelRefIterator};
 
 use std::collections::HashMap;
-use std::mem;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use vocs::component::LayerStorage;
 use vocs::indexed::ChunkIndexed;
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
 use vocs::position::{dir, Offset, ChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
+use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
 use vocs::world::shared::{NoPack, SharedSector, SharedWorld};
 use vocs::world::world::World;
-
-struct Layer<T>(Box<[T]>);
-
-impl<T> Default for Layer<T> where T: Default {
-	fn default() -> Self {
-		let values: Vec<T> = (0..256).map(|_| T::default()).collect();
-
-		Layer(values.into_boxed_slice())
-	}
-}
-
-impl<T> Layer<T> {
-	fn map<F, V>(self, mapper: F) -> Layer<V> where F: FnMut(T) -> V {
-		let entries: Vec<V> = self.0.into_vec().into_iter().map(mapper).collect();
-
-		Layer(entries.into_boxed_slice())
-	}
-
-	fn into_inner(self) -> Box<[T]> {
-		self.0
-	}
-}
-
-impl<T> Layer<T> where T: Clone {
-	fn filled(value: T) -> Self {
-		Layer(vec![value; 256].into_boxed_slice())
-	}
-}
-
-impl<T> std::ops::Index<LayerPosition> for Layer<T> {
-	type Output = T;
-
-	fn index(&self, index: LayerPosition) -> &Self::Output {
-		&self.0[index.zx() as usize]
-	}
-}
-
-impl<T> std::ops::IndexMut<LayerPosition> for Layer<T> {
-	fn index_mut(&mut self, index: LayerPosition) -> &mut Self::Output {
-		&mut self.0[index.zx() as usize]
-	}
-}
-
-struct SectorQueue {
-	/// The queue currently being emptied.
-	front: Sector<ChunkMask>,
-	/// The queue currently being filled.
-	back: Sector<ChunkMask>,
-	spills: Directional<Layer<Option<LayerMask>>>
-}
-
-impl SectorQueue {
-	fn new() -> Self {
-		SectorQueue {
-			front: Sector::new(),
-			back: Sector::new(),
-			spills: Directional::combine(SplitDirectional {
-				plus_x: Layer::default(),
-				minus_x: Layer::default(),
-				up: Layer::default(),
-				down: Layer::default(),
-				plus_z: Layer::default(),
-				minus_z: Layer::default()
-			})
-		}
-	}
-
-	fn spill<D, F>(&mut self, origin: ChunkPosition, dir: D, layer: LayerMask, mut f: F)
-		where ChunkPosition: Offset<D, Spill = LayerPosition>,
-			F: FnMut(&mut ChunkMask, LayerMask),
-			D: Copy,
-			Directional<Layer<Option<LayerMask>>>: std::ops::IndexMut<D, Output = Layer<Option<LayerMask>>> {
-
-
-		// If the layer is empty, don't bother adding / merging it.
-		if layer.is_filled(false) {
-			return;
-		}
-
-		// Either merge it with a local chunk mask, or add it to the neighboring spills.
-		match origin.offset_spilling(dir) {
-			Ok(position) => f(self.back.get_or_create_mut(position), layer),
-			Err(spilled) => {
-				let slot = &mut self.spills[dir][spilled];
-
-				match slot.as_mut() {
-					Some(existing) => *existing |= &layer,
-					None => *slot = Some(layer)
-				}
-			}
-		}
-	}
-
-	fn spill_out(&mut self, origin: ChunkPosition, spills: SplitDirectional<LayerMask>) {
-		self.spill(origin, dir::Up, spills.up, |mask, layer| mask.layer_zx_mut(0).combine(&layer));
-		self.spill(origin, dir::Down, spills.down, |mask, layer| mask.layer_zx_mut(15).combine(&layer));
-		self.spill(origin, dir::PlusX, spills.plus_x, |mask, layer| mask.layer_zy_mut(0).combine(&layer));
-		self.spill(origin, dir::MinusX, spills.minus_x, |mask, layer| mask.layer_zy_mut(15).combine(&layer));
-		self.spill(origin, dir::PlusZ, spills.plus_z, |mask, layer| mask.layer_yx_mut(0).combine(&layer));
-		self.spill(origin, dir::MinusZ, spills.minus_z, |mask, layer| mask.layer_yx_mut(15).combine(&layer));
-	}
-
-	fn reset_spills(&mut self) -> SplitDirectional<Layer<Option<LayerMask>>> {
-		assert!(self.front.is_empty());
-
-		std::mem::replace(&mut self.spills, Directional::combine(SplitDirectional {
-			plus_x: Layer::default(),
-			minus_x: Layer::default(),
-			up: Layer::default(),
-			down: Layer::default(),
-			plus_z: Layer::default(),
-			minus_z: Layer::default()
-		})).split()
-	}
-
-	fn empty(&self) -> bool {
-		self.front.is_empty()
-	}
-
-	fn pop(&mut self) -> Option<(ChunkPosition, ChunkMask)> {
-		self.front.pop_first()
-	}
-
-	fn flip(&mut self) -> bool {
-		mem::swap(&mut self.front, &mut self.back);
-
-		!self.front.is_empty()
-	}
-}
 
 fn lighting_info() -> HashMap<Block, u4> {
 	let mut lighting_info = HashMap::new();
@@ -177,7 +47,7 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 		let mut mask = LayerMask::default();
 		let mut heightmap_builder = HeightMapBuilder::new();
 		// TODO: Reuse this!
-		let mut queue = Queue::default();
+		let mut queue = ChunkQueue::new();
 
 		for (y, chunk) in column.iter().enumerate().rev() {
 			let (blocks, palette) = match chunk {
@@ -218,11 +88,9 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 
 			mask = heightmap_builder.add(chunk_heightmap);
 
-			let old_spills = queue.reset_spills().split();
-
 			let chunk_position = ChunkPosition::from_layer(y as u8, position);
 
-			sector_queue.lock().unwrap().spill_out(chunk_position, old_spills);
+			sector_queue.lock().unwrap().enqueue_spills(chunk_position, queue.reset_spills());
 			sky_light.set(chunk_position, NoPack(light_data));
 		}
 
@@ -258,7 +126,7 @@ fn full_sector(
 	while sector_queue.flip() {
 		iterations += 1;
 
-		while let Some((position, incomplete)) = sector_queue.pop() {
+		while let Some((position, incomplete)) = sector_queue.pop_first() {
 			chunk_operations += 1;
 
 			let blocks = block_sector[position].as_ref().unwrap();
@@ -268,7 +136,7 @@ fn full_sector(
 
 			let mut queue = complete_chunk(position, blocks, sky_light, sky_light_neighbors, incomplete, &heightmap);
 
-			sector_queue.spill_out(position, queue.reset_spills().split());
+			sector_queue.enqueue_spills(position, queue.reset_spills());
 		}
 	}
 
@@ -281,12 +149,12 @@ fn complete_chunk (
 	sky_light: &SharedSector<NoPack<ChunkNibbles>>, 
 	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, 
 	incomplete: ChunkMask, 
-	heightmap: &ChunkHeightMap) -> Queue {
+	heightmap: &ChunkHeightMap) -> ChunkQueue {
 
 	// TODO: Cache these things!
 	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
-	let mut queue = Queue::default();
+	let mut queue = ChunkQueue::new();
 
 	let (blocks, palette) = blocks.freeze();
 
@@ -378,7 +246,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
 	let heightmaps: Mutex<HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>> = Mutex::new(HashMap::new());
-	let spills: Mutex<HashMap<GlobalSectorPosition, SplitDirectional<Layer<Option<LayerMask>>>>> = Mutex::new(HashMap::new());
+	let spills: Mutex<HashMap<GlobalSectorPosition, SectorSpills>> = Mutex::new(HashMap::new());
 
 	let positions = [
 		GlobalSectorPosition::new(0, 0),
