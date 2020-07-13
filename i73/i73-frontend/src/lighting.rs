@@ -371,60 +371,81 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	});
 
 	let mut heightmaps = heightmaps.into_inner().unwrap();
-	let queues = Mutex::new(process_sector_spills(spills.into_inner().unwrap()).into_sectors());
+	let mut queues = Mutex::new(process_sector_spills(spills.into_inner().unwrap()).into_sectors());
+	let mut spills: Mutex<HashMap<GlobalSectorPosition, SectorSpills>> = Mutex::new(HashMap::new());
 
-	let complete_sector = |position: GlobalSectorPosition| {
-		let sector_mask = match queues.lock().unwrap().remove(&position) {
-			Some(mask) => mask,
-			None => {
-				println!("Skipping sky light completion for ({}, {}), nothing queued", position.x(), position.z());
+	let mut iterations = 0;
 
-				return;
+	loop {
+		iterations += 1;
+
+		let complete_sector = |position: GlobalSectorPosition| {
+			let sector_mask = match queues.lock().unwrap().remove(&position) {
+				Some(mask) => mask,
+				None => {
+					println!("Skipping sky light completion for ({}, {}), nothing queued", position.x(), position.z());
+	
+					return (0, 0);
+				}
+			};
+	
+			println!("Performing full sky lighting for sector ({}, {}) [iteration: {}]", position.x(), position.z(), iterations);
+	
+			let full_start = Instant::now();
+	
+			let block_sector = match world.get_sector(position) {
+				Some(sector) => sector,
+				None => return (0, 0)
+			};
+	
+			let sky_light_center = sky_light.get_sector(position).unwrap();
+	
+			let sky_light_neighbors = Directional::combine(SplitDirectional {
+				minus_x: sky_light.get_sector(GlobalSectorPosition::new(position.x() - 1, position.z())).unwrap_or(&empty_sector),
+				plus_x: sky_light.get_sector(GlobalSectorPosition::new(position.x() + 1, position.z())).unwrap_or(&empty_sector),
+				minus_z: sky_light.get_sector(GlobalSectorPosition::new(position.x(), position.z() - 1)).unwrap_or(&empty_sector),
+				plus_z: sky_light.get_sector(GlobalSectorPosition::new(position.x(), position.z() + 1)).unwrap_or(&empty_sector),
+				down: &empty_sector,
+				up: &empty_sector,
+			});
+	
+			let mut sector_queue = SectorQueue::new();
+			sector_queue.reset_from_mask(sector_mask);
+	
+			let sector_heightmaps = heightmaps.get(&position).unwrap();
+	
+			let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps);
+	
+			spills.lock().unwrap().insert(position, sector_queue.reset_spills());
+	
+			{
+				let end = ::std::time::Instant::now();
+				let time = end.duration_since(full_start);
+		
+				let secs = time.as_secs();
+				let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+		
+				println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
 			}
+	
+			(iterations, chunk_operations)
 		};
 
-		println!("Performing full sky lighting for sector ({}, {})", position.x(), position.z());
+		let (a, b) = rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
+		let (c, d) = rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
 
-		let full_start = Instant::now();
+		// let (a, b) = (complete_sector(positions[0]), complete_sector(positions[3]));
+		// let (c, d) = (complete_sector(positions[1]), complete_sector(positions[2]));
 
-		let block_sector = match world.get_sector(position) {
-			Some(sector) => sector,
-			None => return
-		};
-
-		let sky_light_center = sky_light.get_sector(position).unwrap();
-
-		let sky_light_neighbors = Directional::combine(SplitDirectional {
-			minus_x: sky_light.get_sector(GlobalSectorPosition::new(position.x() - 1, position.z())).unwrap_or(&empty_sector),
-			plus_x: sky_light.get_sector(GlobalSectorPosition::new(position.x() + 1, position.z())).unwrap_or(&empty_sector),
-			minus_z: sky_light.get_sector(GlobalSectorPosition::new(position.x(), position.z() - 1)).unwrap_or(&empty_sector),
-			plus_z: sky_light.get_sector(GlobalSectorPosition::new(position.x(), position.z() + 1)).unwrap_or(&empty_sector),
-			down: &empty_sector,
-			up: &empty_sector,
-		});
-
-		let mut sector_queue = SectorQueue::new();
-		sector_queue.reset_from_mask(sector_mask);
-
-		let sector_heightmaps = heightmaps.get(&position).unwrap();
-
-		let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps);
-
-		// TODO: Don't throw away the spills from the sector queue
-
-		{
-			let end = ::std::time::Instant::now();
-			let time = end.duration_since(full_start);
-	
-			let secs = time.as_secs();
-			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-	
-			println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
+		// If no operations are being completed, stop.
+		if a.0 + a.1 + b.0 + b.1 + c.0 + c.1 + d.0 + d.1 == 0 {
+			break;
 		}
-	};
 
-	rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
-	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
+		let spills = std::mem::replace(&mut spills, Mutex::new(HashMap::new())).into_inner().unwrap();
+		queues = Mutex::new(process_sector_spills(spills).into_sectors());
+	}
+	
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
