@@ -241,6 +241,62 @@ fn complete_chunk (
 	queue
 }
 
+fn spill<P, M>(sector: &mut Sector<ChunkMask>, layer: Layer<Option<LayerMask>>, position: P, mut merge: M)
+	where P: Fn(LayerPosition) -> ChunkPosition, M: FnMut(&mut ChunkMask, LayerMask) {
+
+	for (index, spilled) in layer.into_inner().into_vec().drain(..).enumerate() {
+		let spilled: Option<LayerMask> = spilled;
+
+		let spilled = match spilled {
+			Some(mask) => mask,
+			None => continue
+		};
+
+		let layer_position = LayerPosition::from_zx(index as u8);
+		let chunk_position = position(layer_position);
+
+		merge(sector.get_or_create_mut(chunk_position), spilled);
+	}
+}
+
+fn process_sector_spills(spills: HashMap<GlobalSectorPosition, SectorSpills>) -> World<ChunkMask> {
+	let mut world: World<ChunkMask> = World::new();
+
+	for (position, spills) in spills {
+		let spills = spills.0.split();
+		
+		spill(
+			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x() + 1, position.z())), 
+			spills.plus_x, 
+			|layer_position| ChunkPosition::new(0, layer_position.x(), layer_position.z()),
+			|mask, layer| mask.layer_zy_mut(0).combine(&layer)
+		);
+
+		spill(
+			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x() - 1, position.z())), 
+			spills.minus_x, 
+			|layer_position| ChunkPosition::new(15, layer_position.x(), layer_position.z()),
+			|mask, layer| mask.layer_zy_mut(15).combine(&layer)
+		);
+
+		spill(
+			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x(), position.z() + 1)), 
+			spills.plus_z, 
+			|layer_position| ChunkPosition::new(layer_position.x(), layer_position.z(), 0),
+			|mask, layer| mask.layer_yx_mut(0).combine(&layer)
+		);
+
+		spill(
+			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x(), position.z() - 1)), 
+			spills.minus_z, 
+			|layer_position| ChunkPosition::new(layer_position.x(), layer_position.z(), 15),
+			|mask, layer| mask.layer_yx_mut(15).combine(&layer)
+		);
+	}
+
+	world
+}
+
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<GlobalColumnPosition, ColumnHeightMap>) {
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
 
