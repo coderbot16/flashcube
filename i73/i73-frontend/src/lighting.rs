@@ -371,10 +371,18 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	});
 
 	let mut heightmaps = heightmaps.into_inner().unwrap();
+	let queues = Mutex::new(process_sector_spills(spills.into_inner().unwrap()).into_sectors());
 
-	// TODO: Convert sector spills into proper queues
+	let complete_sector = |position: GlobalSectorPosition| {
+		let sector_mask = match queues.lock().unwrap().remove(&position) {
+			Some(mask) => mask,
+			None => {
+				println!("Skipping sky light completion for ({}, {}), nothing queued", position.x(), position.z());
 
-	/*let complete_sector = |position: GlobalSectorPosition| {
+				return;
+			}
+		};
+
 		println!("Performing full sky lighting for sector ({}, {})", position.x(), position.z());
 
 		let full_start = Instant::now();
@@ -395,7 +403,9 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			up: &empty_sector,
 		});
 
-		let mut sector_queue = sector_queues.lock().unwrap().remove(&position).unwrap();
+		let mut sector_queue = SectorQueue::new();
+		sector_queue.reset_from_mask(sector_mask);
+
 		let sector_heightmaps = heightmaps.get(&position).unwrap();
 
 		let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps);
@@ -414,7 +424,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	};
 
 	rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
-	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));*/
+	rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
