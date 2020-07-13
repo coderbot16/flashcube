@@ -25,6 +25,14 @@ impl SectorQueue {
 		}
 	}
 
+	pub fn reset_from_mask(&mut self, mask: Sector<ChunkMask>) {
+		// TODO: Properly clear spills & front mask
+		assert!(self.empty());
+		self.reset_spills();
+
+		self.back = mask;
+	}
+
 	pub fn empty(&self) -> bool {
 		self.front.is_empty()
 	}
@@ -82,7 +90,7 @@ impl SectorQueue {
 	}
 }
 
-pub struct SectorSpills(Directional<Layer<Option<LayerMask>>>);
+pub struct SectorSpills(/*TODO: make private*/ pub Directional<Layer<Option<LayerMask>>>);
 
 impl Default for SectorSpills {
 	fn default() -> SectorSpills {
