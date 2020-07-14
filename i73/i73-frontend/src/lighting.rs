@@ -39,6 +39,15 @@ fn lighting_info() -> HashMap<Block, u4> {
 fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>) -> (SectorQueue, Layer<ColumnHeightMap>) {
 	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
+	let empty_neighbors = Directional::combine(SplitDirectional {
+		minus_x: &empty_lighting,
+		plus_x: &empty_lighting,
+		minus_z: &empty_lighting,
+		plus_z: &empty_lighting,
+		down: &empty_lighting,
+		up: &empty_lighting,
+	});
+
 	let sector_queue = Mutex::new(SectorQueue::new());
 
 	let unordered_heightmaps: Vec<(LayerPosition, ColumnHeightMap)> = 
@@ -72,16 +81,8 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 			let sources = SkyLightSources::new(&chunk_heightmap);
 
 			let mut light_data = ChunkNibbles::default();
-			let neighbors = Directional::combine(SplitDirectional {
-				minus_x: &empty_lighting,
-				plus_x: &empty_lighting,
-				minus_z: &empty_lighting,
-				plus_z: &empty_lighting,
-				down: &empty_lighting,
-				up: &empty_lighting,
-			});
 
-			let mut light = Lighting::new(&mut light_data, neighbors, sources, opacity);
+			let mut light = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
 
 			light.initial(&mut queue);
 			light.apply(blocks, &mut queue);
@@ -299,6 +300,14 @@ fn process_sector_spills(spills: HashMap<GlobalSectorPosition, SectorSpills>) ->
 
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<GlobalColumnPosition, ColumnHeightMap>) {
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
+	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
+		minus_x: &empty_sector,
+		plus_x: &empty_sector,
+		minus_z: &empty_sector,
+		plus_z: &empty_sector,
+		down: &empty_sector,
+		up: &empty_sector
+	});
 
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
 	let heightmaps: Mutex<HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>> = Mutex::new(HashMap::new());
@@ -343,16 +352,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		println!("Performing inner full sky lighting for sector ({}, {})", position.x(), position.z());
 		let inner_start = Instant::now();
 
-		let sky_light_neighbors = Directional::combine(SplitDirectional {
-			minus_x: &empty_sector,
-			plus_x: &empty_sector,
-			minus_z: &empty_sector,
-			plus_z: &empty_sector,
-			down: &empty_sector,
-			up: &empty_sector
-		});
-
-		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, sky_light_neighbors, &mut sector_queue, &sector_heightmaps);
+		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, empty_sky_light_neighbors, &mut sector_queue, &sector_heightmaps);
 
 		let sector_spills = sector_queue.reset_spills();
 
