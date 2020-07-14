@@ -314,8 +314,10 @@ impl WorldQueue {
 		}
 	}
 
-	pub fn flip(&mut self) {
+	pub fn flip(&mut self) -> bool {
 		std::mem::swap(&mut self.front, &mut self.back);
+
+		!self.front.is_empty()
 	}
 
 	pub fn take(&mut self, position: GlobalSectorPosition) -> Option<Sector<ChunkMask>> {
@@ -399,9 +401,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut iterations = 0;
 
-	loop {
-		world_queue.lock().unwrap().flip();
-
+	while world_queue.lock().unwrap().flip() {
 		iterations += 1;
 
 		let complete_sector = |position: GlobalSectorPosition| {
@@ -456,16 +456,12 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			(iterations, chunk_operations)
 		};
 
-		let (a, b) = rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
-		let (c, d) = rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
+		rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
+		rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
 
-		// let (a, b) = (complete_sector(positions[0]), complete_sector(positions[3]));
-		// let (c, d) = (complete_sector(positions[1]), complete_sector(positions[2]));
-
-		// If no operations are being completed, stop.
-		if a.0 + a.1 + b.0 + b.1 + c.0 + c.1 + d.0 + d.1 == 0 {
-			break;
-		}
+		// Discard queues not linked to an existing sector.
+		// TODO: Properly check these, instead of hard-coding the relevant sectors.
+		world_queue.lock().unwrap().front.clear();
 	}
 
 	// Split up the heightmaps into the format expected by the rest of i73
