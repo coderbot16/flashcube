@@ -242,60 +242,85 @@ fn complete_chunk (
 	queue
 }
 
-fn spill<P, M>(sector: &mut Sector<ChunkMask>, layer: Layer<Option<LayerMask>>, position: P, mut merge: M)
-	where P: Fn(LayerPosition) -> ChunkPosition, M: FnMut(&mut ChunkMask, LayerMask) {
-
-	for (index, spilled) in layer.into_inner().into_vec().drain(..).enumerate() {
-		let spilled: Option<LayerMask> = spilled;
-
-		let spilled = match spilled {
-			Some(mask) => mask,
-			None => continue
-		};
-
-		let layer_position = LayerPosition::from_zx(index as u8);
-		let chunk_position = position(layer_position);
-
-		merge(sector.get_or_create_mut(chunk_position), spilled);
-	}
+struct WorldQueue {
+	front: HashMap<GlobalSectorPosition, Sector<ChunkMask>>,
+	back: HashMap<GlobalSectorPosition, Sector<ChunkMask>>
 }
 
-fn process_sector_spills(spills: HashMap<GlobalSectorPosition, SectorSpills>) -> World<ChunkMask> {
-	let mut world: World<ChunkMask> = World::new();
+impl WorldQueue {
+	pub fn new() -> WorldQueue {
+		WorldQueue {
+			front: HashMap::new(),
+			back: HashMap::new()
+		}
+	}
 
-	for (position, spills) in spills {
+	pub fn enqueue_spills(&mut self, position: GlobalSectorPosition, spills: SectorSpills) {
 		let spills = spills.0.split();
 		
-		spill(
-			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x() + 1, position.z())), 
+		self.spill(
+			GlobalSectorPosition::new(position.x() + 1, position.z()), 
 			spills.plus_x, 
 			|layer_position| ChunkPosition::new(0, layer_position.x(), layer_position.z()),
 			|mask, layer| mask.layer_zy_mut(0).combine(&layer)
 		);
 
-		spill(
-			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x() - 1, position.z())), 
+		self.spill(
+			GlobalSectorPosition::new(position.x() - 1, position.z()), 
 			spills.minus_x, 
 			|layer_position| ChunkPosition::new(15, layer_position.x(), layer_position.z()),
 			|mask, layer| mask.layer_zy_mut(15).combine(&layer)
 		);
 
-		spill(
-			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x(), position.z() + 1)), 
+		self.spill(
+			GlobalSectorPosition::new(position.x(), position.z() + 1),
 			spills.plus_z, 
 			|layer_position| ChunkPosition::new(layer_position.x(), layer_position.z(), 0),
 			|mask, layer| mask.layer_yx_mut(0).combine(&layer)
 		);
 
-		spill(
-			world.get_or_create_sector_mut(GlobalSectorPosition::new(position.x(), position.z() - 1)), 
+		self.spill(
+			GlobalSectorPosition::new(position.x(), position.z() - 1), 
 			spills.minus_z, 
 			|layer_position| ChunkPosition::new(layer_position.x(), layer_position.z(), 15),
 			|mask, layer| mask.layer_yx_mut(15).combine(&layer)
 		);
 	}
 
-	world
+	fn spill<P, M>(&mut self, origin: GlobalSectorPosition, layer: Layer<Option<LayerMask>>, position: P, mut merge: M)
+		where P: Fn(LayerPosition) -> ChunkPosition, M: FnMut(&mut ChunkMask, LayerMask) {
+
+		use vocs::component::LayerStorage;
+
+		for (index, spilled) in layer.into_inner().into_vec().drain(..).enumerate() {
+			let spilled: Option<LayerMask> = spilled;
+
+			let spilled = match spilled {
+				Some(mask) => mask,
+				None => continue
+			};
+
+			if spilled.is_filled(false) {
+				continue;
+			}
+
+			let layer_position = LayerPosition::from_zx(index as u8);
+			let chunk_position = position(layer_position);
+
+			// TODO: Don't repeatedly perform hashmap lookups
+			let sector = self.back.entry(origin).or_insert_with(Sector::new);
+
+			merge(sector.get_or_create_mut(chunk_position), spilled);
+		}
+	}
+
+	pub fn flip(&mut self) {
+		std::mem::swap(&mut self.front, &mut self.back);
+	}
+
+	pub fn take(&mut self, position: GlobalSectorPosition) -> Option<Sector<ChunkMask>> {
+		self.front.remove(&position)
+	}
 }
 
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<GlobalColumnPosition, ColumnHeightMap>) {
@@ -311,7 +336,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
 	let heightmaps: Mutex<HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>> = Mutex::new(HashMap::new());
-	let spills: Mutex<HashMap<GlobalSectorPosition, SectorSpills>> = Mutex::new(HashMap::new());
+	let world_queue = Mutex::new(WorldQueue::new());
 
 	let positions = [
 		GlobalSectorPosition::new(0, 0),
@@ -356,7 +381,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 		let sector_spills = sector_queue.reset_spills();
 
-		spills.lock().unwrap().insert(position, sector_spills);
+		world_queue.lock().unwrap().enqueue_spills(position, sector_spills);
 		heightmaps.lock().unwrap().insert(position, sector_heightmaps);
 
 		{
@@ -371,16 +396,16 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	});
 
 	let mut heightmaps = heightmaps.into_inner().unwrap();
-	let mut queues = Mutex::new(process_sector_spills(spills.into_inner().unwrap()).into_sectors());
-	let mut spills: Mutex<HashMap<GlobalSectorPosition, SectorSpills>> = Mutex::new(HashMap::new());
 
 	let mut iterations = 0;
 
 	loop {
+		world_queue.lock().unwrap().flip();
+
 		iterations += 1;
 
 		let complete_sector = |position: GlobalSectorPosition| {
-			let sector_mask = match queues.lock().unwrap().remove(&position) {
+			let sector_mask = match world_queue.lock().unwrap().take(position) {
 				Some(mask) => mask,
 				None => {
 					println!("Skipping sky light completion for ({}, {}), nothing queued", position.x(), position.z());
@@ -416,7 +441,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	
 			let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps);
 	
-			spills.lock().unwrap().insert(position, sector_queue.reset_spills());
+			world_queue.lock().unwrap().enqueue_spills(position, sector_queue.reset_spills());
 	
 			{
 				let end = ::std::time::Instant::now();
@@ -441,11 +466,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		if a.0 + a.1 + b.0 + b.1 + c.0 + c.1 + d.0 + d.1 == 0 {
 			break;
 		}
-
-		let spills = std::mem::replace(&mut spills, Mutex::new(HashMap::new())).into_inner().unwrap();
-		queues = Mutex::new(process_sector_spills(spills).into_sectors());
 	}
-	
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
