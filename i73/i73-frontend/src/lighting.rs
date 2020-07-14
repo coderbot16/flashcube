@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use vocs::indexed::ChunkIndexed;
+use vocs::indexed::{ChunkIndexed, Target};
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
@@ -36,7 +36,66 @@ fn lighting_info() -> HashMap<Block, u4> {
 	lighting_info
 }
 
-fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>) -> (SectorQueue, Layer<ColumnHeightMap>) {
+fn compute_world_heightmaps<'a, B, F>(blocks: &'a World<ChunkIndexed<B>>, predicate: &'a F) -> HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>> 
+	where B: 'a + Target + Send + Sync, F: Fn(&'a B) -> bool + Sync {
+
+	let compute_sector_heightmaps = 
+		|(&position, sector)| (position, compute_sector_heightmaps(sector, predicate));
+
+	// TODO: Remove need for par_bridge
+	blocks.sectors().par_bridge().map(compute_sector_heightmaps).collect()
+}
+
+fn compute_sector_heightmaps<'a, B, F>(blocks: &'a Sector<ChunkIndexed<B>>, predicate: &'a F) -> Layer<ColumnHeightMap>
+	where B: 'a + Target + Send + Sync, F: Fn(&'a B) -> bool + Sync {
+
+	let compute_column_heightmap = 
+		|(position, column)| (position, compute_column_heightmap(column, predicate));
+
+	// TODO: Remove need for par_bridge
+	let unordered_heightmaps: Vec<(LayerPosition, ColumnHeightMap)> = 
+		blocks.enumerate_columns().par_bridge().map(compute_column_heightmap).collect();
+
+	// We've received an unordered list of heightmaps from the parallel iterator.
+	// It's necessary to properly sort them before returning.
+	// First, we order them with the ordered_heightmaps layer...
+	let mut ordered_heightmaps: Layer<Option<ColumnHeightMap>> = Layer::default();
+
+	for (position, heightmap) in unordered_heightmaps {
+		ordered_heightmaps[position] = Some(heightmap);
+	}
+
+	// ... then, we unwrap all of the heightmaps, since at this point every slot should
+	// be occupied by a Some value.
+	ordered_heightmaps.map(Option::unwrap)
+}
+
+fn compute_column_heightmap<'a, B, F>(column: [Option<&'a ChunkIndexed<B>>; 16], predicate: &'a F) -> ColumnHeightMap
+	where B: 'a + Target + Send + Sync, F: Fn(&'a B) -> bool {
+
+	let mut mask = LayerMask::default();
+	let mut heightmap_builder = HeightMapBuilder::new();
+
+	for chunk in column.iter().rev() {
+		let (blocks, palette) = match chunk {
+			&Some(chunk) => chunk.freeze(),
+			&None => todo!("Cannot handle empty chunks!")
+		};
+
+		// TODO: Don't ignore corrupted chunks by silently defaulting empty palette entries
+		let predicate_palette: BitVec = palette
+			.iter()
+			.map(|block| block.as_ref().map(predicate).unwrap_or(false))
+			.collect();
+
+		let chunk_heightmap = ChunkHeightMap::build(blocks, &predicate_palette, mask);
+		mask = heightmap_builder.add(chunk_heightmap);
+	}
+
+	heightmap_builder.build()
+}
+
+fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>, heightmaps: &Layer<ColumnHeightMap>) -> SectorQueue {
 	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
 	let empty_neighbors = Directional::combine(SplitDirectional {
@@ -50,13 +109,10 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 
 	let sector_queue = Mutex::new(SectorQueue::new());
 
-	let unordered_heightmaps: Vec<(LayerPosition, ColumnHeightMap)> = 
-		block_sector.enumerate_columns().par_bridge().map(|(position, column)| {
-
-		let mut mask = LayerMask::default();
-		let mut heightmap_builder = HeightMapBuilder::new();
+	block_sector.enumerate_columns().par_bridge().for_each(|(position, column)| {
 		// TODO: Reuse this!
 		let mut queue = ChunkQueue::new();
+		let heightmap = &heightmaps[position];
 
 		for (y, chunk) in column.iter().enumerate().rev() {
 			let (blocks, palette) = match chunk {
@@ -65,19 +121,16 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 			};
 
 			let mut opacity = BulkNibbles::new(palette.len());
-			let mut obstructs = BitVec::new();
 
 			for (index, value) in palette.iter().enumerate() {
 				let opacity_value = value
-				.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
-				.unwrap_or(u4::new(15));
+					.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
+					.unwrap_or(u4::new(15));
 				
 				opacity.set(index, opacity_value);
-
-				obstructs.push(opacity_value != u4::new(0));
 			}
 
-			let chunk_heightmap = ChunkHeightMap::build(blocks, &obstructs, mask);
+			let chunk_heightmap = heightmap.slice(u4::new(y as u8));
 			let sources = SkyLightSources::new(&chunk_heightmap);
 
 			let mut light_data = ChunkNibbles::default();
@@ -87,31 +140,14 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 			light.initial(&mut queue);
 			light.apply(blocks, &mut queue);
 
-			mask = heightmap_builder.add(chunk_heightmap);
-
 			let chunk_position = ChunkPosition::from_layer(y as u8, position);
 
 			sector_queue.lock().unwrap().enqueue_spills(chunk_position, queue.reset_spills());
 			sky_light.set(chunk_position, NoPack(light_data));
 		}
+	});
 
-		(position, heightmap_builder.build())
-	}).collect();
-
-	// We've received an unordered list of heightmaps from the parallel iterator.
-	// It's necessary to properly sort them before returning.
-	// First, we order them with the ordered_heightmaps layer...
-	let mut ordered_heightmaps: Layer<Option<ColumnHeightMap>> = Layer::default();
-
-	for (position, heightmap) in unordered_heightmaps {
-		ordered_heightmaps[position] = Some(heightmap);
-	}
-
-	// ... then, we unwrap all of the heightmaps, since at this point every slot should
-	// be occupied by a Some value.
-	let heightmaps = ordered_heightmaps.map(Option::unwrap);
-
-	(sector_queue.into_inner().unwrap(), heightmaps)
+	sector_queue.into_inner().unwrap()
 }
 
 fn full_sector(
@@ -326,6 +362,26 @@ impl WorldQueue {
 }
 
 pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<GlobalColumnPosition, ColumnHeightMap>) {
+	println!("Computing world heightmaps");
+	let heightmap_start = Instant::now();
+
+	let opacities = lighting_info();
+	let predicate = |block| {
+		opacities.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
+	};
+
+	let heightmaps = compute_world_heightmaps(world, &predicate);
+
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(heightmap_start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("Heightmap computation done in {}us ({}us per column)", us, us / ((world.sectors().len() * 256) as u64));
+	}
+
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
 	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
 		minus_x: &empty_sector,
@@ -337,7 +393,6 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	});
 
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
-	let heightmaps: Mutex<HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>> = Mutex::new(HashMap::new());
 	let world_queue = Mutex::new(WorldQueue::new());
 
 	let positions = [
@@ -363,8 +418,9 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		};
 
 		let sky_light = sky_light.get_sector(position).unwrap();
+		let sector_heightmaps = heightmaps.get(&position).unwrap();
 
-		let (mut sector_queue, sector_heightmaps) = initial_sector(block_sector, sky_light);
+		let mut sector_queue = initial_sector(block_sector, sky_light, sector_heightmaps);
 
 		{
 			let end = ::std::time::Instant::now();
@@ -384,7 +440,6 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		let sector_spills = sector_queue.reset_spills();
 
 		world_queue.lock().unwrap().enqueue_spills(position, sector_spills);
-		heightmaps.lock().unwrap().insert(position, sector_heightmaps);
 
 		{
 			let end = ::std::time::Instant::now();
@@ -396,8 +451,6 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			println!("Inner full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
 		}
 	});
-
-	let mut heightmaps = heightmaps.into_inner().unwrap();
 
 	let mut iterations = 0;
 
@@ -465,6 +518,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	}
 
 	// Split up the heightmaps into the format expected by the rest of i73
+	let mut heightmaps = heightmaps;
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
 
 	for &position in &positions {
