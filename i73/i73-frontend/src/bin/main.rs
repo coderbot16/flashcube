@@ -784,7 +784,7 @@ fn main() {
 	let opacities = |block| lighting_info.get(block).copied().unwrap_or(u4::new(15));
 
 	// Also logs timing messages
-	let mut sky_light = lighting::compute_skylight(&world, &heightmaps, &opacities);
+	let mut sky_light = lighting::compute_skylight(&world, &heightmaps, &opacities, &lighting::PrintTraces);
 
 	{
 		let end = ::std::time::Instant::now();

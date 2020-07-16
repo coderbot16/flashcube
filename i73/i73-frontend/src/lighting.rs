@@ -8,7 +8,7 @@ use rayon::prelude::{ParallelIterator, IntoParallelIterator};
 
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use vocs::indexed::{ChunkIndexed, Target};
 use vocs::mask::ChunkMask;
@@ -346,13 +346,56 @@ impl WorldQueue {
 	}
 }
 
-pub fn compute_skylight<'a, B, F>(
+pub trait SkyLightTraces {
+	fn initial_sector(&self, position: GlobalSectorPosition, duration: Duration);
+	fn initial_full_sector(&self, position: GlobalSectorPosition, iterations: u32, chunk_operations: u32, duration: Duration);
+	fn complete_sector(&self, position: GlobalSectorPosition, iteration: u32, inner_iterations: u32, chunk_operations: u32, duration: Duration);
+}
+
+pub struct PrintTraces;
+
+impl PrintTraces {
+	fn us(duration: Duration) -> u64 {
+		(duration.as_secs() * 1000000) + ((duration.subsec_nanos() / 1000) as u64)
+	}
+}
+
+impl SkyLightTraces for PrintTraces {
+	fn initial_sector(&self, position: GlobalSectorPosition, duration: Duration) {
+		let us = Self::us(duration);
+
+		println!("Initial sky lighting for ({}, {}) done in {}us ({}us per column)", position.x(), position.z(), us, us / 256);
+	}
+
+	fn initial_full_sector(&self, position: GlobalSectorPosition, iterations: u32, chunk_operations: u32, duration: Duration) {
+		let us = Self::us(duration);
+
+		println!("Inner full sky lighting for ({}, {}) done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", position.x(), position.z(), us, us / 256, iterations, chunk_operations);
+	}
+
+	fn complete_sector(&self, position: GlobalSectorPosition, iteration: u32, inner_iterations: u32, chunk_operations: u32, duration: Duration) {
+		let us = Self::us(duration);
+
+		println!("Full sky lighting for ({}, {}) [iteration {}] done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", position.x(), position.z(), iteration, us, us / 256, inner_iterations, chunk_operations);
+	}
+}
+
+pub struct IgnoreTraces;
+
+impl SkyLightTraces for IgnoreTraces {
+	fn initial_sector(&self, _: GlobalSectorPosition, _: Duration) {}
+	fn initial_full_sector(&self, _: GlobalSectorPosition, _: u32, _: u32, _: Duration) {}
+	fn complete_sector(&self, _: GlobalSectorPosition, _: u32, _: u32, _: u32, _: Duration) {}
+}
+
+pub fn compute_skylight<'a, B, F, T>(
 	world: &'a World<ChunkIndexed<B>>, heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>,
-	opacities: &'a F
+	opacities: &'a F, tracer: &T
 ) -> SharedWorld<NoPack<ChunkNibbles>>
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
+	T: SkyLightTraces + Sync,
 {
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
 	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
@@ -374,25 +417,13 @@ where
 	world.sectors().par_bridge().for_each(|(&position, block_sector)| {
 		let initial_start = Instant::now();
 
-		println!("Performing initial lighting for sector ({}, {})", position.x(), position.z());
-
 		let sky_light = sky_light.get_sector(position).unwrap();
 		let sector_heightmaps = heightmaps.get(&position).unwrap();
 
 		let mut sector_queue = initial_sector(block_sector, sky_light, sector_heightmaps, opacities);
 
-		{
-			let end = ::std::time::Instant::now();
-			let time = end.duration_since(initial_start);
-	
-			let secs = time.as_secs();
-			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-	
-			println!("Initial sky lighting for ({}, {}) done in {}us ({}us per column)", position.x(), position.z(), us, us / 256);
-		}
-
-		println!("Performing inner full sky lighting for sector ({}, {})", position.x(), position.z());
 		let inner_start = Instant::now();
+		tracer.initial_sector(position, inner_start.duration_since(initial_start));
 
 		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, empty_sky_light_neighbors, &mut sector_queue, &sector_heightmaps, opacities);
 
@@ -400,15 +431,7 @@ where
 
 		world_queue.lock().unwrap().enqueue_spills(position, sector_spills);
 
-		{
-			let end = ::std::time::Instant::now();
-			let time = end.duration_since(inner_start);
-	
-			let secs = time.as_secs();
-			let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-	
-			println!("Inner full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
-		}
+		tracer.initial_full_sector(position, iterations, chunk_operations, Instant::now().duration_since(inner_start));
 	});
 
 	let mut iterations = 0;
@@ -423,7 +446,6 @@ where
 			};
 
 			let full_start = Instant::now();
-			println!("Performing full sky lighting for sector ({}, {}) [iteration: {}]", position.x(), position.z(), iterations);
 	
 			let sky_light_center = sky_light.get_sector(position).unwrap();
 	
@@ -441,19 +463,11 @@ where
 	
 			let sector_heightmaps = heightmaps.get(&position).unwrap();
 	
-			let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps, opacities);
+			let (inner_iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps, opacities);
 	
 			world_queue.lock().unwrap().enqueue_spills(position, sector_queue.reset_spills());
 	
-			{
-				let end = ::std::time::Instant::now();
-				let time = end.duration_since(full_start);
-		
-				let secs = time.as_secs();
-				let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-		
-				println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
-			}
+			tracer.complete_sector(position, iterations, inner_iterations, chunk_operations, Instant::now().duration_since(full_start));
 		};
 
 		world_masks.into_par_iter().for_each(complete_sector);
