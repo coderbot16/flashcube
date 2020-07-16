@@ -6,7 +6,7 @@ use lumis::sources::SkyLightSources;
 use lumis::queue::{ChunkQueue, SectorQueue, SectorSpills};
 
 use rayon::iter::ParallelBridge;
-use rayon::prelude::{ParallelIterator, IntoParallelRefIterator};
+use rayon::prelude::{ParallelIterator, IntoParallelIterator};
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -212,16 +212,43 @@ fn complete_chunk (
 	queue
 }
 
+#[derive(Copy, Clone)]
+enum Phase {
+	Odd,
+	Even
+}
+
+impl Phase {
+	fn from_position(position: GlobalSectorPosition) -> Self {
+		let is_odd = position.x().wrapping_add(position.z()) & 1 == 1;
+
+		if is_odd {
+			Phase::Odd
+		} else {
+			Phase::Even
+		}
+	}
+
+	fn next(self) -> Self {
+		match self {
+			Phase::Odd => Phase::Even,
+			Phase::Even => Phase::Odd
+		}
+	}
+}
+
 struct WorldQueue {
-	front: HashMap<GlobalSectorPosition, Sector<ChunkMask>>,
-	back: HashMap<GlobalSectorPosition, Sector<ChunkMask>>
+	odd: HashMap<GlobalSectorPosition, Sector<ChunkMask>>,
+	even: HashMap<GlobalSectorPosition, Sector<ChunkMask>>,
+	phase: Phase
 }
 
 impl WorldQueue {
 	pub fn new() -> WorldQueue {
 		WorldQueue {
-			front: HashMap::new(),
-			back: HashMap::new()
+			odd: HashMap::new(),
+			even: HashMap::new(),
+			phase: Phase::Odd
 		}
 	}
 
@@ -257,6 +284,13 @@ impl WorldQueue {
 		);
 	}
 
+	fn sector_masks(&mut self, position: GlobalSectorPosition) -> &mut Sector<ChunkMask> {
+		match Phase::from_position(position) {
+			Phase::Odd => &mut self.odd,
+			Phase::Even => &mut self.even
+		}.entry(position).or_insert_with(Sector::new)
+	}
+
 	fn spill<P, M>(&mut self, origin: GlobalSectorPosition, layer: Layer<Option<LayerMask>>, position: P, mut merge: M)
 		where P: Fn(LayerPosition) -> ChunkPosition, M: FnMut(&mut ChunkMask, LayerMask) {
 
@@ -278,20 +312,38 @@ impl WorldQueue {
 			let chunk_position = position(layer_position);
 
 			// TODO: Don't repeatedly perform hashmap lookups
-			let sector = self.back.entry(origin).or_insert_with(Sector::new);
+			let sector = self.sector_masks(origin);
 
 			merge(sector.get_or_create_mut(chunk_position), spilled);
 		}
 	}
 
-	pub fn flip(&mut self) -> bool {
-		std::mem::swap(&mut self.front, &mut self.back);
+	pub fn flip(&mut self) -> Option<HashMap<GlobalSectorPosition, Sector<ChunkMask>>> {
+		match (self.even.is_empty(), self.odd.is_empty()) {
+			(true, true) => {
+				self.phase = Phase::Odd;
 
-		!self.front.is_empty()
-	}
+				None
+			},
+			(false, true) => {
+				self.phase = Phase::Even;
 
-	pub fn take(&mut self, position: GlobalSectorPosition) -> Option<Sector<ChunkMask>> {
-		self.front.remove(&position)
+				Some(std::mem::replace(&mut self.even, HashMap::new()))
+			},
+			(true, false) => {
+				self.phase = Phase::Odd;
+
+				Some(std::mem::replace(&mut self.odd, HashMap::new()))
+			},
+			(false, false) => {
+				self.phase = self.phase.next();
+
+				Some(std::mem::replace(match self.phase {
+					Phase::Odd => &mut self.odd,
+					Phase::Even => &mut self.even
+				}, HashMap::new()))
+			}
+		}
 	}
 }
 
@@ -375,22 +427,13 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 
 	let mut iterations = 0;
 
-	while world_queue.lock().unwrap().flip() {
+	while let Some(world_masks) = {let mask = world_queue.lock().unwrap().flip(); mask} {
 		iterations += 1;
 
-		let complete_sector = |position: GlobalSectorPosition| {
-			let sector_mask = match world_queue.lock().unwrap().take(position) {
-				Some(mask) => mask,
-				None => {
-					println!("Skipping sky light completion for ({}, {}), nothing queued", position.x(), position.z());
-	
-					return (0, 0);
-				}
-			};
-	
+		let complete_sector = |(position, sector_mask): (GlobalSectorPosition, Sector<ChunkMask>)| {
 			let block_sector = match world.get_sector(position) {
 				Some(sector) => sector,
-				None => return (0, 0)
+				None => return
 			};
 
 			let full_start = Instant::now();
@@ -425,24 +468,9 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		
 				println!("Full sky lighting done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", us, us / 256, iterations, chunk_operations);
 			}
-	
-			(iterations, chunk_operations)
 		};
 
-		// TODO: Don't hardcode these positions
-		let positions = [
-			GlobalSectorPosition::new(0, 0),
-			GlobalSectorPosition::new(0, 1),
-			GlobalSectorPosition::new(1, 0),
-			GlobalSectorPosition::new(1, 1)
-		];
-
-		rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
-		rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
-
-		// Discard queues not linked to an existing sector.
-		// TODO: Properly check these, instead of hard-coding the relevant sectors.
-		world_queue.lock().unwrap().front.clear();
+		world_masks.into_par_iter().for_each(complete_sector);
 	}
 
 	// Split up the heightmaps into the format expected by the rest of i73
