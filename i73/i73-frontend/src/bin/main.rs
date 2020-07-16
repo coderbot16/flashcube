@@ -755,9 +755,15 @@ fn main() {
 	println!("Computing heightmaps");
 	let heightmaps_start = std::time::Instant::now();
 
-	let opacities = lighting::lighting_info();
+	let mut lighting_info = HashMap::new();
+
+	lighting_info.insert(Block::air(), u4::new(0));
+	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
+	lighting_info.insert(Block::from_anvil_id(9 * 16), u4::new(2));
+	lighting_info.insert(Block::from_anvil_id(18 * 16), u4::new(1));
+
 	let predicate = |block| {
-		opacities.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
+		lighting_info.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
 	};
 
 	let mut heightmaps = heightmap::compute_world_heightmaps(&world, &predicate);
@@ -775,8 +781,10 @@ fn main() {
 	println!("Performing sky lighting");
 	let lighting_start = std::time::Instant::now();
 
+	let opacities = |block| lighting_info.get(block).copied().unwrap_or(u4::new(15));
+
 	// Also logs timing messages
-	let mut sky_light = lighting::compute_skylight(&world, &heightmaps);
+	let mut sky_light = lighting::compute_skylight(&world, &heightmaps, &opacities);
 
 	{
 		let end = ::std::time::Instant::now();

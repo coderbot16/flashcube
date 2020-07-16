@@ -1,5 +1,3 @@
-use i73_base::Block;
-
 use lumis::heightmap::{ChunkHeightMap, ColumnHeightMap};
 use lumis::light::Lighting;
 use lumis::sources::SkyLightSources;
@@ -12,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use vocs::indexed::ChunkIndexed;
+use vocs::indexed::{ChunkIndexed, Target};
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
@@ -23,19 +21,14 @@ use vocs::world::sector::Sector;
 use vocs::world::shared::{NoPack, SharedSector, SharedWorld};
 use vocs::world::world::World;
 
-pub fn lighting_info() -> HashMap<Block, u4> {
-	let mut lighting_info = HashMap::new();
-
-	lighting_info.insert(Block::air(), u4::new(0));
-	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
-	lighting_info.insert(Block::from_anvil_id(9 * 16), u4::new(2));
-	lighting_info.insert(Block::from_anvil_id(18 * 16), u4::new(1));
-
-	lighting_info
-}
-
-fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>, heightmaps: &Layer<ColumnHeightMap>) -> SectorQueue {
-	let lighting_info = lighting_info();
+fn initial_sector<'a, B, F>(
+	block_sector: &'a Sector<ChunkIndexed<B>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>,
+	heightmaps: &Layer<ColumnHeightMap>, opacities: &'a F
+) -> SectorQueue
+where
+	B: 'a + Target + Send + Sync,
+	F: Fn(&'a B) -> u4 + Sync,
+{
 	let empty_lighting = ChunkNibbles::default();
 	let empty_neighbors = Directional::combine(SplitDirectional {
 		minus_x: &empty_lighting,
@@ -57,9 +50,7 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 			let mut opacity = BulkNibbles::new(palette.len());
 
 			for (index, value) in palette.iter().enumerate() {
-				let opacity_value = value
-					.and_then(|entry| lighting_info.get(&entry).copied())
-					.unwrap_or(u4::new(15));
+				let opacity_value = value.as_ref().map(opacities).unwrap_or(u4::new(15));
 				
 				opacity.set(index, opacity_value);
 			}
@@ -84,12 +75,18 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 	sector_queue.into_inner().unwrap()
 }
 
-fn full_sector(
-	block_sector: &Sector<ChunkIndexed<Block>>, 
+fn full_sector<'a, B, F>(
+	block_sector: &'a Sector<ChunkIndexed<B>>, 
 	sky_light: &SharedSector<NoPack<ChunkNibbles>>, 
 	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, 
 	sector_queue: &mut SectorQueue, 
-	heightmaps: &Layer<ColumnHeightMap>) -> (u32, u32) {
+	heightmaps: &Layer<ColumnHeightMap>, 
+	opacities: &'a F
+) -> (u32, u32)
+where
+	B: 'a + Target + Send + Sync,
+	F: Fn(&'a B) -> u4 + Sync,
+{
 
 	let mut iterations = 0;
 	let mut chunk_operations = 0;
@@ -105,7 +102,7 @@ fn full_sector(
 
 			let heightmap = column_heightmap.slice(u4::new(position.y()));
 
-			let mut queue = complete_chunk(position, blocks, sky_light, sky_light_neighbors, incomplete, &heightmap);
+			let mut queue = complete_chunk(position, blocks, sky_light, sky_light_neighbors, incomplete, &heightmap, opacities);
 
 			sector_queue.enqueue_spills(position, queue.reset_spills());
 		}
@@ -114,16 +111,21 @@ fn full_sector(
 	(iterations, chunk_operations)
 }
 
-fn complete_chunk (
+fn complete_chunk<'a, B, F>(
 	position: ChunkPosition, 
-	blocks: &ChunkIndexed<Block>, 
+	blocks: &'a ChunkIndexed<B>, 
 	sky_light: &SharedSector<NoPack<ChunkNibbles>>, 
 	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, 
 	incomplete: ChunkMask, 
-	heightmap: &ChunkHeightMap) -> ChunkQueue {
+	heightmap: &ChunkHeightMap, 
+	opacities: &'a F
+) -> ChunkQueue
+where
+	B: 'a + Target + Send + Sync,
+	F: Fn(&'a B) -> u4 + Sync,
+{
 
 	// TODO: Cache these things!
-	let lighting_info = lighting_info();
 	let empty_lighting = ChunkNibbles::default();
 	let mut queue = ChunkQueue::new();
 
@@ -132,12 +134,9 @@ fn complete_chunk (
 	let mut opacity = BulkNibbles::new(palette.len());
 
 	for (index, value) in palette.iter().enumerate() {
-		opacity.set(
-			index,
-			value
-				.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
-				.unwrap_or(u4::new(15)),
-		);
+		let opacity_value = value.as_ref().map(opacities).unwrap_or(u4::new(15));
+
+		opacity.set(index, opacity_value);
 	}
 
 	let sources = SkyLightSources::new(heightmap);
@@ -347,7 +346,14 @@ impl WorldQueue {
 	}
 }
 
-pub fn compute_skylight(world: &World<ChunkIndexed<Block>>, heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>) -> SharedWorld<NoPack<ChunkNibbles>> {
+pub fn compute_skylight<'a, B, F>(
+	world: &'a World<ChunkIndexed<B>>, heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>,
+	opacities: &'a F
+) -> SharedWorld<NoPack<ChunkNibbles>>
+where
+	B: 'a + Target + Send + Sync,
+	F: Fn(&'a B) -> u4 + Sync,
+{
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
 	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
 		minus_x: &empty_sector,
@@ -373,7 +379,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>, heightmaps: &HashMap
 		let sky_light = sky_light.get_sector(position).unwrap();
 		let sector_heightmaps = heightmaps.get(&position).unwrap();
 
-		let mut sector_queue = initial_sector(block_sector, sky_light, sector_heightmaps);
+		let mut sector_queue = initial_sector(block_sector, sky_light, sector_heightmaps, opacities);
 
 		{
 			let end = ::std::time::Instant::now();
@@ -388,7 +394,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>, heightmaps: &HashMap
 		println!("Performing inner full sky lighting for sector ({}, {})", position.x(), position.z());
 		let inner_start = Instant::now();
 
-		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, empty_sky_light_neighbors, &mut sector_queue, &sector_heightmaps);
+		let (iterations, chunk_operations) = full_sector(block_sector, sky_light, empty_sky_light_neighbors, &mut sector_queue, &sector_heightmaps, opacities);
 
 		let sector_spills = sector_queue.reset_spills();
 
@@ -435,7 +441,7 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>, heightmaps: &HashMap
 	
 			let sector_heightmaps = heightmaps.get(&position).unwrap();
 	
-			let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps);
+			let (iterations, chunk_operations) = full_sector(block_sector, sky_light_center, sky_light_neighbors, &mut sector_queue, sector_heightmaps, opacities);
 	
 			world_queue.lock().unwrap().enqueue_spills(position, sector_queue.reset_spills());
 	
