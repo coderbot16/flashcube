@@ -1,3 +1,5 @@
+mod compute;
+
 use bit_vec::BitVec;
 use std::cmp;
 use std::ops::{Index, IndexMut};
@@ -6,6 +8,8 @@ use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, LayerNibbles};
 use vocs::packed::ChunkPacked;
 use vocs::position::{ChunkPosition, LayerPosition};
+
+pub use compute::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ChunkHeightMap {
