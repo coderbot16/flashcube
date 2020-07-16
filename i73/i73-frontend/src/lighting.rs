@@ -109,43 +109,38 @@ fn initial_sector(block_sector: &Sector<ChunkIndexed<Block>>, sky_light: &Shared
 
 	let sector_queue = Mutex::new(SectorQueue::new());
 
-	block_sector.enumerate_columns().par_bridge().for_each(|(position, column)| {
-		// TODO: Reuse this!
-		let mut queue = ChunkQueue::new();
-		let heightmap = &heightmaps[position];
-
-		for (y, chunk) in column.iter().enumerate().rev() {
-			let (blocks, palette) = match chunk {
-				&Some(chunk) => chunk.freeze(),
-				&None => unimplemented!()
-			};
-
+	block_sector
+		.iter()
+		.enumerate()
+		.par_bridge()
+		.map(|(index, chunk)| (ChunkPosition::from_yzx(index as u16), chunk.as_ref().expect("TODO").freeze()))
+		.for_each(|(position, (blocks, palette))| {
 			let mut opacity = BulkNibbles::new(palette.len());
 
 			for (index, value) in palette.iter().enumerate() {
 				let opacity_value = value
-					.and_then(|entry| lighting_info.get(&entry).map(|opacity| *opacity))
+					.and_then(|entry| lighting_info.get(&entry).copied())
 					.unwrap_or(u4::new(15));
 				
 				opacity.set(index, opacity_value);
 			}
 
-			let chunk_heightmap = heightmap.slice(u4::new(y as u8));
+			let column_heightmap = &heightmaps[position.layer()];
+			let chunk_heightmap = column_heightmap.slice(u4::new(position.y()));
 			let sources = SkyLightSources::new(&chunk_heightmap);
 
 			let mut light_data = ChunkNibbles::default();
 
 			let mut light = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
 
+			// TODO: Reuse this!
+			let mut queue = ChunkQueue::new();
 			light.initial(&mut queue);
 			light.apply(blocks, &mut queue);
 
-			let chunk_position = ChunkPosition::from_layer(y as u8, position);
-
-			sector_queue.lock().unwrap().enqueue_spills(chunk_position, queue.reset_spills());
-			sky_light.set(chunk_position, NoPack(light_data));
-		}
-	});
+			sector_queue.lock().unwrap().enqueue_spills(position, queue.reset_spills());
+			sky_light.set(position, NoPack(light_data));
+		});
 
 	sector_queue.into_inner().unwrap()
 }
