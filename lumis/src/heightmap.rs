@@ -1,16 +1,16 @@
 use bit_vec::BitVec;
+use std::cmp;
+use std::ops::{Index, IndexMut};
 use vocs::component::LayerStorage;
-use vocs::mask::{Mask, LayerMask};
+use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, LayerNibbles};
 use vocs::packed::ChunkPacked;
 use vocs::position::{ChunkPosition, LayerPosition};
-use std::cmp;
-use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ChunkHeightMap {
 	heights: LayerNibbles,
-	is_filled:  LayerMask
+	is_filled: LayerMask,
 }
 
 impl ChunkHeightMap {
@@ -23,14 +23,11 @@ impl ChunkHeightMap {
 		}
 
 		if is_filled.is_filled(true) {
-			return ChunkHeightMap {
-				heights: LayerNibbles::default(),
-				is_filled
-			};
+			return ChunkHeightMap { heights: LayerNibbles::default(), is_filled };
 		}
-		
+
 		let mut heightmap = LayerNibbles::default();
-		
+
 		for layer in LayerPosition::enumerate() {
 			if is_filled[layer] {
 				continue;
@@ -38,21 +35,18 @@ impl ChunkHeightMap {
 
 			for y in (0..15).rev() {
 				let position = ChunkPosition::from_layer(y, layer);
-			
+
 				if matches.get(chunk.get(position) as usize).unwrap() {
 					heightmap.set(position.layer(), u4::new(y + 1));
-					
+
 					break;
 				}
 			}
 		}
-		
-		ChunkHeightMap {
-			heights: heightmap,
-			is_filled
-		}
+
+		ChunkHeightMap { heights: heightmap, is_filled }
 	}
-	
+
 	pub fn heightmap(&self) -> &LayerNibbles {
 		&self.heights
 	}
@@ -73,21 +67,17 @@ impl ChunkHeightMap {
 }
 
 pub struct ColumnHeightMap {
-	heights: Box<[u32; 256]>
+	heights: Box<[u32; 256]>,
 }
 
 impl ColumnHeightMap {
-	fn new () -> Self {
-		ColumnHeightMap {
-			heights: Box::new([0; 256])
-		}
+	fn new() -> Self {
+		ColumnHeightMap { heights: Box::new([0; 256]) }
 	}
 
 	pub fn slice(&self, chunk_y: u4) -> ChunkHeightMap {
-		let mut sliced = ChunkHeightMap {
-			heights: LayerNibbles::default(),
-			is_filled: LayerMask::default()
-		};
+		let mut sliced =
+			ChunkHeightMap { heights: LayerNibbles::default(), is_filled: LayerMask::default() };
 
 		let base = chunk_y.raw() as u32 * 16;
 
@@ -128,19 +118,19 @@ impl IndexMut<LayerPosition> for ColumnHeightMap {
 
 pub struct HeightMapBuilder {
 	heightmap: ColumnHeightMap,
-	chunk_y: u8
+	chunk_y: u8,
 }
 
 impl HeightMapBuilder {
 	pub fn new() -> Self {
-		HeightMapBuilder {
-			heightmap: ColumnHeightMap::new(),
-			chunk_y: 15
-		}
+		HeightMapBuilder { heightmap: ColumnHeightMap::new(), chunk_y: 15 }
 	}
 
 	pub fn add(&mut self, slice: ChunkHeightMap) -> LayerMask {
-		assert_ne!(self.chunk_y, 255, "Tried to add too many ChunkHeightMap slices to HeightMapBuilder");
+		assert_ne!(
+			self.chunk_y, 255,
+			"Tried to add too many ChunkHeightMap slices to HeightMapBuilder"
+		);
 
 		let base = (self.chunk_y as u32) * 16;
 
@@ -169,7 +159,10 @@ impl HeightMapBuilder {
 	}
 
 	pub fn build(self) -> ColumnHeightMap {
-		assert_eq!(self.chunk_y, 255, "HeightMapBuilder::build called before all ChunkHeightMap slices were provided");
+		assert_eq!(
+			self.chunk_y, 255,
+			"HeightMapBuilder::build called before all ChunkHeightMap slices were provided"
+		);
 
 		self.heightmap
 	}

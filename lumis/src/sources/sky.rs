@@ -2,10 +2,10 @@ use crate::heightmap::ChunkHeightMap;
 use crate::sources::LightSources;
 use std::cmp;
 use vocs::component::{ChunkStorage, LayerStorage};
-use vocs::mask::{Mask, LayerMask};
+use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, ChunkNibbles, LayerNibbles};
-use vocs::position::{ChunkPosition, LayerPosition, dir};
-use vocs::view::{SpillChunkMask, MaskOffset};
+use vocs::position::{dir, ChunkPosition, LayerPosition};
+use vocs::view::{MaskOffset, SpillChunkMask};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SkyLightSources<'h>(&'h ChunkHeightMap);
@@ -14,7 +14,7 @@ impl<'h> SkyLightSources<'h> {
 	pub fn new(heightmap: &'h ChunkHeightMap) -> Self {
 		SkyLightSources(heightmap)
 	}
-	
+
 	pub fn heightmap(&self) -> &LayerNibbles {
 		self.0.heightmap()
 	}
@@ -27,11 +27,12 @@ impl<'h> SkyLightSources<'h> {
 impl<'h> LightSources for SkyLightSources<'h> {
 	fn emission(&self, position: ChunkPosition) -> u4 {
 		// no_light -> height of 16 or more
-		let height = ((self.no_light()[position.layer()] as u8) << 4) | self.heightmap().get(position.layer()).raw();
+		let height = ((self.no_light()[position.layer()] as u8) << 4)
+			| self.heightmap().get(position.layer()).raw();
 
 		u4::new(if position.y() >= height { 15 } else { 0 })
 	}
-	
+
 	fn initial(&self, data: &mut ChunkNibbles, mask: &mut SpillChunkMask) {
 		if self.no_light().is_filled(true) {
 			// Note: This assumes that the chunk is already filled with zeros...
@@ -101,8 +102,8 @@ impl<'h> LightSources for SkyLightSources<'h> {
 				}
 			}
 
-			// Note: queueing blocks on the Down face is handled by the loop below.
-			// Queuing blocks on the Up face is not necessary, because the block above has to let skylight through.
+		// Note: queueing blocks on the Down face is handled by the loop below.
+		// Queuing blocks on the Up face is not necessary, because the block above has to let skylight through.
 		} else {
 			// Same behavior as optimization disabled.
 			max_heightmap = 16;
