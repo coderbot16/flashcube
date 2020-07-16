@@ -1,6 +1,6 @@
 use i73_base::Block;
 
-use lumis::heightmap::{ChunkHeightMap, ColumnHeightMap, compute_world_heightmaps};
+use lumis::heightmap::{ChunkHeightMap, ColumnHeightMap};
 use lumis::light::Lighting;
 use lumis::sources::SkyLightSources;
 use lumis::queue::{ChunkQueue, SectorQueue, SectorSpills};
@@ -16,14 +16,14 @@ use vocs::indexed::ChunkIndexed;
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
-use vocs::position::{dir, Offset, ChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
+use vocs::position::{dir, Offset, ChunkPosition, GlobalSectorPosition, LayerPosition};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
 use vocs::world::shared::{NoPack, SharedSector, SharedWorld};
 use vocs::world::world::World;
 
-fn lighting_info() -> HashMap<Block, u4> {
+pub fn lighting_info() -> HashMap<Block, u4> {
 	let mut lighting_info = HashMap::new();
 
 	lighting_info.insert(Block::air(), u4::new(0));
@@ -347,27 +347,7 @@ impl WorldQueue {
 	}
 }
 
-pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPack<ChunkNibbles>>, HashMap<GlobalColumnPosition, ColumnHeightMap>) {
-	println!("Computing world heightmaps");
-	let heightmap_start = Instant::now();
-
-	let opacities = lighting_info();
-	let predicate = |block| {
-		opacities.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
-	};
-
-	let heightmaps = compute_world_heightmaps(world, &predicate);
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(heightmap_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Heightmap computation done in {}us ({}us per column)", us, us / ((world.sectors().len() * 256) as u64));
-	}
-
+pub fn compute_skylight(world: &World<ChunkIndexed<Block>>, heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>) -> SharedWorld<NoPack<ChunkNibbles>> {
 	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
 	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
 		minus_x: &empty_sector,
@@ -473,18 +453,5 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 		world_masks.into_par_iter().for_each(complete_sector);
 	}
 
-	// Split up the heightmaps into the format expected by the rest of i73
-	let mut heightmaps = heightmaps;
-	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
-
-	heightmaps.drain().for_each(|(position, sector_heightmaps)| {
-		for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
-			let layer = LayerPosition::from_zx(index as u8);
-			let column_position = GlobalColumnPosition::combine(position, layer);
-	
-			individual_heightmaps.insert(column_position, heightmap);
-		}
-	});
-
-	(sky_light, individual_heightmaps)
+	sky_light
 }

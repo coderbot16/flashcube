@@ -17,6 +17,8 @@ use std::cmp::min;
 use std::fs::File;
 use std::path::PathBuf;
 
+use lumis::heightmap;
+
 use i73::config::biomes::{BiomeConfig, BiomesConfig, FollowupConfig, RectConfig, SurfaceConfig};
 use i73::config::settings::customized::{
 	BiomeSettings, Decorators, Ocean, Parts, Structures, VeinSettings, VeinSettingsCentered,
@@ -30,8 +32,9 @@ use i73_terrain::overworld_173::{self, Settings};
 use cgmath::Vector3;
 
 use vocs::indexed::ChunkIndexed;
+use vocs::nibbles::u4;
 use vocs::position::{
-	ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, LayerPosition, QuadPosition,
+	ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition, QuadPosition,
 };
 use vocs::view::ColumnMut;
 use vocs::world::world::World;
@@ -749,12 +752,31 @@ fn main() {
 		println!("Decoration done in {}us ({}us per column)", us, us / 1024);
 	}
 
-	println!("Performing sky lighting");
+	println!("Computing heightmaps");
+	let heightmaps_start = std::time::Instant::now();
 
+	let opacities = lighting::lighting_info();
+	let predicate = |block| {
+		opacities.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
+	};
+
+	let mut heightmaps = heightmap::compute_world_heightmaps(&world, &predicate);
+
+	{
+		let end = ::std::time::Instant::now();
+		let time = end.duration_since(heightmaps_start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("Heightmap computation done in {}us ({}us per column)", us, us / 1024);
+	}
+
+	println!("Performing sky lighting");
 	let lighting_start = std::time::Instant::now();
 
 	// Also logs timing messages
-	let (mut sky_light, mut heightmaps) = lighting::compute_skylight(&world);
+	let mut sky_light = lighting::compute_skylight(&world, &heightmaps);
 
 	{
 		let end = ::std::time::Instant::now();
@@ -860,7 +882,7 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 
 fn write_region(
 	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,
-	heightmaps: &mut HashMap<GlobalColumnPosition, ColumnHeightMap>,
+	heightmaps: &mut HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ColumnHeightMap>>,
 	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
 ) {
 	use rs25::level::anvil::ColumnRoot;
@@ -870,12 +892,24 @@ fn write_region(
 	let file = File::create("out/region/r.0.0.mca").unwrap();
 	let mut writer = RegionWriter::start(file).unwrap();
 
+	// Split up the heightmaps into the format expected by the rest of i73
+	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
+
+	heightmaps.drain().for_each(|(position, sector_heightmaps)| {
+		for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
+			let layer = LayerPosition::from_zx(index as u8);
+			let column_position = GlobalColumnPosition::combine(position, layer);
+	
+			individual_heightmaps.insert(column_position, heightmap);
+		}
+	});
+
 	for z in 0..32 {
 		println!("{}", z);
 		for x in 0..32 {
 			let column_position = GlobalColumnPosition::new(x, z);
 
-			let heightmap: Box<[u32]> = heightmaps.remove(&column_position).unwrap().into_inner();
+			let heightmap: Box<[u32]> = individual_heightmaps.remove(&column_position).unwrap().into_inner();
 
 			let mut snapshot = ColumnSnapshot {
 				chunks: vec![None; 16],
