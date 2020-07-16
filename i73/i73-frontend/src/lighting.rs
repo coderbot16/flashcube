@@ -329,27 +329,14 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
 	let world_queue = Mutex::new(WorldQueue::new());
 
-	let positions = [
-		GlobalSectorPosition::new(0, 0),
-		GlobalSectorPosition::new(0, 1),
-		GlobalSectorPosition::new(1, 0),
-		GlobalSectorPosition::new(1, 1)
-	];
-
-	for &position in &positions {
+	world.sectors().map(|entry| *entry.0).for_each(|position| {
 		sky_light.get_or_create_sector_mut(position);
-	}
+	});
 
-	positions.par_iter().for_each(|position| {
-		let position = *position;
-
-		println!("Performing initial lighting for sector ({}, {})", position.x(), position.z());
+	world.sectors().par_bridge().for_each(|(&position, block_sector)| {
 		let initial_start = Instant::now();
 
-		let block_sector = match world.get_sector(position) {
-			Some(sector) => sector,
-			None => return
-		};
+		println!("Performing initial lighting for sector ({}, {})", position.x(), position.z());
 
 		let sky_light = sky_light.get_sector(position).unwrap();
 		let sector_heightmaps = heightmaps.get(&position).unwrap();
@@ -401,14 +388,13 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 				}
 			};
 	
-			println!("Performing full sky lighting for sector ({}, {}) [iteration: {}]", position.x(), position.z(), iterations);
-	
-			let full_start = Instant::now();
-	
 			let block_sector = match world.get_sector(position) {
 				Some(sector) => sector,
 				None => return (0, 0)
 			};
+
+			let full_start = Instant::now();
+			println!("Performing full sky lighting for sector ({}, {}) [iteration: {}]", position.x(), position.z(), iterations);
 	
 			let sky_light_center = sky_light.get_sector(position).unwrap();
 	
@@ -443,6 +429,14 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 			(iterations, chunk_operations)
 		};
 
+		// TODO: Don't hardcode these positions
+		let positions = [
+			GlobalSectorPosition::new(0, 0),
+			GlobalSectorPosition::new(0, 1),
+			GlobalSectorPosition::new(1, 0),
+			GlobalSectorPosition::new(1, 1)
+		];
+
 		rayon::join(|| complete_sector(positions[0]), || complete_sector(positions[3]));
 		rayon::join(|| complete_sector(positions[1]), || complete_sector(positions[2]));
 
@@ -455,16 +449,14 @@ pub fn compute_skylight(world: &World<ChunkIndexed<Block>>) -> (SharedWorld<NoPa
 	let mut heightmaps = heightmaps;
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
 
-	for &position in &positions {
-		let sector_heightmaps = heightmaps.remove(&position).unwrap();
-
+	heightmaps.drain().for_each(|(position, sector_heightmaps)| {
 		for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
 			let layer = LayerPosition::from_zx(index as u8);
 			let column_position = GlobalColumnPosition::combine(position, layer);
 	
 			individual_heightmaps.insert(column_position, heightmap);
 		}
-	}
+	});
 
 	(sky_light, individual_heightmaps)
 }
