@@ -17,8 +17,6 @@ use std::cmp::min;
 use std::fs::File;
 use std::path::PathBuf;
 
-use lumis::heightmap;
-
 use i73::config::biomes::{BiomeConfig, BiomesConfig, FollowupConfig, RectConfig, SurfaceConfig};
 use i73::config::settings::customized::{
 	BiomeSettings, Decorators, Ocean, Parts, Structures, VeinSettings, VeinSettingsCentered,
@@ -49,9 +47,6 @@ use std::collections::HashMap;
 use vocs::nibbles::ChunkNibbles;
 use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::position::{dir, Offset};
-
-use i73::lighting;
-use lumis::heightmap::ColumnHeightMap;
 
 fn main() {
 	let main_start = ::std::time::Instant::now();
@@ -766,7 +761,7 @@ fn main() {
 		lighting_info.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
 	};
 
-	let mut heightmaps = heightmap::compute_world_heightmaps(&world, &predicate);
+	let mut heightmaps = lumis::compute_world_heightmaps(&world, &predicate);
 
 	{
 		let end = ::std::time::Instant::now();
@@ -784,7 +779,7 @@ fn main() {
 	let opacities = |block| lighting_info.get(block).copied().unwrap_or(u4::new(15));
 
 	// Also logs timing messages
-	let mut sky_light = lighting::compute_skylight(&world, &heightmaps, &opacities, &lighting::PrintTraces);
+	let mut sky_light = lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces);
 
 	{
 		let end = ::std::time::Instant::now();
@@ -890,7 +885,7 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 
 fn write_region(
 	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,
-	heightmaps: &mut HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ColumnHeightMap>>,
+	heightmaps: &mut HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
 ) {
 	use rs25::level::anvil::ColumnRoot;
@@ -901,7 +896,7 @@ fn write_region(
 	let mut writer = RegionWriter::start(file).unwrap();
 
 	// Split up the heightmaps into the format expected by the rest of i73
-	let mut individual_heightmaps: HashMap<GlobalColumnPosition, ColumnHeightMap> = HashMap::new();
+	let mut individual_heightmaps: HashMap<GlobalColumnPosition, lumis::heightmap::ColumnHeightMap> = HashMap::new();
 
 	heightmaps.drain().for_each(|(position, sector_heightmaps)| {
 		for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
