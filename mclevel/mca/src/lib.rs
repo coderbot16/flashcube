@@ -2,16 +2,16 @@ use nbt_turbo::writer::{CompoundWriter, Output};
 use vocs::nibbles::ChunkNibbles;
 
 #[derive(Debug, Clone)]
-pub struct ColumnRoot {
+pub struct ColumnRoot<'c> {
 	/// Patch version of the NBT structure.
 	///
 	/// Determines the version of the schema used by DataFixerUpper.
 	/// Columns missing a data version are assumed to be from 15w31c or below (ie, 1.8.9 or below)
 	pub version: Option<i32>,
-	pub column: Column,
+	pub column: Column<'c>,
 }
 
-impl ColumnRoot {
+impl<'c> ColumnRoot<'c> {
 	pub fn write<T: Output>(&self, out: T) -> T {
 		CompoundWriter::write("", out, |writer| {
 			if let Some(version) = self.version {
@@ -25,14 +25,14 @@ impl ColumnRoot {
 	}
 }
 
-impl From<Column> for ColumnRoot {
-	fn from(column: Column) -> Self {
+impl<'c> From<Column<'c>> for ColumnRoot<'c> {
+	fn from(column: Column<'c>) -> Self {
 		ColumnRoot { version: None, column }
 	}
 }
 
 #[derive(Debug, Clone)]
-pub struct Column {
+pub struct Column<'c> {
 	pub x: i32,
 	pub z: i32,
 	pub last_update: i64,
@@ -40,13 +40,13 @@ pub struct Column {
 	pub terrain_populated: bool,
 	pub v: Option<i8>,
 	pub inhabited_time: i64,
-	pub biomes: Vec<u8>,
-	pub heightmap: Vec<u32>,
-	pub sections: Vec<Section>,
-	pub tile_ticks: Vec<ScheduledTick>, // TODO: Entities, TileEntities
+	pub biomes: &'c [u8],
+	pub heightmap: &'c [u32],
+	pub sections: &'c [Section<'c>],
+	pub tile_ticks: &'c [ScheduledTick], // TODO: Entities, TileEntities
 }
 
-impl Column {
+impl<'c> Column<'c> {
 	pub fn write(&self, writer: &mut CompoundWriter<impl Output>) {
 		writer
 			.i32("xPos", self.x)
@@ -55,27 +55,27 @@ impl Column {
 			.bool("LightPopulated", self.light_populated)
 			.bool("TerrainPopulated", self.terrain_populated)
 			.i64("InhabitedTime", self.inhabited_time)
-			.u8_array("Biomes", &self.biomes)
-			.u32_array("HeightMap", &self.heightmap)
+			.u8_array("Biomes", self.biomes)
+			.u32_array("HeightMap", self.heightmap)
 			.compound_array("Sections", self.sections.len(), |sections| {
-				for section in &self.sections {
+				for section in self.sections {
 					sections.compound(|writer| {
 						section.write(writer);
 					});
 				}
 			})
 			.compound_array("TileTicks", 0, |ticks| {
-				for tick in &self.tile_ticks {
+				for tick in self.tile_ticks {
 					ticks.compound(|writer| {
 						tick.write(writer);
 					});
 				}
 			})
 			.compound_array("Entities", 0, |_| {
-				// TODO: Entities
+				todo!("cannot write entities");
 			})
 			.compound_array("TileEntities", 0, |_| {
-				// TODO: TileEntities
+				todo!("cannot write tile entities");
 			});
 
 		if let Some(&v) = self.v.as_ref() {
@@ -84,23 +84,23 @@ impl Column {
 	}
 }
 
-impl From<ColumnRoot> for Column {
-	fn from(root: ColumnRoot) -> Self {
+impl<'c> From<ColumnRoot<'c>> for Column<'c> {
+	fn from(root: ColumnRoot<'c>) -> Self {
 		root.column
 	}
 }
 
 #[derive(Debug, Clone)]
-pub struct Section {
+pub struct Section<'c> {
 	pub y: i8,
-	pub blocks: Vec<u8>,
-	pub add: Option<ChunkNibbles>,
-	pub data: ChunkNibbles,
-	pub block_light: ChunkNibbles,
-	pub sky_light: ChunkNibbles,
+	pub blocks: &'c [u8],
+	pub add: Option<&'c ChunkNibbles>,
+	pub data: &'c ChunkNibbles,
+	pub block_light: &'c ChunkNibbles,
+	pub sky_light: &'c ChunkNibbles,
 }
 
-impl Section {
+impl<'c> Section<'c> {
 	pub fn write(&self, writer: &mut CompoundWriter<impl Output>) {
 		writer
 			.i8("Y", self.y)
@@ -109,7 +109,7 @@ impl Section {
 			.u8_array("BlockLight", self.block_light.raw())
 			.u8_array("SkyLight", self.sky_light.raw());
 
-		if let Some(add) = self.add.as_ref() {
+		if let Some(add) = self.add {
 			writer.u8_array("Add", add.raw());
 		}
 	}
