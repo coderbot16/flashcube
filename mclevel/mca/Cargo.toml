@@ -1,0 +1,9 @@
+[package]
+name = "mca"
+version = "0.1.0"
+authors = ["coderbot <coderbot16@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+vocs = { path = "../../vocs" }
+nbt-turbo = { path = "../../nbt-turbo" }
