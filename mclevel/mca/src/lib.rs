@@ -27,7 +27,7 @@ impl ColumnRoot {
 
 impl From<Column> for ColumnRoot {
 	fn from(column: Column) -> Self {
-		ColumnRoot { version: Some(0), column }
+		ColumnRoot { version: None, column }
 	}
 }
 
