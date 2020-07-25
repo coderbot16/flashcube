@@ -7,7 +7,5 @@ edition = "2018"
 [dependencies]
 java-rand = "0.2.0"
 vocs = { path = "../../vocs" }
-serde = "0.9"
-serde_derive = "0.9"
 i73-base = { path = "../i73-base" }
 i73-trig = { path = "../i73-trig" }

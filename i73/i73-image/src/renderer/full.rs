@@ -139,7 +139,6 @@ pub fn create_renderer(seed: u64) -> FullRenderer {
 	let settings = Settings::default();
 
 	let mut biomes_config = BiomesConfig {
-		decorator_sets: HashMap::new(),
 		biomes: HashMap::new(),
 		default: "plains".to_string(),
 		grid: vec![

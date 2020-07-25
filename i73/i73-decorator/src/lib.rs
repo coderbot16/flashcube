@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate serde_derive;
 extern crate i73_base;
 extern crate i73_trig;
 extern crate java_rand;

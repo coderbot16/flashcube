@@ -7,7 +7,7 @@ use vocs::component::LayerStorage;
 use vocs::mask::LayerMask;
 use vocs::position::LayerPosition;
 
-#[derive(Deserialize, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct ClimateSettings {
 	pub temperature_fq: f64,
 	pub rainfall_fq: f64,

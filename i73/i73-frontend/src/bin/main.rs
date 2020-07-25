@@ -148,10 +148,7 @@ fn main() {
 
 	// TODO: Structures and Decorators
 
-	// TODO: Better JSON parser; uncommenting this adds 18 seconds to the compile time
-	// let biomes_config = serde_json::from_reader::<File, BiomesConfig>(File::open(profile.join("biomes.json")).unwrap()).unwrap();
 	let mut biomes_config = BiomesConfig {
-		decorator_sets: HashMap::new(),
 		biomes: HashMap::new(),
 		default: "plains".to_string(),
 		grid: vec![
@@ -395,16 +392,6 @@ fn main() {
 			i73_base::distribution::Chance<i73_base::distribution::Baseline>,
 		>,
 	> = Vec::new();
-
-	/*for (name, decorator_set) in biomes_config.decorator_sets {
-		println!("Configuring decorator set {}", name);
-
-		for decorator_config in decorator_set {
-			println!("Config: {:?}", decorator_config);
-
-			decorators.push(decorator_config.into_dispatcher(&decorator_registry).unwrap());
-		}
-	}*/
 
 	decorators.push(::i73_decorator::Dispatcher {
 		decorator: Box::new(::i73_decorator::lake::LakeDecorator {

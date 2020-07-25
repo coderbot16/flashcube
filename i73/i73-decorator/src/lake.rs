@@ -9,10 +9,9 @@ use vocs::view::QuadMut;
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LakeDecorator {
 	pub blocks: LakeBlocks,
-	#[serde(default)]
 	pub settings: LakeSettings,
 }
 
@@ -50,7 +49,7 @@ impl Decorator for LakeDecorator {
 	}
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LakeBlocks {
 	pub is_liquid: BlockMatcher,
 	pub is_solid: BlockMatcher,
@@ -123,7 +122,7 @@ impl LakeBlocks {
 	// TODO: grow_grass, solidify_border
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LakeSettings {
 	pub surface: u8,
 	pub min_spheroids: u32,

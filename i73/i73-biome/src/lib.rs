@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate serde_derive;
 extern crate cgmath;
 extern crate i73_base;
 extern crate i73_noise;

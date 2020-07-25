@@ -1,9 +1,5 @@
-use crate::config::decorator::DecoratorFactory;
-use i73_base::distribution::{Baseline, Chance};
 use i73_base::Block;
 use i73_biome::{Biome, Followup, Grid, Surface};
-use i73_decorator::Dispatcher;
-use serde_json;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::num::ParseIntError;
@@ -22,7 +18,6 @@ impl From<ParseIntError> for Error {
 
 #[derive(Debug)]
 pub struct BiomesConfig {
-	pub decorator_sets: HashMap<String, Vec<DecoratorConfig>>,
 	pub biomes: HashMap<String, BiomeConfig>,
 	pub default: String,
 	pub grid: Vec<RectConfig>,
@@ -97,32 +92,6 @@ pub struct FollowupConfig {
 impl FollowupConfig {
 	pub fn to_followup(&self) -> Result<Followup, ParseIntError> {
 		Ok(Followup { block: parse_id(&self.block)?, max_depth: self.max_depth })
-	}
-}
-
-#[derive(Debug)]
-pub struct DecoratorConfig {
-	pub decorator: String,
-	pub settings: serde_json::Value,
-	pub height_distribution: Chance<Baseline>,
-	pub count: Chance<Baseline>,
-}
-
-impl DecoratorConfig {
-	pub fn into_dispatcher(
-		self, registry: &HashMap<String, Box<dyn DecoratorFactory>>,
-	) -> Result<Dispatcher<Chance<Baseline>, Chance<Baseline>>, String> {
-		let factory = registry
-			.get(&self.decorator)
-			.ok_or_else(|| format!("unknown decorator kind: {}", self.decorator))?;
-
-		let decorator = factory.configure(self.settings).map_err(|e| format!("{}", e))?;
-
-		Ok(Dispatcher {
-			decorator,
-			height_distribution: self.height_distribution,
-			rarity: self.count,
-		})
 	}
 }
 

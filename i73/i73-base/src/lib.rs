@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate serde_derive;
 extern crate fxhash;
 extern crate java_rand;
 extern crate vocs;
@@ -19,7 +17,7 @@ pub trait Pass<C: Copy> {
 }
 
 /// ID of a block.
-#[derive(Eq, PartialEq, Hash, Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
 pub struct Block(u16);
 
 impl Block {

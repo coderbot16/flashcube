@@ -15,7 +15,7 @@ const RADIUS_DIVISOR: f64 = 16.0;
 /// The length is `size/LENGTH_DIVISOR`
 const LENGTH_DIVISOR: f32 = 8.0;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct SeasideVeinDecorator {
 	pub vein: VeinDecorator,
 	pub ocean: BlockMatcher,
@@ -33,7 +33,7 @@ impl Decorator for SeasideVeinDecorator {
 	}
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct VeinDecorator {
 	pub blocks: VeinBlocks,
 	pub size: u32,
@@ -52,7 +52,7 @@ impl Decorator for VeinDecorator {
 	}
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct VeinBlocks {
 	pub replace: BlockMatcher,
 	pub block: Block,

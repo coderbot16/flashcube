@@ -6,7 +6,5 @@ edition = "2018"
 
 [dependencies]
 java-rand = "0.2.0"
-serde = "0.9"
-serde_derive = "0.9"
 vocs = { path = "../../vocs" }
 fxhash = "0.2"

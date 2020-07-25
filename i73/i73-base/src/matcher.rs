@@ -6,7 +6,7 @@ use crate::Block;
 use fxhash::FxHashSet;
 use std::iter::{FromIterator, IntoIterator, Iterator};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct BlockMatcher {
 	pub blocks: FxHashSet<Block>,
 	pub blacklist: bool,

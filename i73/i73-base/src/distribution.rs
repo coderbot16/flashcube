@@ -5,21 +5,13 @@ pub trait Distribution {
 	fn next(&self, rng: &mut Random) -> u32;
 }
 
-fn default_chance() -> u32 {
-	1
-}
-
-fn default_ordering() -> ChanceOrdering {
-	ChanceOrdering::AlwaysGeneratePayload
-}
-
-#[derive(Debug, Copy, Clone, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ChanceOrdering {
 	AlwaysGeneratePayload,
 	CheckChanceBeforePayload,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct Chance<D>
 where
 	D: Distribution,
@@ -27,9 +19,7 @@ where
 	/// Chance for this distribution to return its value instead of 0.
 	/// Represented as probability = 1 / chance.
 	/// A chance of "1" does not call the Chance RNG, and acts as if it passed.
-	#[serde(default = "default_chance")]
 	pub chance: u32,
-	#[serde(default = "default_ordering")]
 	pub ordering: ChanceOrdering,
 	pub base: D,
 }
@@ -65,8 +55,7 @@ where
 }
 
 /// Baseline distribution. This should be general enough to fit most use cases.
-#[derive(Debug, Deserialize)]
-#[serde(tag = "kind")]
+#[derive(Debug)]
 pub enum Baseline {
 	Constant { value: u32 },
 	Linear(Linear),
@@ -94,7 +83,7 @@ impl Distribution for u32 {
 }
 
 /// Plain old linear distribution, with a minimum and maximum.
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct Linear {
 	pub min: u32,
 	pub max: u32,
@@ -107,7 +96,7 @@ impl Distribution for Linear {
 }
 
 /// Distribution that packs more values to the minimum value. This is based on 2 RNG iterations.
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct Packed2 {
 	pub min: u32,
 	/// Minimum height passed to the second RNG call (the linear call).
@@ -125,7 +114,7 @@ impl Distribution for Packed2 {
 
 /// Distribution that packs more values to the minimum value. This is based on 3 RNG iterations, and is more extreme.
 /// The average is around `(max+1)/8 - 1`, a simplified form of `(max+1)/2³ - 1`.
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct Packed3 {
 	pub max: u32,
 }
@@ -139,7 +128,7 @@ impl Distribution for Packed3 {
 }
 
 /// Distribution centered around a certain point, with a maximum variance.
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct Centered {
 	pub center: u32,
 	pub radius: u32,
