@@ -29,6 +29,29 @@ impl<'c> SectionRef<'c> {
 	}
 }
 
+#[derive(Clone)]
+pub struct Section {
+	pub y: i8,
+	pub blocks: Box<[u8; 4096]>,
+	pub add: Option<ChunkNibbles>,
+	pub data: ChunkNibbles,
+	pub block_light: ChunkNibbles,
+	pub sky_light: ChunkNibbles,
+}
+
+impl Section {
+	pub fn to_ref(&self) -> SectionRef {
+		SectionRef {
+			y: self.y,
+			blocks: &self.blocks,
+			add: self.add.as_ref(),
+			data: &self.data,
+			block_light: &self.block_light,
+			sky_light: &self.sky_light
+		}
+	}
+}
+
 pub struct AnvilBlocks {
 	pub blocks: Box<[u8; 4096]>,
 	pub add: Option<ChunkNibbles>,

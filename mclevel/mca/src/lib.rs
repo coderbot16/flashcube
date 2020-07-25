@@ -2,7 +2,7 @@ use nbt_turbo::writer::{CompoundWriter, Output};
 
 mod section;
 
-pub use section::{AnvilBlocks, SectionRef};
+pub use section::{AnvilBlocks, Section, SectionRef};
 
 // TODO: Cannot derive Debug (Column)
 #[derive(Clone)]
