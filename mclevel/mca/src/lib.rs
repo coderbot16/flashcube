@@ -1,7 +1,11 @@
 use nbt_turbo::writer::{CompoundWriter, Output};
-use vocs::nibbles::ChunkNibbles;
 
-#[derive(Debug, Clone)]
+mod section;
+
+pub use section::{AnvilBlocks, SectionRef};
+
+// TODO: Cannot derive Debug (Column)
+#[derive(Clone)]
 pub struct ColumnRoot<'c> {
 	/// Patch version of the NBT structure.
 	///
@@ -31,7 +35,8 @@ impl<'c> From<Column<'c>> for ColumnRoot<'c> {
 	}
 }
 
-#[derive(Debug, Clone)]
+// TODO: Cannot derive Debug (Section)
+#[derive(Clone)]
 pub struct Column<'c> {
 	pub x: i32,
 	pub z: i32,
@@ -42,7 +47,7 @@ pub struct Column<'c> {
 	pub inhabited_time: i64,
 	pub biomes: &'c [u8],
 	pub heightmap: &'c [u32],
-	pub sections: &'c [Section<'c>],
+	pub sections: &'c [SectionRef<'c>],
 	pub tile_ticks: &'c [ScheduledTick], // TODO: Entities, TileEntities
 }
 
@@ -87,31 +92,6 @@ impl<'c> Column<'c> {
 impl<'c> From<ColumnRoot<'c>> for Column<'c> {
 	fn from(root: ColumnRoot<'c>) -> Self {
 		root.column
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct Section<'c> {
-	pub y: i8,
-	pub blocks: &'c [u8],
-	pub add: Option<&'c ChunkNibbles>,
-	pub data: &'c ChunkNibbles,
-	pub block_light: &'c ChunkNibbles,
-	pub sky_light: &'c ChunkNibbles,
-}
-
-impl<'c> Section<'c> {
-	pub fn write(&self, writer: &mut CompoundWriter<impl Output>) {
-		writer
-			.i8("Y", self.y)
-			.u8_array("Blocks", &self.blocks)
-			.u8_array("Data", self.data.raw())
-			.u8_array("BlockLight", self.block_light.raw())
-			.u8_array("SkyLight", self.sky_light.raw());
-
-		if let Some(add) = self.add {
-			writer.u8_array("Add", add.raw());
-		}
 	}
 }
 
