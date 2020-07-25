@@ -69,18 +69,18 @@ impl<'c> Column<'c> {
 					});
 				}
 			})
+			.compound_array("Entities", 0, |_| {
+				todo!("cannot write entities");
+			})
+			.compound_array("TileEntities", 0, |_| {
+				todo!("cannot write tile entities");
+			})
 			.compound_array("TileTicks", 0, |ticks| {
 				for tick in self.tile_ticks {
 					ticks.compound(|writer| {
 						tick.write(writer);
 					});
 				}
-			})
-			.compound_array("Entities", 0, |_| {
-				todo!("cannot write entities");
-			})
-			.compound_array("TileEntities", 0, |_| {
-				todo!("cannot write tile entities");
 			});
 
 		if let Some(&v) = self.v.as_ref() {
