@@ -7,11 +7,12 @@ edition = "2018"
 [dependencies]
 cgmath = "0.16"
 serde_json = "0.9"
-rs25 = { path = "../../rs25" }
 vocs = { path = "../../vocs" }
 lumis = { path = "../../lumis" }
 java-rand = "0.2.0"
 nbt-turbo = { git = "https://gitlab.com/coderbot16/nbt-turbo" }
+mca = { path = "../../mclevel/mca" }
+region = { path = "../../mclevel/region" }
 
 i73-noise = { path = "../i73-noise" }
 i73-biome = { path = "../i73-biome" }

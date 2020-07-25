@@ -10,7 +10,6 @@ extern crate i73_structure;
 extern crate i73_terrain;
 extern crate java_rand;
 extern crate nbt_turbo;
-extern crate rs25;
 extern crate vocs;
 
 use std::cmp::min;
@@ -888,12 +887,12 @@ fn write_region(
 	heightmaps: &mut HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
 ) {
-	use rs25::level::anvil::ColumnRoot;
-	use rs25::level::manager::{ChunkSnapshot, ColumnSnapshot};
-	use rs25::level::region::RegionWriter;
+	use mca::{AnvilBlocks, Section, SectionRef};
+	use mca::Column as McaColumn;
+	use mca::ColumnRoot as McaColumnRoot;
+	use region::ZlibOutput;
 
-	let file = File::create("out/region/r.0.0.mca").unwrap();
-	let mut writer = RegionWriter::start(file).unwrap();
+	let mut mclevel_writer = region::RegionWriter::start(File::create("out/region/r.0.0.mca").unwrap()).unwrap();
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, lumis::heightmap::ColumnHeightMap> = HashMap::new();
@@ -913,41 +912,59 @@ fn write_region(
 			let column_position = GlobalColumnPosition::new(x, z);
 
 			let heightmap: Box<[u32]> = individual_heightmaps.remove(&column_position).unwrap().into_inner();
+			let biomes = world_biomes.remove(&(x, z)).unwrap();
 
-			let mut snapshot = ColumnSnapshot {
-				chunks: vec![None; 16],
-				last_update: 0,
-				light_populated: true,
-				terrain_populated: true,
-				inhabited_time: 0,
-				biomes: world_biomes.remove(&(x, z)).unwrap(),
-				heightmap: heightmap.into_vec(),
-				tile_ticks: vec![],
-			};
+			let mut sections = Vec::new();
 
 			for y in 0..16 {
 				let chunk_position = GlobalChunkPosition::from_column(column_position, y);
 
 				let chunk = world.get(chunk_position).unwrap();
 
+				let anvil_blocks = AnvilBlocks::from_paletted(&chunk, &|&id| id.into());
+
 				/*if chunk.anvil_empty() {
 					continue;
 				}*/
 
-				let sky_light = sky_light.remove(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
+				let sky_light = sky_light.remove(chunk_position).unwrap().0/*_or_else(ChunkNibbles::default)*/;
 
-				snapshot.chunks[y as usize] = Some(ChunkSnapshot {
-					blocks: chunk.clone(),
+				sections.push(Section {
+					y: y as i8,
+					blocks: anvil_blocks.blocks,
+					add: anvil_blocks.add,
+					data: anvil_blocks.data,
 					block_light: ChunkNibbles::default(),
-					sky_light: sky_light.0,
+					sky_light
 				});
 			}
+			
+			let section_refs: Vec<SectionRef> = sections.iter().map(Section::to_ref).collect();
+			
+			let mca_column = McaColumn {
+				x: x as i32,
+				z: z as i32,
+				last_update: 0,
+				light_populated: true,
+				terrain_populated: true,
+				v: Some(1),
+				inhabited_time: 0,
+				biomes: &biomes,
+				heightmap: &heightmap,
+				sections: &section_refs,
+				tile_ticks: &[]
+			};
 
-			let root = ColumnRoot::from(snapshot.to_column(x as i32, z as i32).unwrap());
+			let mca_root = McaColumnRoot {
+				version: Some(0),
+				column: mca_column
+			};
 
-			writer.column(x as u8, z as u8, &root).unwrap();
+			let mut output = ZlibOutput::new();
+			mca_root.write(&mut output);
+			mclevel_writer.column(x as u8, z as u8, &output.finish()).unwrap();
 		}
 	}
 
-	writer.finish().unwrap();
+	mclevel_writer.finish().unwrap();
 }
