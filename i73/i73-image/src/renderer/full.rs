@@ -6,13 +6,14 @@ use frontend::config::biomes::{
 use i73_base::{math, Block, Layer, Pass};
 use i73_biome::climate::{Climate, ClimateSource};
 use i73_biome::Lookup;
+use crate::Rgb;
 use i73_noise::sample::Sample;
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73_terrain::overworld::paint::PaintPass;
 use i73_terrain::overworld::shape::ShapePass;
 use i73_terrain::overworld_173;
 use i73_terrain::overworld_173::Settings;
-use image::{GenericImage, Rgb, RgbImage, SubImage};
+use image::{GenericImage, RgbImage, SubImage};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::ops::AddAssign;
@@ -471,18 +472,18 @@ impl FullRenderer {
 			let mut no_shade = false;
 
 			let color = match top {
-				AIR => Rgb { data: [255, 255, 255] },
-				STONE => Rgb { data: [127, 127, 127] },
+				AIR => Rgb::gray(255),
+				STONE => Rgb::gray(127),
 				GRASS => colorize_grass(climate),
-				DIRT => Rgb { data: [255, 196, 127] },
-				BEDROCK => Rgb { data: [0, 0, 0] },
-				SAND => Rgb { data: [255, 240, 127] },
-				GRAVEL => Rgb { data: [196, 196, 196] },
+				DIRT => Rgb { red: 255, green: 196, blue: 127 },
+				BEDROCK => Rgb::gray(0),
+				SAND => Rgb { red: 255, green: 240, blue: 127 },
+				GRAVEL => Rgb::gray(196),
 				_ => {
 					println!("warning: unknown block: {:?}", top);
 					no_shade = true;
 
-					Rgb { data: [255, 0, 255] }
+					Rgb { red: 255, green: 0, blue: 255 }
 				}
 			};
 
@@ -495,40 +496,34 @@ impl FullRenderer {
 
 				if !ice {
 					Rgb {
-						data: [
-							(color.data[0] as f64 * (1.0 - shade) * 0.5) as u8,
-							(color.data[1] as f64 * (1.0 - shade) * 0.5) as u8,
-							math::lerp(color.data[2] as f64, 255.0, shade) as u8,
-						],
+						red: (color.red as f64 * (1.0 - shade) * 0.5) as u8,
+						green: (color.green as f64 * (1.0 - shade) * 0.5) as u8,
+						blue: math::lerp(color.blue as f64, 255.0, shade) as u8,
 					}
 				} else {
 					Rgb {
-						data: [
-							math::lerp(color.data[1] as f64 * 0.5 + 63.0, 63.0, shade) as u8,
-							math::lerp(color.data[1] as f64 * 0.5 + 63.0, 63.0, shade) as u8,
-							math::lerp(color.data[2] as f64, 255.0, shade) as u8,
-						],
+						red: math::lerp(color.green as f64 * 0.5 + 63.0, 63.0, shade) as u8,
+						green: math::lerp(color.green as f64 * 0.5 + 63.0, 63.0, shade) as u8,
+						blue: math::lerp(color.blue as f64, 255.0, shade) as u8,
 					}
 				}
 			} else {
 				let shade = math::clamp(((height as f64) / 127.0) * 0.6 + 0.4, 0.0, 1.0);
 
 				let (color, shade) = if climate.freezing() {
-					(Rgb { data: [255, 255, 255] }, 1.0 - (1.0 - shade).powi(2))
+					(Rgb::gray(255), 1.0 - (1.0 - shade).powi(2))
 				} else {
 					(color, shade)
 				};
 
 				Rgb {
-					data: [
-						(color.data[0] as f64 * shade) as u8,
-						(color.data[1] as f64 * shade) as u8,
-						(color.data[2] as f64 * shade) as u8,
-					],
+					red: (color.red as f64 * shade) as u8,
+					green: (color.green as f64 * shade) as u8,
+					blue: (color.blue as f64 * shade) as u8,
 				}
 			};
 
-			target.put_pixel(layer_position.x() as u32, layer_position.z() as u32, shaded_color);
+			target.put_pixel(layer_position.x() as u32, layer_position.z() as u32, shaded_color.into());
 		}
 	}
 }
