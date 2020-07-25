@@ -11,11 +11,12 @@ extern crate image;
 extern crate java_rand;
 extern crate vocs;
 
-use image::{Rgb, RgbImage};
+use image::{RgbImage};
 use std::fs;
 
 use cgmath::{Point2, Vector3};
 use i73_biome::climate::{ClimateSettings, ClimateSource};
+use i73_image::Rgb;
 use i73_noise::octaves::PerlinOctaves;
 use i73_noise::sample::Sample;
 use i73_shape::height::{HeightSettings, HeightSource};
@@ -48,21 +49,13 @@ fn main() {
 		let scaled_center = ((height.center / 17.0) * 255.0) as u8;
 		// let scaled_chaos = ((height.chaos - 0.5) * 255.0) as u8;
 
-		Rgb { data: [scaled_center, scaled_center, scaled_center] }
-
-		/*Rgb {
-			data: [
-				scaled_chaos,
-				scaled_chaos,
-				scaled_chaos
-			]
-		}*/
+		Rgb::gray(/*scaled_chaos*/ scaled_center)
 	});
 }
 
 fn generate_image<F>(name: &str, size: (u32, u32), scale: u32, f: F)
 where
-	F: Fn(u32, u32) -> Rgb<u8>,
+	F: Fn(u32, u32) -> Rgb,
 {
 	let mut map = RgbImage::new(size.0, size.1);
 
@@ -72,7 +65,7 @@ where
 		}
 
 		for x in 0..size.0 {
-			map.put_pixel(x, z, f(x, z));
+			map.put_pixel(x, z, f(x, z).into());
 		}
 	}
 
