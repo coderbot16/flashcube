@@ -52,7 +52,7 @@ extern crate bit_vec;
 extern crate spin;
 
 // Fast hash map
-extern crate fxhash;
+extern crate rustc_hash;
 
 // Access multiple distinct hash map entries at same time
 extern crate splitmut;

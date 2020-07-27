@@ -1,5 +1,5 @@
 use crate::component::*;
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 use std::collections::hash_map::Entry;
 use crate::position::LayerPosition;
 
