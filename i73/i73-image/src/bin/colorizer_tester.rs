@@ -33,7 +33,7 @@ fn main() {
 			let climate = coordinates_to_climate(x, y);
 			let color = colorize_grass(climate);
 
-			map.put_pixel(x, y, color);
+			map.put_pixel(x, y, color.into());
 		}
 
 		for y in 0..x {

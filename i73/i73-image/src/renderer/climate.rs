@@ -1,18 +1,19 @@
 use crate::renderer::{duration_us, BasicTimeMetrics, BasicTotalMetrics, Renderer};
+use crate::Rgb;
 use i73_biome::climate::{Climate, ClimateSettings, ClimateSource};
 use i73_noise::sample::Sample;
-use image::{Rgb, RgbImage};
+use image::RgbImage;
 use vocs::position::{GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 
 pub trait Mapper: Send + Sync {
-	fn map(&self, climate: Climate) -> Rgb<u8>;
+	fn map(&self, climate: Climate) -> Rgb;
 }
 
 impl<F> Mapper for F
 where
-	F: Send + Sync + Fn(Climate) -> Rgb<u8>,
+	F: Send + Sync + Fn(Climate) -> Rgb,
 {
-	fn map(&self, climate: Climate) -> Rgb<u8> {
+	fn map(&self, climate: Climate) -> Rgb {
 		self(climate)
 	}
 }
@@ -61,7 +62,7 @@ where
 				map.put_pixel(
 					base.0 + pixel.x() as u32,
 					base.1 + pixel.z() as u32,
-					self.1.map(climates.get(pixel)),
+					self.1.map(climates.get(pixel)).into(),
 				);
 			}
 		}

@@ -36,18 +36,18 @@ pub fn colorize_grass(climate: Climate) -> Rgb {
 
 	Rgb {
 		red: lerp_color_final(
-			lerp_color(COLDEST.data[0], DESERT.data[0], temperature),
-			RAINFOREST.data[0],
+			lerp_color(COLDEST.red, DESERT.red, temperature),
+			RAINFOREST.red,
 			adjusted_rainfall,
 		),
 		green: lerp_color_final(
-			lerp_color(COLDEST.data[1], DESERT.data[1], temperature),
-			RAINFOREST.data[1],
+			lerp_color(COLDEST.green, DESERT.green, temperature),
+			RAINFOREST.green,
 			adjusted_rainfall,
 		),
 		blue: lerp_color_final(
-			lerp_color(COLDEST.data[2], DESERT.data[2], temperature),
-			RAINFOREST.data[2],
+			lerp_color(COLDEST.blue, DESERT.blue, temperature),
+			RAINFOREST.blue,
 			adjusted_rainfall,
 		),
 	}

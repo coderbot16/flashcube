@@ -12,11 +12,11 @@ use i73_image::colorizer::{colorize_grass, DESERT};
 use i73_image::renderer::climate::{ClimateRenderer, Mapper};
 use i73_image::renderer::full::create_renderer;
 use i73_image::stitcher;
+use i73_image::Rgb;
 
 use i73_biome::{Grid, Lookup};
 
 use i73_biome::climate::Climate;
-use image::Rgb;
 
 #[derive(Default)]
 struct MapperOptions {
@@ -219,18 +219,18 @@ fn execute_biome(
 	}
 
 	impl Biome {
-		fn color(self) -> Rgb<u8> {
+		fn color(self) -> Rgb {
 			match self {
-				Biome::Tundra => Rgb { data: [245, 255, 255] },
-				Biome::Taiga => Rgb { data: [175, 255, 255] },
-				Biome::Swampland => Rgb { data: [40, 70, 40] },
+				Biome::Tundra => Rgb { red: 245, green: 255, blue: 255 },
+				Biome::Taiga => Rgb { red: 175, green: 255, blue: 255 },
+				Biome::Swampland => Rgb { red: 40, green: 70, blue: 40 },
 				Biome::Savanna => DESERT,
-				Biome::Shrubland => Rgb { data: [150, 185, 50] },
-				Biome::Forest => Rgb { data: [70, 185, 50] },
-				Biome::Desert => Rgb { data: [255, 240, 127] },
-				Biome::Plains => Rgb { data: [150, 220, 90] },
-				Biome::SeasonalForest => Rgb { data: [70, 220, 50] },
-				Biome::Rainforest => Rgb { data: [70, 255, 50] },
+				Biome::Shrubland => Rgb { red: 150, green: 185, blue: 50 },
+				Biome::Forest => Rgb { red: 70, green: 185, blue: 50 },
+				Biome::Desert => Rgb { red: 255, green: 240, blue: 127 },
+				Biome::Plains => Rgb { red: 150, green: 220, blue: 90 },
+				Biome::SeasonalForest => Rgb { red: 70, green: 220, blue: 50 },
+				Biome::Rainforest => Rgb { red: 70, green: 255, blue: 50 },
 			}
 		}
 	}
@@ -252,7 +252,7 @@ fn execute_biome(
 	struct BiomeMapper(Lookup<Biome>);
 
 	impl Mapper for BiomeMapper {
-		fn map(&self, climate: Climate) -> Rgb<u8> {
+		fn map(&self, climate: Climate) -> Rgb {
 			self.0.lookup(climate).color()
 		}
 	}
