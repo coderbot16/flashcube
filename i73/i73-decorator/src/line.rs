@@ -1,6 +1,5 @@
 use std::cmp;
 use vocs::position::QuadPosition;
-use vocs::view::{QuadAssociation, QuadBlocks};
 
 // TODO: This should be close enough, but is unverified.
 
@@ -34,12 +33,6 @@ impl Line {
 				(diff.2 as f64) / (max as f64),
 			),
 			position: (self.from.x() as f64, self.from.y() as f64, self.from.z() as f64),
-		}
-	}
-
-	pub fn draw(&self, blocks: &mut QuadBlocks, association: &mut QuadAssociation) {
-		for position in self.trace() {
-			blocks.set(position, association);
 		}
 	}
 }

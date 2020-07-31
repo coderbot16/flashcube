@@ -12,22 +12,19 @@ extern crate vocs;
 
 use std::fs::File;
 
-use i73::config::biomes::{BiomeConfig, BiomesConfig, FollowupConfig, RectConfig, SurfaceConfig};
 use i73_base::matcher::BlockMatcher;
 use i73_base::{Block, Layer, Pass};
-use i73_biome::Lookup;
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73_terrain::overworld_173::{self, Settings};
 
 use vocs::indexed::ChunkIndexed;
 use vocs::nibbles::u4;
 use vocs::position::{
-	ChunkPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition, QuadPosition,
+	GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition, QuadPosition,
 };
 use vocs::view::ColumnMut;
 use vocs::world::world::World;
 
-use deflate::Compression;
 use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
@@ -38,211 +35,6 @@ use vocs::position::{dir, Offset};
 
 fn main() {
 	let main_start = ::std::time::Instant::now();
-
-	// TODO: Structures and Decorators
-
-	let mut biomes_config = BiomesConfig {
-		biomes: HashMap::new(),
-		default: "plains".to_string(),
-		grid: vec![
-			RectConfig {
-				temperature: (0.0, 0.1),
-				rainfall: (0.0, 1.0),
-				biome: "tundra".to_string(),
-			},
-			RectConfig {
-				temperature: (0.1, 0.5),
-				rainfall: (0.0, 0.2),
-				biome: "tundra".to_string(),
-			},
-			RectConfig {
-				temperature: (0.1, 0.5),
-				rainfall: (0.2, 0.5),
-				biome: "taiga".to_string(),
-			},
-			RectConfig {
-				temperature: (0.1, 0.7),
-				rainfall: (0.5, 1.0),
-				biome: "swampland".to_string(),
-			},
-			RectConfig {
-				temperature: (0.5, 0.95),
-				rainfall: (0.0, 0.2),
-				biome: "savanna".to_string(),
-			},
-			RectConfig {
-				temperature: (0.5, 0.97),
-				rainfall: (0.2, 0.35),
-				biome: "shrubland".to_string(),
-			},
-			RectConfig {
-				temperature: (0.5, 0.97),
-				rainfall: (0.35, 0.5),
-				biome: "forest".to_string(),
-			},
-			RectConfig {
-				temperature: (0.7, 0.97),
-				rainfall: (0.5, 1.0),
-				biome: "forest".to_string(),
-			},
-			RectConfig {
-				temperature: (0.95, 1.0),
-				rainfall: (0.0, 0.2),
-				biome: "desert".to_string(),
-			},
-			RectConfig {
-				temperature: (0.97, 1.0),
-				rainfall: (0.2, 0.45),
-				biome: "plains".to_string(),
-			},
-			RectConfig {
-				temperature: (0.97, 1.0),
-				rainfall: (0.45, 0.9),
-				biome: "seasonal_forest".to_string(),
-			},
-			RectConfig {
-				temperature: (0.97, 1.0),
-				rainfall: (0.9, 1.0),
-				biome: "rainforest".to_string(),
-			},
-		],
-	};
-	biomes_config.biomes.insert(
-		"seasonal_forest".to_string(),
-		BiomeConfig {
-			debug_name: "seasonal_forest".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"swampland".to_string(),
-		BiomeConfig {
-			debug_name: "swampland".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"rainforest".to_string(),
-		BiomeConfig {
-			debug_name: "rainforest".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"desert".to_string(),
-		BiomeConfig {
-			debug_name: "desert".to_string(),
-			surface: SurfaceConfig {
-				top: "12:0".to_string(),
-				fill: "12:0".to_string(),
-				chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"savanna".to_string(),
-		BiomeConfig {
-			debug_name: "savanna".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"plains".to_string(),
-		BiomeConfig {
-			debug_name: "plains".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"tundra".to_string(),
-		BiomeConfig {
-			debug_name: "tundra".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"shrubland".to_string(),
-		BiomeConfig {
-			debug_name: "shrubland".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"taiga".to_string(),
-		BiomeConfig {
-			debug_name: "taiga".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"forest".to_string(),
-		BiomeConfig {
-			debug_name: "forest".to_string(),
-			surface: SurfaceConfig {
-				top: "2:0".to_string(),
-				fill: "3:0".to_string(),
-				chain: vec![],
-			},
-			decorators: vec![],
-		},
-	);
-	biomes_config.biomes.insert(
-		"ice_desert".to_string(),
-		BiomeConfig {
-			debug_name: "ice_desert".to_string(),
-			surface: SurfaceConfig {
-				top: "12:0".to_string(),
-				fill: "12:0".to_string(),
-				chain: vec![FollowupConfig { block: "24:0".to_string(), max_depth: 3 }],
-			},
-			decorators: vec![],
-		},
-	);
-
-	println!("{:?}", biomes_config);
-
-	let grid = biomes_config.to_grid().unwrap();
 
 	/*let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
 	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
@@ -395,8 +187,9 @@ fn main() {
 		sea_top: 64,
 	};
 
+	let biome_lookup = i73::generate_biome_lookup();
 	let (climates, shape, paint) =
-		overworld_173::passes(8399452073110208023, Settings::default(), Lookup::generate(&grid));
+		overworld_173::passes(8399452073110208023, Settings::default(), biome_lookup);
 
 	let caves_generator = i73_structure::caves::CavesGenerator {
 		carve: Block::air(),
@@ -671,7 +464,9 @@ fn main() {
 	}
 }
 
-fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
+/*fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
+	use vocs::position::ChunkPosition;
+
 	let mut blocks = vec![0; 512 * 128 * 512];
 	for z in 0..32 {
 		println!("{}", z);
@@ -727,13 +522,14 @@ fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
 	});
 
 	use deflate::write::GzEncoder;
+	use deflate::Compression;
 	use std::io::Write;
 
 	let file = File::create("out/classic/i73.cw").unwrap();
 	let mut gzip = GzEncoder::new(file, Compression::Fast);
 	gzip.write_all(&buffer).unwrap();
 	gzip.finish().unwrap();
-}
+}*/
 
 fn write_region(
 	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,

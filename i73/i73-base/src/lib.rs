@@ -18,7 +18,7 @@ pub trait Pass<C: Copy> {
 
 /// ID of a block.
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
-pub struct Block(u16);
+pub struct Block(pub u16);
 
 impl Block {
 	pub const fn from_anvil_id(id: u16) -> Self {
