@@ -1,11 +1,9 @@
-extern crate cgmath;
 extern crate deflate;
 extern crate frontend as i73;
 extern crate i73_base;
 extern crate i73_biome;
 extern crate i73_decorator;
 extern crate i73_noise;
-extern crate i73_shape;
 extern crate i73_structure;
 extern crate i73_terrain;
 extern crate java_rand;
