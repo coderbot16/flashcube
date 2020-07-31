@@ -536,12 +536,11 @@ fn write_region(
 	heightmaps: &mut HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
 ) {
-	use mca::{AnvilBlocks, Section, SectionRef};
-	use mca::Column as McaColumn;
-	use mca::ColumnRoot as McaColumnRoot;
-	use region::ZlibOutput;
+	use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
+	use region::{RegionWriter, ZlibOutput};
 
-	let mut mclevel_writer = region::RegionWriter::start(File::create("out/region/r.0.0.mca").unwrap()).unwrap();
+	let region_file = File::create("out/region/r.0.0.mca").unwrap();
+	let mut writer = RegionWriter::start(region_file).unwrap();
 
 	// Split up the heightmaps into the format expected by the rest of i73
 	let mut individual_heightmaps: HashMap<GlobalColumnPosition, lumis::heightmap::ColumnHeightMap> = HashMap::new();
@@ -590,7 +589,7 @@ fn write_region(
 			
 			let section_refs: Vec<SectionRef> = sections.iter().map(Section::to_ref).collect();
 			
-			let mca_column = McaColumn {
+			let column = Column {
 				x: x as i32,
 				z: z as i32,
 				last_update: 0,
@@ -604,16 +603,16 @@ fn write_region(
 				tile_ticks: &[]
 			};
 
-			let mca_root = McaColumnRoot {
+			let root = ColumnRoot {
 				version: Some(0),
-				column: mca_column
+				column: column
 			};
 
 			let mut output = ZlibOutput::new();
-			mca_root.write(&mut output);
-			mclevel_writer.column(x as u8, z as u8, &output.finish()).unwrap();
+			root.write(&mut output);
+			writer.column(x as u8, z as u8, &output.finish()).unwrap();
 		}
 	}
 
-	mclevel_writer.finish().unwrap();
+	writer.finish().unwrap();
 }
