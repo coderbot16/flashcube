@@ -5,7 +5,7 @@ authors = ["coderbot <coderbot16@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-image = { version = "0.23", default-features = false }
+image = { version = "0.23", default-features = false, features = ["png"] }
 cgmath = "0.16"
 vocs = { path = "../../vocs" }
 java-rand = "0.2.0"

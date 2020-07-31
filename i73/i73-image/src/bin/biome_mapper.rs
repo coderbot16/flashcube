@@ -79,7 +79,7 @@ where
 			&map,
 			size.0 * scale,
 			size.1 * scale,
-			image::FilterType::Triangle,
+			image::imageops::FilterType::Triangle,
 		);
 		resized.save(format!("out/image/{}.png", name)).unwrap();
 	}

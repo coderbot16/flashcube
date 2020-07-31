@@ -12,7 +12,7 @@ use i73_image::colorizer::{colorize_grass, coordinates_to_climate};
 fn main() {
 	let reference_file = fs::File::open("out/image/grasscolor.png").unwrap();
 	let reference =
-		image::load(BufReader::new(reference_file), image::ImageFormat::PNG).unwrap().to_rgb();
+		image::load(BufReader::new(reference_file), image::ImageFormat::Png).unwrap().to_rgb();
 	let mut map = RgbImage::new(256, 256);
 	let mut diff = RgbImage::new(256, 256);
 
@@ -37,7 +37,7 @@ fn main() {
 		}
 
 		for y in 0..x {
-			map.put_pixel(x, y, Rgb { data: [255, 255, 255] });
+			map.put_pixel(x, y, Rgb ([255, 255, 255]));
 		}
 	}
 
@@ -49,13 +49,11 @@ fn main() {
 			diff.put_pixel(
 				x,
 				y,
-				Rgb {
-					data: [
-						i32::abs(ref_pixel.data[0] as i32 - map_pixel.data[0] as i32) as u8,
-						i32::abs(ref_pixel.data[1] as i32 - map_pixel.data[1] as i32) as u8,
-						i32::abs(ref_pixel.data[2] as i32 - map_pixel.data[2] as i32) as u8,
-					],
-				},
+				Rgb ([
+					i32::abs(ref_pixel.0[0] as i32 - map_pixel.0[0] as i32) as u8,
+					i32::abs(ref_pixel.0[1] as i32 - map_pixel.0[1] as i32) as u8,
+					i32::abs(ref_pixel.0[2] as i32 - map_pixel.0[2] as i32) as u8,
+				]),
 			);
 		}
 	}
