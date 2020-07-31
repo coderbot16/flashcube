@@ -12,21 +12,14 @@ extern crate java_rand;
 extern crate nbt_turbo;
 extern crate vocs;
 
-use std::cmp::min;
 use std::fs::File;
-use std::path::PathBuf;
 
 use i73::config::biomes::{BiomeConfig, BiomesConfig, FollowupConfig, RectConfig, SurfaceConfig};
-use i73::config::settings::customized::{
-	BiomeSettings, Decorators, Ocean, Parts, Structures, VeinSettings, VeinSettingsCentered,
-};
 use i73_base::matcher::BlockMatcher;
 use i73_base::{Block, Layer, Pass};
 use i73_biome::Lookup;
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73_terrain::overworld_173::{self, Settings};
-
-use cgmath::Vector3;
 
 use vocs::indexed::ChunkIndexed;
 use vocs::nibbles::u4;
@@ -40,8 +33,6 @@ use deflate::Compression;
 use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
-use i73_shape::height::HeightSettings81;
-use i73_shape::volume::TriNoiseSettings;
 use std::collections::HashMap;
 use vocs::nibbles::ChunkNibbles;
 use vocs::world::shared::{NoPack, SharedWorld};
@@ -49,102 +40,6 @@ use vocs::position::{dir, Offset};
 
 fn main() {
 	let main_start = ::std::time::Instant::now();
-
-	let profile_name = match ::std::env::args().skip(1).next() {
-		Some(name) => name,
-		None => {
-			println!("Usage: i73 <profile>");
-			return;
-		}
-	};
-
-	let mut profile = PathBuf::new();
-	profile.push("profiles");
-	profile.push(&profile_name);
-
-	println!("Using profile {}: {}", profile_name, profile.to_string_lossy());
-
-	// TODO: Better JSON parser; uncommenting this adds 9 seconds to the compile time
-	/*let customized = serde_json::from_reader::<File, Customized>(File::open(profile.join("customized.json")).unwrap()).unwrap();
-	let parts = Parts::from(customized);*/
-
-	let parts = Parts {
-		tri: TriNoiseSettings {
-			main_out_scale: 20.0,
-			upper_out_scale: 512.0,
-			lower_out_scale: 512.0,
-			lower_scale: Vector3 { x: 684.412, y: 684.412, z: 684.412 },
-			upper_scale: Vector3 { x: 684.412, y: 684.412, z: 684.412 },
-			main_scale: Vector3 { x: 8.55515, y: 4.277575, z: 8.55515 },
-			y_size: 17,
-		},
-		height_stretch: 12.0,
-		height: HeightSettings81 {
-			coord_scale: Vector3 { x: 200.0, y: 0.0, z: 200.0 },
-			out_scale: 8000.0,
-			base: 8.5,
-		},
-		biome: BiomeSettings {
-			depth_weight: 1.0,
-			depth_offset: 0.0,
-			scale_weight: 1.0,
-			scale_offset: 0.0,
-			fixed: -1,
-			biome_size: 4,
-			river_size: 4,
-		},
-		ocean: Ocean { top: 64, lava: false },
-		structures: Structures {
-			caves: true,
-			strongholds: true,
-			villages: true,
-			mineshafts: true,
-			temples: true,
-			ravines: true,
-		},
-		decorators: Decorators {
-			dungeon_chance: Some(8),
-			water_lake_chance: Some(4),
-			lava_lake_chance: Some(80),
-			dirt: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 256 },
-			gravel: VeinSettings { size: 33, count: 8, min_y: 0, max_y: 256 },
-			granite: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 80 },
-			diorite: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 80 },
-			andesite: VeinSettings { size: 33, count: 10, min_y: 0, max_y: 80 },
-			coal: VeinSettings { size: 17, count: 20, min_y: 0, max_y: 128 },
-			iron: VeinSettings { size: 9, count: 20, min_y: 0, max_y: 64 },
-			redstone: VeinSettings { size: 8, count: 8, min_y: 0, max_y: 16 },
-			diamond: VeinSettings { size: 8, count: 1, min_y: 0, max_y: 16 },
-			lapis: VeinSettingsCentered { size: 7, count: 1, center_y: 16, spread: 16 },
-		},
-	};
-
-	println!("  Tri Noise Settings: {:?}", parts.tri);
-	println!("  Height Stretch: {:?}", parts.height_stretch);
-	println!("  Height Settings: {:?}", parts.height);
-	println!("  Biome Settings: {:?}", parts.biome);
-	println!("  Structures: {:?}", parts.structures);
-	println!("  Decorators: {:?}", parts.decorators);
-
-	let mut settings = Settings::default();
-
-	settings.tri = parts.tri;
-	settings.height = parts.height.into();
-	settings.field.height_stretch = parts.height_stretch;
-
-	// TODO: Biome Settings
-	println!();
-	let sea_block = Block::from_anvil_id(if parts.ocean.top > 0 {
-		settings.sea_coord = min(parts.ocean.top - 1, 255) as u8;
-
-		if parts.ocean.lava {
-			11 * 16
-		} else {
-			9 * 16
-		}
-	} else {
-		0 * 16
-	});
 
 	// TODO: Structures and Decorators
 
@@ -497,40 +392,13 @@ fn main() {
 		}
 	});*/
 
-	/*use large_tree::{LargeTreeSettings, LargeTree};
-	let settings = LargeTreeSettings::default();
-
-	for i in 0..1 {
-		let mut rng = Random::new(100 + i);
-		let shape = settings.tree((0, 0, 0), &mut rng, None, 20);
-
-		println!("{:?}", shape);
-
-		let mut y = shape.foliage_max_y - 1;
-		while y >= shape.foliage_min_y {
-			let spread = shape.spread(y);
-
-			println!("y: {}, spread: {}", y, spread);
-
-			for _ in 0..shape.foliage_per_y {
-				println!("{:?}", shape.foliage(y, spread, &mut rng));
-			}
-
-			y -= 1;
-		}
-	}*/
-
 	let ocean = OceanPass {
-		blocks: OceanBlocks {
-			ocean: sea_block,
-			air: settings.paint_blocks.air.clone(),
-			ice: Block::from_anvil_id(79 * 16),
-		},
-		sea_top: (settings.sea_coord + 1) as usize,
+		blocks: OceanBlocks::default(),
+		sea_top: 64,
 	};
 
 	let (climates, shape, paint) =
-		overworld_173::passes(8399452073110208023, settings, Lookup::generate(&grid));
+		overworld_173::passes(8399452073110208023, Settings::default(), Lookup::generate(&grid));
 
 	let caves_generator = i73_structure::caves::CavesGenerator {
 		carve: Block::air(),
