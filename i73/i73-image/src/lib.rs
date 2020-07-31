@@ -30,8 +30,6 @@ impl Rgb {
 
 impl Into<image::Rgb<u8>> for Rgb {
 	fn into(self) -> image::Rgb<u8> {
-		image::Rgb {
-			data: [self.red, self.green, self.blue]
-		}
+		image::Rgb([self.red, self.green, self.blue])
 	}
 }
