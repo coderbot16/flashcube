@@ -1,6 +1,21 @@
 use std::fs::File;
 use std::io::Read;
 
+#[test]
+fn test_sin() {
+	let java = read_u32s("JavaSinTable");
+
+	assert_eq!(java.len(), 65536);
+
+	for (index, &j) in java.iter().enumerate() {
+		let r = crate::sin_index(index as u16).to_bits();
+
+		if r != j {
+			panic!("trig::test_sin: mismatch @ index {}: {} (R) != {} (J)", index, r, j);
+		}
+	}
+}
+
 pub fn read_u32s(name: &str) -> Vec<u32> {
 	let file = File::open(format!("test_data/{}.txt", name)).unwrap();
 	let mut data = Vec::new();
