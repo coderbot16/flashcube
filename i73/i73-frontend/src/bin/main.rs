@@ -42,6 +42,9 @@ fn run() {
 
 	time("Decorating terrain", || decorate_terrain(&mut world));
 
+	// World is no longer mutable
+	let world = world;
+
 	let (heightmaps, opacities) = time("Computing heightmaps", || {
 		let mut opacities = HashMap::new();
 
@@ -56,9 +59,6 @@ fn run() {
 
 		(lumis::compute_world_heightmaps(&world, &predicate), opacities)
 	});
-
-	// World is no longer mutable
-	let world = world;
 
 	let sky_light = time("Computing sky lighting", || {
 		let opacities = |block| opacities.get(block).copied().unwrap_or(u4::new(15));
@@ -88,7 +88,6 @@ fn time<T, F: FnOnce() -> T>(name: &str, task: F) -> T {
 		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
 		println!("{} done in {}us ({}us per column)", name, us, us / 1024);
-		println!();
 	}
 
 	value
