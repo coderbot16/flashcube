@@ -104,6 +104,10 @@ impl ColumnHeightMap {
 	pub fn into_inner(self) -> Box<[u32; 256]> {
 		self.heights
 	}
+
+	pub fn as_inner(&self) -> &[u32; 256] {
+		&self.heights
+	}
 }
 
 impl Index<LayerPosition> for ColumnHeightMap {
