@@ -47,14 +47,14 @@ impl<T> SharedWorld<T> where T: Packed {
 	}
 
 	// TODO:
-	/*pub fn get(&self, position: GlobalChunkPosition) -> Option<&T> {
+	pub fn get(&self, position: GlobalChunkPosition) -> Option<Guard<T>> {
 		let sector = position.global_sector();
 		let inner = position.local_chunk();
 
-		self.sectors.get(&sector).and_then(|sector| sector[inner].as_ref())
+		self.sectors.get(&sector).and_then(|sector| sector.get(inner))
 	}
 
-	pub fn get_mut(&mut self, position: GlobalChunkPosition) -> Option<&mut T> {
+	/*pub fn get_mut(&mut self, position: GlobalChunkPosition) -> Option<&mut T> {
 		let sector = position.global_sector();
 		let inner = position.local_chunk();
 
