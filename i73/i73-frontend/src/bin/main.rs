@@ -38,11 +38,11 @@ fn main() {
 }
 
 fn run() {
-	let (mut world, mut world_biomes) = time("Generating terrain", generate_terrain);
+	let (mut world, world_biomes) = time("Generating terrain", generate_terrain);
 
 	time("Decorating terrain", || decorate_terrain(&mut world));
 
-	let (mut heightmaps, opacities) = time("Computing heightmaps", || {
+	let (heightmaps, opacities) = time("Computing heightmaps", || {
 		let mut opacities = HashMap::new();
 
 		opacities.insert(Block::air(), u4::new(0));
@@ -57,7 +57,10 @@ fn run() {
 		(lumis::compute_world_heightmaps(&world, &predicate), opacities)
 	});
 
-	let mut sky_light = time("Computing sky lighting", || {
+	// World is no longer mutable
+	let world = world;
+
+	let sky_light = time("Computing sky lighting", || {
 		let opacities = |block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		// Also logs timing messages
@@ -65,7 +68,7 @@ fn run() {
 	});
 
 	time("Writing region file", || {
-		write_region(&world, &mut sky_light, &mut heightmaps, &mut world_biomes)
+		write_region(&world, &sky_light, &heightmaps, &world_biomes)
 	});
 }
 
@@ -483,9 +486,9 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 }*/
 
 fn write_region(
-	world: &World<ChunkIndexed<Block>>, sky_light: &mut SharedWorld<NoPack<ChunkNibbles>>,
-	heightmaps: &mut HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
-	world_biomes: &mut HashMap<(i32, i32), Vec<u8>>,
+	world: &World<ChunkIndexed<Block>>, sky_light: &SharedWorld<NoPack<ChunkNibbles>>,
+	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
+	world_biomes: &HashMap<(i32, i32), Vec<u8>>,
 ) {
 	use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
 	use region::{RegionWriter, ZlibOutput};
@@ -493,25 +496,16 @@ fn write_region(
 	let region_file = File::create("out/region/r.0.0.mca").unwrap();
 	let mut writer = RegionWriter::start(region_file).unwrap();
 
-	// Split up the heightmaps into the format expected by the rest of i73
-	let mut individual_heightmaps: HashMap<GlobalColumnPosition, lumis::heightmap::ColumnHeightMap> = HashMap::new();
-
-	heightmaps.drain().for_each(|(position, sector_heightmaps)| {
-		for (index, heightmap) in sector_heightmaps.into_inner().into_vec().into_iter().enumerate() {
-			let layer = LayerPosition::from_zx(index as u8);
-			let column_position = GlobalColumnPosition::combine(position, layer);
-	
-			individual_heightmaps.insert(column_position, heightmap);
-		}
-	});
-
 	for z in 0..32 {
 		println!("{}", z);
 		for x in 0..32 {
 			let column_position = GlobalColumnPosition::new(x, z);
 
-			let heightmap: Box<[u32]> = individual_heightmaps.remove(&column_position).unwrap().into_inner();
-			let biomes = world_biomes.remove(&(x, z)).unwrap();
+			let heightmap = heightmaps
+				.get(&column_position.global_sector())
+				.as_ref().unwrap()[column_position.local_layer()].as_inner();
+
+			let biomes = world_biomes.get(&(x, z)).unwrap();
 
 			let mut sections = Vec::new();
 
@@ -526,7 +520,7 @@ fn write_region(
 					continue;
 				}*/
 
-				let sky_light = sky_light.remove(chunk_position).unwrap().0/*_or_else(ChunkNibbles::default)*/;
+				let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
 
 				sections.push(Section {
 					y: y as i8,
@@ -534,7 +528,8 @@ fn write_region(
 					add: anvil_blocks.add,
 					data: anvil_blocks.data,
 					block_light: ChunkNibbles::default(),
-					sky_light
+					// TODO: Cloning this is stupid
+					sky_light: (&*sky_light).clone()
 				});
 			}
 			
@@ -549,7 +544,7 @@ fn write_region(
 				v: Some(1),
 				inhabited_time: 0,
 				biomes: &biomes,
-				heightmap: &heightmap,
+				heightmap: heightmap,
 				sections: &section_refs,
 				tile_ticks: &[]
 			};
