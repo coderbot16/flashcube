@@ -34,8 +34,170 @@ use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::position::{dir, Offset};
 
 fn main() {
-	let main_start = ::std::time::Instant::now();
+	time("Generating region (0, 0)", run);
+}
 
+fn run() {
+	let (mut world, mut world_biomes) = time("Generating terrain", generate_terrain);
+
+	time("Decorating terrain", || decorate_terrain(&mut world));
+
+	let (mut heightmaps, opacities) = time("Computing heightmaps", || {
+		let mut opacities = HashMap::new();
+
+		opacities.insert(Block::air(), u4::new(0));
+		opacities.insert(Block::from_anvil_id(8 * 16), u4::new(2));
+		opacities.insert(Block::from_anvil_id(9 * 16), u4::new(2));
+		opacities.insert(Block::from_anvil_id(18 * 16), u4::new(1));
+
+		let predicate = |block| {
+			opacities.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
+		};
+
+		(lumis::compute_world_heightmaps(&world, &predicate), opacities)
+	});
+
+	let mut sky_light = time("Computing sky lighting", || {
+		let opacities = |block| opacities.get(block).copied().unwrap_or(u4::new(15));
+
+		// Also logs timing messages
+		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces)
+	});
+
+	time("Writing region file", || {
+		write_region(&world, &mut sky_light, &mut heightmaps, &mut world_biomes)
+	});
+}
+
+fn time<T, F: FnOnce() -> T>(name: &str, task: F) -> T {
+	use std::time::Instant;
+
+	let start = Instant::now();
+	println!("{}", name);
+
+	let value = task();
+
+	{
+		let end = Instant::now();
+		let time = end.duration_since(start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("{} done in {}us ({}us per column)", name, us, us / 1024);
+		println!();
+	}
+
+	value
+}
+
+fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8>>) {
+	let ocean = OceanPass {
+		blocks: OceanBlocks::default(),
+		sea_top: 64,
+	};
+
+	let biome_lookup = i73::generate_biome_lookup();
+	let (climates, shape, paint) =
+		overworld_173::passes(8399452073110208023, Settings::default(), biome_lookup);
+
+	let caves_generator = i73_structure::caves::CavesGenerator {
+		carve: Block::air(),
+		lower: Block::from_anvil_id(10 * 16),
+		surface_block: Block::from_anvil_id(2 * 16),
+		ocean: BlockMatcher::include(
+			[Block::from_anvil_id(8 * 16), Block::from_anvil_id(9 * 16)].iter(),
+		),
+		carvable: BlockMatcher::include(
+			[
+				Block::from_anvil_id(1 * 16),
+				Block::from_anvil_id(2 * 16),
+				Block::from_anvil_id(3 * 16),
+			]
+			.iter(),
+		),
+		surface_top: BlockMatcher::is(Block::from_anvil_id(2 * 16)),
+		surface_fill: BlockMatcher::is(Block::from_anvil_id(3 * 16)),
+		spheroid_size_multiplier: 1.0,
+		vertical_multiplier: 1.0,
+		lower_surface: 10,
+	};
+	let caves =
+		i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
+
+	let mut world: World<ChunkIndexed<Block>> = World::new();
+	let mut world_biomes: HashMap<(i32, i32), Vec<u8>> = HashMap::new();
+
+	for x in 0..32 {
+		println!("{}", x);
+		for z in 0..32 {
+			let column_position = GlobalColumnPosition::new(x, z);
+
+			let mut column_chunks = [
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::air()),
+			];
+
+			let climate = climates
+				.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
+			let lookup = paint.biome_lookup();
+			let mut biomes = Vec::with_capacity(256);
+
+			for position in LayerPosition::enumerate() {
+				let climate = climate.get(position);
+				let biome = lookup.lookup(climate);
+
+				let id = match biome.name.as_ref() {
+					"rainforest" => 21,      // jungle
+					"seasonal_forest" => 23, // jungle_edge
+					"forest" => 4,           // forest
+					"swampland" => 3,        // mountains
+					"savanna" => 35,         // savanna
+					"shrubland" => 1,        // plains
+					"taiga" => 30,           // cold_taiga
+					"desert" => 2,           // desert
+					"plains" => 1,           // plains
+					"tundra" => 12,          // ice_plains
+					"ice_desert" => 12,      // ice_plains
+					unknown => panic!("Unknown biome {}", unknown),
+				};
+
+				biomes.push(id);
+			}
+
+			world_biomes.insert((x, z), biomes);
+
+			{
+				let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
+
+				shape.apply(&mut column, &climate, column_position);
+				paint.apply(&mut column, &climate, column_position);
+				ocean.apply(&mut column, &climate, column_position);
+				caves.apply(&mut column, &Layer::fill(()), column_position);
+			}
+
+			world.set_column(column_position, column_chunks);
+		}
+	}
+
+	(world, world_biomes)
+}
+
+fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 	/*let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
 	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
 	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::config::decorator::vein::SeasideVeinDecoratorFactory::default()));
@@ -182,136 +344,6 @@ fn main() {
 		}
 	});*/
 
-	let ocean = OceanPass {
-		blocks: OceanBlocks::default(),
-		sea_top: 64,
-	};
-
-	let biome_lookup = i73::generate_biome_lookup();
-	let (climates, shape, paint) =
-		overworld_173::passes(8399452073110208023, Settings::default(), biome_lookup);
-
-	let caves_generator = i73_structure::caves::CavesGenerator {
-		carve: Block::air(),
-		lower: Block::from_anvil_id(10 * 16),
-		surface_block: Block::from_anvil_id(2 * 16),
-		ocean: BlockMatcher::include(
-			[Block::from_anvil_id(8 * 16), Block::from_anvil_id(9 * 16)].iter(),
-		),
-		carvable: BlockMatcher::include(
-			[
-				Block::from_anvil_id(1 * 16),
-				Block::from_anvil_id(2 * 16),
-				Block::from_anvil_id(3 * 16),
-			]
-			.iter(),
-		),
-		surface_top: BlockMatcher::is(Block::from_anvil_id(2 * 16)),
-		surface_fill: BlockMatcher::is(Block::from_anvil_id(3 * 16)),
-		spheroid_size_multiplier: 1.0,
-		vertical_multiplier: 1.0,
-		lower_surface: 10,
-	};
-	let caves =
-		i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
-
-	/*let shape = nether_173::passes(-160654125608861039, &nether_173::default_tri_settings(), nether_173::ShapeBlocks::default(), 31);
-
-	let default_grid = biome::default_grid();
-
-	let mut fake_settings = Settings::default();
-	fake_settings.biome_lookup = biome::Lookup::filled(default_grid.lookup(biome::climate::Climate::new(0.5, 0.0)));
-	fake_settings.sea_coord = 31;
-	fake_settings.beach = None;
-	fake_settings.max_bedrock_height = None;
-
-	let (_, paint) = overworld_173::passes(-160654125608861039, fake_settings);*/
-
-	let mut world = World::<ChunkIndexed<Block>>::new();
-	let mut world_biomes = HashMap::<(i32, i32), Vec<u8>>::new();
-
-	println!("Generating region (0, 0)");
-	let gen_start = ::std::time::Instant::now();
-
-	for x in 0..32 {
-		println!("{}", x);
-		for z in 0..32 {
-			let column_position = GlobalColumnPosition::new(x, z);
-
-			let mut column_chunks = [
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-			];
-
-			let climate = climates
-				.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
-			let lookup = paint.biome_lookup();
-			let mut biomes = Vec::with_capacity(256);
-
-			for position in LayerPosition::enumerate() {
-				let climate = climate.get(position);
-				let biome = lookup.lookup(climate);
-
-				let id = match biome.name.as_ref() {
-					"rainforest" => 21,      // jungle
-					"seasonal_forest" => 23, // jungle_edge
-					"forest" => 4,           // forest
-					"swampland" => 3,        // mountains
-					"savanna" => 35,         // savanna
-					"shrubland" => 1,        // plains
-					"taiga" => 30,           // cold_taiga
-					"desert" => 2,           // desert
-					"plains" => 1,           // plains
-					"tundra" => 12,          // ice_plains
-					"ice_desert" => 12,      // ice_plains
-					unknown => panic!("Unknown biome {}", unknown),
-				};
-
-				biomes.push(id);
-			}
-
-			world_biomes.insert((x, z), biomes);
-
-			{
-				let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
-
-				shape.apply(&mut column, &climate, column_position);
-				paint.apply(&mut column, &climate, column_position);
-				ocean.apply(&mut column, &climate, column_position);
-				caves.apply(&mut column, &Layer::fill(()), column_position);
-			}
-
-			world.set_column(column_position, column_chunks);
-		}
-	}
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(gen_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Generation done in {}us ({}us per column)", us, us / 1024);
-	}
-
-	println!("Decorating region (0, 0)");
-	let dec_start = ::std::time::Instant::now();
-
 	let mut decoration_rng = ::java_rand::Random::new(8399452073110208023);
 	let coefficients =
 		(((decoration_rng.next_i64() >> 1) << 1) + 1, ((decoration_rng.next_i64() >> 1) << 1) + 1);
@@ -381,87 +413,6 @@ fn main() {
 			}
 		}
 	}*/
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(dec_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Decoration done in {}us ({}us per column)", us, us / 1024);
-	}
-
-	println!("Computing heightmaps");
-	let heightmaps_start = std::time::Instant::now();
-
-	let mut lighting_info = HashMap::new();
-
-	lighting_info.insert(Block::air(), u4::new(0));
-	lighting_info.insert(Block::from_anvil_id(8 * 16), u4::new(2));
-	lighting_info.insert(Block::from_anvil_id(9 * 16), u4::new(2));
-	lighting_info.insert(Block::from_anvil_id(18 * 16), u4::new(1));
-
-	let predicate = |block| {
-		lighting_info.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
-	};
-
-	let mut heightmaps = lumis::compute_world_heightmaps(&world, &predicate);
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(heightmaps_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Heightmap computation done in {}us ({}us per column)", us, us / 1024);
-	}
-
-	println!("Performing sky lighting");
-	let lighting_start = std::time::Instant::now();
-
-	let opacities = |block| lighting_info.get(block).copied().unwrap_or(u4::new(15));
-
-	// Also logs timing messages
-	let mut sky_light = lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces);
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(lighting_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Sky lighting done in {}us ({}us per column)", us, us / 1024);
-	}
-
-	println!("Writing region (0, 0)");
-	let writing_start = ::std::time::Instant::now();
-
-	write_region(&world, &mut sky_light, &mut heightmaps, &mut world_biomes);
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(writing_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("Writing done in {}us ({}us per column)", us, us / 1024);
-		println!();
-	}
-
-	{
-		let end = ::std::time::Instant::now();
-		let time = end.duration_since(main_start);
-
-		let secs = time.as_secs();
-		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
-
-		println!("i73 done in {}us ({}us per column)", us, us / 1024);
-		println!();
-	}
 }
 
 /*fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
