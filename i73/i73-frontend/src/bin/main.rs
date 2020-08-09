@@ -106,20 +106,20 @@ fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8
 	let caves_generator = i73_structure::caves::CavesGenerator {
 		carve: Block::air(),
 		lower: Block::from_anvil_id(10 * 16),
-		surface_block: Block::from_anvil_id(2 * 16),
+		surface_block: Block::GRASS,
 		ocean: BlockMatcher::include(
 			[Block::from_anvil_id(8 * 16), Block::from_anvil_id(9 * 16)].iter(),
 		),
 		carvable: BlockMatcher::include(
 			[
-				Block::from_anvil_id(1 * 16),
-				Block::from_anvil_id(2 * 16),
-				Block::from_anvil_id(3 * 16),
+				Block::STONE,
+				Block::GRASS,
+				Block::DIRT,
 			]
 			.iter(),
 		),
-		surface_top: BlockMatcher::is(Block::from_anvil_id(2 * 16)),
-		surface_fill: BlockMatcher::is(Block::from_anvil_id(3 * 16)),
+		surface_top: BlockMatcher::is(Block::GRASS),
+		surface_fill: BlockMatcher::is(Block::DIRT),
 		spheroid_size_multiplier: 1.0,
 		vertical_multiplier: 1.0,
 		lower_surface: 10,

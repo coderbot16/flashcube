@@ -92,9 +92,9 @@ impl Default for PaintBlocks {
 	fn default() -> Self {
 		PaintBlocks {
 			reset: BlockMatcher::is(Block::air()),
-			ignore: BlockMatcher::is_not(Block::from_anvil_id(1 * 16)),
+			ignore: BlockMatcher::is_not(Block::STONE),
 			air: Block::air(),
-			stone: Block::from_anvil_id(1 * 16),
+			stone: Block::STONE,
 			gravel: Block::from_anvil_id(13 * 16),
 			sand: Block::from_anvil_id(12 * 16),
 			sandstone: Block::from_anvil_id(24 * 16),

@@ -32,7 +32,7 @@ pub struct ShapeBlocks {
 
 impl Default for ShapeBlocks {
 	fn default() -> Self {
-		ShapeBlocks { solid: Block::from_anvil_id(1 * 16), air: Block::air() }
+		ShapeBlocks { solid: Block::STONE, air: Block::air() }
 	}
 }
 

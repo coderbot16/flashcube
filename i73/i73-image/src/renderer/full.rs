@@ -18,9 +18,9 @@ use vocs::view::ColumnMut;
 
 // Block types
 const AIR: Block = Block::air();
-const STONE: Block = Block::from_anvil_id(1 * 16);
-const GRASS: Block = Block::from_anvil_id(2 * 16);
-const DIRT: Block = Block::from_anvil_id(3 * 16);
+const STONE: Block = Block::STONE;
+const GRASS: Block = Block::GRASS;
+const DIRT: Block = Block::DIRT;
 const BEDROCK: Block = Block::from_anvil_id(7 * 16);
 const OCEAN: Block = Block::from_anvil_id(9 * 16);
 const SAND: Block = Block::from_anvil_id(12 * 16);

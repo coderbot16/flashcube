@@ -88,10 +88,10 @@ impl Default for TreeBlocks {
 			foliage: Block::from_anvil_id(18 * 16),
 			replace: BlockMatcher::include(&[Block::air(), Block::from_anvil_id(18 * 16)]),
 			soil: BlockMatcher::include(&[
-				Block::from_anvil_id(2 * 16),
-				Block::from_anvil_id(3 * 16),
+				Block::GRASS,
+				Block::DIRT,
 			]),
-			new_soil: Block::from_anvil_id(3 * 16),
+			new_soil: Block::DIRT,
 		}
 	}
 }
