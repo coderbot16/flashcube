@@ -48,10 +48,10 @@ fn run() {
 	let (heightmaps, opacities) = time("Computing heightmaps", || {
 		let mut opacities = HashMap::new();
 
-		opacities.insert(Block::air(), u4::new(0));
-		opacities.insert(Block::from_anvil_id(8 * 16), u4::new(2));
-		opacities.insert(Block::from_anvil_id(9 * 16), u4::new(2));
-		opacities.insert(Block::from_anvil_id(18 * 16), u4::new(1));
+		opacities.insert(Block::AIR, u4::new(0));
+		opacities.insert(Block::FLOWING_WATER, u4::new(2));
+		opacities.insert(Block::STILL_WATER, u4::new(2));
+		opacities.insert(Block::OAK_LEAVES, u4::new(1));
 
 		let predicate = |block| {
 			opacities.get(block).copied().unwrap_or(u4::new(15)) != u4::new(0)
@@ -104,11 +104,11 @@ fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8
 		overworld_173::passes(8399452073110208023, Settings::default(), biome_lookup);
 
 	let caves_generator = i73_structure::caves::CavesGenerator {
-		carve: Block::air(),
-		lower: Block::from_anvil_id(10 * 16),
+		carve: Block::AIR,
+		lower: Block::FLOWING_LAVA,
 		surface_block: Block::GRASS,
 		ocean: BlockMatcher::include(
-			[Block::from_anvil_id(8 * 16), Block::from_anvil_id(9 * 16)].iter(),
+			[Block::FLOWING_WATER, Block::STILL_WATER].iter(),
 		),
 		carvable: BlockMatcher::include(
 			[
@@ -136,22 +136,22 @@ fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8
 			let column_position = GlobalColumnPosition::new(x, z);
 
 			let mut column_chunks = [
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
 			];
 
 			let climate = climates
@@ -247,26 +247,26 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 			blocks: ::i73_decorator::lake::LakeBlocks {
 				is_liquid: BlockMatcher::include(
 					[
-						Block::from_anvil_id(8 * 16),
-						Block::from_anvil_id(9 * 16),
-						Block::from_anvil_id(10 * 16),
-						Block::from_anvil_id(11 * 16),
+						Block::FLOWING_WATER,
+						Block::STILL_WATER,
+						Block::FLOWING_LAVA,
+						Block::STILL_LAVA,
 					]
 					.iter(),
 				),
 				is_solid: BlockMatcher::exclude(
 					[
-						Block::air(),
-						Block::from_anvil_id(8 * 16),
-						Block::from_anvil_id(9 * 16),
-						Block::from_anvil_id(10 * 16),
-						Block::from_anvil_id(11 * 16),
+						Block::AIR,
+						Block::FLOWING_WATER,
+						Block::STILL_WATER,
+						Block::FLOWING_LAVA,
+						Block::STILL_LAVA,
 					]
 					.iter(),
 				), // TODO: All nonsolid blocks
 				replaceable: BlockMatcher::none(), // TODO
-				liquid: Block::from_anvil_id(9 * 16),
-				carve: Block::air(),
+				liquid: Block::STILL_WATER,
+				carve: Block::AIR,
 				solidify: None,
 			},
 			settings: ::i73_decorator::lake::LakeSettings::default(),
@@ -290,7 +290,7 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 		decorator: Box::new(::i73_decorator::vein::SeasideVeinDecorator {
 			vein: ::i73_decorator::vein::VeinDecorator {
 				blocks: ::i73_decorator::vein::VeinBlocks {
-					replace: BlockMatcher::is(Block::from_anvil_id(12*16)),
+					replace: BlockMatcher::is(Block::SAND),
 					block: Block::from_anvil_id(82*16)
 				},
 				size: 32
@@ -324,8 +324,8 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 			vertical: 4,
 			decorator: ::i73_decorator::clump::plant::PlantDecorator {
 				block: Block::from_anvil_id(31*16 + 1),
-				base: BlockMatcher::include([Block::from_anvil_id(2*16), Block::from_anvil_id(3*16), Block::from_anvil_id(60*16)].into_iter()),
-				replace: BlockMatcher::is(Block::air())
+				base: BlockMatcher::include([Block::GRASS, Block::DIRT, Block::from_anvil_id(60*16)].into_iter()),
+				replace: BlockMatcher::is(Block::AIR)
 			}
 		}),
 		height_distribution: ::i73_base::distribution::Chance {
@@ -368,7 +368,7 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 					decoration_rng.next_u32_bound(16) as u8 + 8,
 				);
 
-				while quad.get(position) == &Block::air() {
+				while quad.get(position) == &Block::AIR {
 					position = match position.offset(dir::Down) {
 						Some(pos) => pos,
 						None => break 'outer,

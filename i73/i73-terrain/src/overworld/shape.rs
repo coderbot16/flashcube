@@ -15,7 +15,7 @@ pub struct ShapeBlocks {
 
 impl Default for ShapeBlocks {
 	fn default() -> Self {
-		ShapeBlocks { solid: Block::STONE, air: Block::air() }
+		ShapeBlocks { solid: Block::STONE, air: Block::AIR }
 	}
 }
 

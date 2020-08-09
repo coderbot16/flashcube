@@ -84,9 +84,9 @@ struct TreeBlocks {
 impl Default for TreeBlocks {
 	fn default() -> Self {
 		TreeBlocks {
-			log: Block::from_anvil_id(17 * 16),
-			foliage: Block::from_anvil_id(18 * 16),
-			replace: BlockMatcher::include(&[Block::air(), Block::from_anvil_id(18 * 16)]),
+			log: Block::OAK_LOG,
+			foliage: Block::OAK_LEAVES,
+			replace: BlockMatcher::include(&[Block::AIR, Block::OAK_LEAVES]),
 			soil: BlockMatcher::include(&[
 				Block::GRASS,
 				Block::DIRT,

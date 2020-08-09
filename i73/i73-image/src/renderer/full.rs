@@ -17,15 +17,15 @@ use vocs::position::{ColumnPosition, GlobalColumnPosition, GlobalSectorPosition,
 use vocs::view::ColumnMut;
 
 // Block types
-const AIR: Block = Block::air();
+const AIR: Block = Block::AIR;
 const STONE: Block = Block::STONE;
 const GRASS: Block = Block::GRASS;
 const DIRT: Block = Block::DIRT;
-const BEDROCK: Block = Block::from_anvil_id(7 * 16);
-const OCEAN: Block = Block::from_anvil_id(9 * 16);
-const SAND: Block = Block::from_anvil_id(12 * 16);
-const GRAVEL: Block = Block::from_anvil_id(13 * 16);
-const ICE: Block = Block::from_anvil_id(79 * 16);
+const BEDROCK: Block = Block::BEDROCK;
+const OCEAN: Block = Block::STILL_WATER;
+const SAND: Block = Block::SAND;
+const GRAVEL: Block = Block::GRAVEL;
+const ICE: Block = Block::ICE;
 
 type OverworldPasses = (ClimateSource, ShapePass, PaintPass);
 
@@ -136,9 +136,9 @@ pub fn create_renderer(seed: u64) -> FullRenderer {
 
 	let ocean = OceanPass {
 		blocks: OceanBlocks {
-			ocean: Block::from_anvil_id(9 * 16),
-			air: Block::air(),
-			ice: Block::from_anvil_id(79 * 16),
+			ocean: Block::STILL_WATER,
+			air: Block::AIR,
+			ice: Block::ICE,
 		},
 		sea_top: (settings.sea_coord + 1) as usize,
 	};
@@ -170,22 +170,22 @@ impl Renderer for FullRenderer {
 			let column_position = GlobalColumnPosition::combine(sector_position, layer_position);
 
 			let mut column_chunks = [
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
-				ChunkIndexed::<Block>::new(4, Block::air()),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
+				ChunkIndexed::<Block>::new(4, Block::AIR),
 			];
 
 			let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);

@@ -38,9 +38,9 @@ pub struct ShapeBlocks {
 impl Default for ShapeBlocks {
 	fn default() -> Self {
 		ShapeBlocks {
-			solid: Block::from_anvil_id(87 * 16),
-			air: Block::air(),
-			ocean: Block::from_anvil_id(11 * 16),
+			solid: Block::NETHERRACK,
+			air: Block::AIR,
+			ocean: Block::STILL_LAVA,
 		}
 	}
 }

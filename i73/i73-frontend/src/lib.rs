@@ -44,11 +44,11 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("desert", Biome {
 		name: "desert".into(),
 		surface: Surface {
-			top: Block::from_anvil_id(12 * 16),
-			fill: Block::from_anvil_id(12 * 16),
+			top: Block::SAND,
+			fill: Block::SAND,
 			chain: vec![
 				Followup {
-					block: Block::from_anvil_id(24 * 16),
+					block: Block::SANDSTONE,
 					max_depth: 3
 				}
 			]
@@ -85,11 +85,11 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("ice_desert", Biome {
 		name: "ice_desert".into(),
 		surface: Surface {
-			top: Block::from_anvil_id(12 * 16),
-			fill: Block::from_anvil_id(12 * 16),
+			top: Block::SAND,
+			fill: Block::SAND,
 			chain: vec![
 				Followup {
-					block: Block::from_anvil_id(24 * 16),
+					block: Block::SANDSTONE,
 					max_depth: 3
 				}
 			]

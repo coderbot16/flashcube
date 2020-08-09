@@ -91,14 +91,14 @@ pub struct PaintBlocks {
 impl Default for PaintBlocks {
 	fn default() -> Self {
 		PaintBlocks {
-			reset: BlockMatcher::is(Block::air()),
+			reset: BlockMatcher::is(Block::AIR),
 			ignore: BlockMatcher::is_not(Block::STONE),
-			air: Block::air(),
+			air: Block::AIR,
 			stone: Block::STONE,
-			gravel: Block::from_anvil_id(13 * 16),
-			sand: Block::from_anvil_id(12 * 16),
-			sandstone: Block::from_anvil_id(24 * 16),
-			bedrock: Block::from_anvil_id(7 * 16),
+			gravel: Block::GRAVEL,
+			sand: Block::SAND,
+			sandstone: Block::SANDSTONE,
+			bedrock: Block::BEDROCK,
 		}
 	}
 }

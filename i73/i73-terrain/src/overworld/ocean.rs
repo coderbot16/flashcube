@@ -14,9 +14,9 @@ pub struct OceanBlocks {
 impl Default for OceanBlocks {
 	fn default() -> Self {
 		OceanBlocks {
-			air: Block::air(),
-			ocean: Block::from_anvil_id(9 * 16),
-			ice: Block::from_anvil_id(79 * 16),
+			air: Block::AIR,
+			ocean: Block::STILL_WATER,
+			ice: Block::ICE,
 		}
 	}
 }
