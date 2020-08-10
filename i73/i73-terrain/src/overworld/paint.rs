@@ -1,6 +1,6 @@
 use cgmath::{Point2, Vector2, Vector3};
 use i73_base::matcher::BlockMatcher;
-use i73_base::Block;
+use i73_base::block::{self, Block};
 use i73_base::{Layer, Pass};
 use i73_biome::climate::{Climate, ClimateSettings, ClimateSource};
 use i73_biome::{Biome, Lookup, Surface};
@@ -91,14 +91,14 @@ pub struct PaintBlocks {
 impl Default for PaintBlocks {
 	fn default() -> Self {
 		PaintBlocks {
-			reset: BlockMatcher::is(Block::AIR),
-			ignore: BlockMatcher::is_not(Block::STONE),
-			air: Block::AIR,
-			stone: Block::STONE,
-			gravel: Block::GRAVEL,
-			sand: Block::SAND,
-			sandstone: Block::SANDSTONE,
-			bedrock: Block::BEDROCK,
+			reset: BlockMatcher::is(block::AIR),
+			ignore: BlockMatcher::is_not(block::STONE),
+			air: block::AIR,
+			stone: block::STONE,
+			gravel: block::GRAVEL,
+			sand: block::SAND,
+			sandstone: block::SANDSTONE,
+			bedrock: block::BEDROCK,
 		}
 	}
 }

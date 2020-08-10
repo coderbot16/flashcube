@@ -1,5 +1,5 @@
 use crate::{Decorator, Result};
-use i73_base::Block;
+use i73_base::block::Block;
 use java_rand::Random;
 use vocs::position::{Offset, QuadPosition};
 use vocs::view::QuadMut;

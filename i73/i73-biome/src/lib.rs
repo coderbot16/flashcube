@@ -9,7 +9,8 @@ pub mod segmented;
 pub mod source;
 
 use climate::Climate;
-use i73_base::{Block, Layer};
+use i73_base::Layer;
+use i73_base::block::Block;
 use segmented::Segmented;
 use std::borrow::Cow;
 use vocs::indexed::{LayerIndexed, Target};

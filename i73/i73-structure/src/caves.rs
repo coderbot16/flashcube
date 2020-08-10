@@ -1,6 +1,7 @@
 use i73_base::distribution::{Chance, ChanceOrdering, Distribution, Linear, Packed2, Packed3};
 use i73_base::matcher::BlockMatcher;
-use i73_base::{math, Block};
+use i73_base::math;
+use i73_base::block::Block;
 use i73_trig as trig;
 use java_rand::Random;
 use std::cmp::{max, min};

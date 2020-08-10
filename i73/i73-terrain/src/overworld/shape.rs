@@ -1,5 +1,6 @@
 use cgmath::{Point2, Vector2, Vector3};
-use i73_base::{math, Block};
+use i73_base::math;
+use i73_base::block::{self, Block};
 use i73_base::{Layer, Pass};
 use i73_biome::climate::Climate;
 use i73_shape::height::lerp_to_layer;
@@ -15,7 +16,7 @@ pub struct ShapeBlocks {
 
 impl Default for ShapeBlocks {
 	fn default() -> Self {
-		ShapeBlocks { solid: Block::STONE, air: Block::AIR }
+		ShapeBlocks { solid: block::STONE, air: block::AIR }
 	}
 }
 

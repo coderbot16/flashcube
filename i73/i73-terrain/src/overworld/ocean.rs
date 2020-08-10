@@ -1,4 +1,4 @@
-use i73_base::Block;
+use i73_base::block::{self, Block};
 use i73_base::{Layer, Pass};
 use i73_biome::climate::{self, Climate};
 use vocs::component::LayerStorage;
@@ -14,9 +14,9 @@ pub struct OceanBlocks {
 impl Default for OceanBlocks {
 	fn default() -> Self {
 		OceanBlocks {
-			air: Block::AIR,
-			ocean: Block::STILL_WATER,
-			ice: Block::ICE,
+			air: block::AIR,
+			ocean: block::STILL_WATER,
+			ice: block::ICE,
 		}
 	}
 }

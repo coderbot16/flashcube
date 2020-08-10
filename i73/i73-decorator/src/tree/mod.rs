@@ -2,7 +2,7 @@ mod large;
 mod normal;
 
 use i73_base::matcher::BlockMatcher;
-use i73_base::Block;
+use i73_base::block::{self, Block};
 pub use large::LargeTreeDecorator;
 pub use normal::NormalTreeDecorator;
 use std::i32;
@@ -84,14 +84,11 @@ struct TreeBlocks {
 impl Default for TreeBlocks {
 	fn default() -> Self {
 		TreeBlocks {
-			log: Block::OAK_LOG,
-			foliage: Block::OAK_LEAVES,
-			replace: BlockMatcher::include(&[Block::AIR, Block::OAK_LEAVES]),
-			soil: BlockMatcher::include(&[
-				Block::GRASS,
-				Block::DIRT,
-			]),
-			new_soil: Block::DIRT,
+			log: block::OAK_LOG,
+			foliage: block::OAK_LEAVES,
+			replace: BlockMatcher::include(&[block::AIR, block::OAK_LEAVES]),
+			soil: BlockMatcher::include(&[block::GRASS, block::DIRT]),
+			new_soil: block::DIRT,
 		}
 	}
 }

@@ -1,5 +1,6 @@
 use cgmath::{Vector2, Vector3};
-use i73_base::{Block, Layer, Pass};
+use i73_base::{Layer, Pass};
+use i73_base::block::{self, Block};
 use i73_shape::volume::{self, trilinear128, TriNoiseSettings, TriNoiseSource};
 use java_rand::Random;
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
@@ -38,9 +39,9 @@ pub struct ShapeBlocks {
 impl Default for ShapeBlocks {
 	fn default() -> Self {
 		ShapeBlocks {
-			solid: Block::NETHERRACK,
-			air: Block::AIR,
-			ocean: Block::STILL_LAVA,
+			solid: block::NETHERRACK,
+			air: block::AIR,
+			ocean: block::STILL_LAVA,
 		}
 	}
 }

@@ -5,7 +5,8 @@ extern crate vocs;
 
 pub mod caves;
 
-use i73_base::{Block, Layer, Pass};
+use i73_base::{Layer, Pass};
+use i73_base::block::Block;
 use java_rand::Random;
 use vocs::position::GlobalColumnPosition;
 use vocs::view::ColumnMut;

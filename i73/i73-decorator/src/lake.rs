@@ -1,6 +1,6 @@
 use crate::{Decorator, Result};
 use i73_base::matcher::BlockMatcher;
-use i73_base::Block;
+use i73_base::block::Block;
 use java_rand::Random;
 use vocs::component::*;
 use vocs::mask::ChunkMask;

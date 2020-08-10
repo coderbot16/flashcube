@@ -1,4 +1,4 @@
-use i73_base::Block;
+use i73_base::block;
 use i73_biome::{Biome, Followup, Lookup, Surface};
 use std::collections::HashMap;
 
@@ -8,8 +8,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("swampland", Biome {
 		name: "swampland".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -17,8 +17,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("savanna", Biome {
 		name: "savanna".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -26,8 +26,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("plains", Biome {
 		name: "plains".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -35,8 +35,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("seasonal_forest", Biome {
 		name: "seasonal_forest".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -44,11 +44,11 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("desert", Biome {
 		name: "desert".into(),
 		surface: Surface {
-			top: Block::SAND,
-			fill: Block::SAND,
+			top: block::SAND,
+			fill: block::SAND,
 			chain: vec![
 				Followup {
-					block: Block::SANDSTONE,
+					block: block::SANDSTONE,
 					max_depth: 3
 				}
 			]
@@ -58,8 +58,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("shrubland", Biome {
 		name: "shrubland".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -67,8 +67,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("taiga", Biome {
 		name: "taiga".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -76,8 +76,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("rainforest", Biome {
 		name: "rainforest".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -85,11 +85,11 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("ice_desert", Biome {
 		name: "ice_desert".into(),
 		surface: Surface {
-			top: Block::SAND,
-			fill: Block::SAND,
+			top: block::SAND,
+			fill: block::SAND,
 			chain: vec![
 				Followup {
-					block: Block::SANDSTONE,
+					block: block::SANDSTONE,
 					max_depth: 3
 				}
 			]
@@ -99,8 +99,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("tundra", Biome {
 		name: "tundra".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
@@ -108,8 +108,8 @@ pub fn generate_biome_lookup() -> Lookup<Biome> {
 	biome_registry.insert("forest", Biome {
 		name: "forest".into(),
 		surface: Surface {
-			top: Block::GRASS,
-			fill: Block::DIRT,
+			top: block::GRASS,
+			fill: block::DIRT,
 			chain: vec![]
 		}
 	});
