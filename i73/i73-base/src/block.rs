@@ -18,12 +18,11 @@ pub const ICE: Block = Block(79 * 16);
 pub const CLAY: Block = Block(82 * 16);
 pub const NETHERRACK: Block = Block(87 * 16);
 
-/// ID of a block.
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
 pub struct Block(u16);
 
-impl Into<u16> for Block {
-	fn into(self) -> u16 {
+impl Block {
+	pub fn to_anvil_id(self) -> u16 {
 		self.0
 	}
 }

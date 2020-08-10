@@ -443,15 +443,15 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 						position.z() as u32 + z as u32 * 16,
 					);
 
-					let mut block: u16 = (*chunk.get(position)).into();
-					block /= 16;
-
-					// Sandstone is ID 52 in ClassiCube, not 24
-					if block == 24 {
-						block = 52;
-					}
-
-					blocks[i as usize] = block as u8;
+					let block_id: Block = *chunk.get(position);
+					
+					blocks[i as usize] = if block_id == block::SANDSTONE {
+						// Sandstone is ID 52 in ClassiCube, not 24
+						52
+					} else {
+						// Strip the block metadata, all other current blocks line up
+						(block_id.to_anvil_id() / 16) as u8
+					};
 				}
 			}
 		}
@@ -514,7 +514,7 @@ fn write_region(
 
 				let chunk = world.get(chunk_position).unwrap();
 
-				let anvil_blocks = AnvilBlocks::from_paletted(&chunk, &|&id| id.into());
+				let anvil_blocks = AnvilBlocks::from_paletted(&chunk, &|&id| id.to_anvil_id());
 
 				/*if chunk.anvil_empty() {
 					continue;
