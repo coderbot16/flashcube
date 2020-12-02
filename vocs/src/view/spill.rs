@@ -4,7 +4,7 @@ use crate::view::Directional;
 use std::ops::IndexMut;
 use crate::component::{Component, ChunkStorage, LayerStorage};
 
-pub type SpillChunkMask = SpillChunk<bool>;
+pub type SpillBitCube = SpillChunk<bool>;
 
 pub trait MaskOffset<P, D> {
 	fn set_offset_true(&mut self, position: P, offset: D);

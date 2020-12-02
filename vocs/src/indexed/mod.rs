@@ -8,7 +8,7 @@ use crate::position::{CubePosition, LayerPosition};
 
 pub use self::palette::Palette;
 
-pub type ChunkIndexed<B> = IndexedStorage<B, CubePosition>;
+pub type IndexedCube<B> = IndexedStorage<B, CubePosition>;
 pub type LayerIndexed<B> = IndexedStorage<B, LayerPosition>;
 
 pub trait Target: Eq + Hash + Clone + Debug {}
@@ -131,7 +131,7 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 	}
 }
 
-impl ChunkIndexed<u16> {
+impl IndexedCube<u16> {
 	pub fn anvil_empty(&self) -> bool {
 		/*if let Some(assoc) = self.palette.reverse_lookup(&0) {
 			self.storage.get_count(&assoc) == 4096

@@ -2,7 +2,7 @@ mod chunk;
 mod layer;
 mod bulk;
 
-pub use self::chunk::ChunkNibbles;
+pub use self::chunk::NibbleCube;
 pub use self::layer::LayerNibbles;
 pub use self::bulk::BulkNibbles;
 
@@ -14,7 +14,7 @@ fn nibble_index(index: usize) -> (usize, u8) {
 }
 
 impl Component for u4 {
-	type Chunk = ChunkNibbles;
+	type Chunk = NibbleCube;
 	type Layer = LayerNibbles;
 	type Bulk = ();
 }

@@ -69,7 +69,7 @@ impl<T> SharedSector<T> where T: Packed + Default {
 }
 
 /* TODO: Reimplement
-impl<B> SharedSector<ChunkIndexed<B>> where B: Target {
+impl<B> SharedSector<IndexedCube<B>> where B: Target {
 	pub fn set_block_immediate(&mut self, x: u8, y: u8, z: u8, target: &B) -> Option<()> {
 		let (chunk, block) = (
 			CubePosition::new(x / 16, y / 16, z / 16),

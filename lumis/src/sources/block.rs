@@ -1,8 +1,8 @@
 use crate::sources::LightSources;
-use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
+use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
 use vocs::packed::ChunkPacked;
 use vocs::position::CubePosition;
-use vocs::view::SpillChunkMask;
+use vocs::view::SpillBitCube;
 
 #[derive(Debug)]
 pub struct BlockLightSources<'c> {
@@ -25,7 +25,7 @@ impl<'c> LightSources for BlockLightSources<'c> {
 		self.emission.get(self.chunk.get(position) as usize)
 	}
 
-	fn initial(&self, _data: &mut ChunkNibbles, _mask: &mut SpillChunkMask) {
+	fn initial(&self, _data: &mut NibbleCube, _mask: &mut SpillBitCube) {
 		unimplemented!()
 	}
 }

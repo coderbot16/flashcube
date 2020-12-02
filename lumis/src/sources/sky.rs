@@ -3,9 +3,9 @@ use crate::sources::LightSources;
 use std::cmp;
 use vocs::component::{ChunkStorage, LayerStorage};
 use vocs::mask::{LayerMask, Mask};
-use vocs::nibbles::{u4, ChunkNibbles, LayerNibbles};
+use vocs::nibbles::{u4, NibbleCube, LayerNibbles};
 use vocs::position::{dir, CubePosition, LayerPosition};
-use vocs::view::{MaskOffset, SpillChunkMask};
+use vocs::view::{MaskOffset, SpillBitCube};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SkyLightSources<'h>(&'h ChunkHeightMap);
@@ -33,7 +33,7 @@ impl<'h> LightSources for SkyLightSources<'h> {
 		u4::new(if position.y() >= height { 15 } else { 0 })
 	}
 
-	fn initial(&self, data: &mut ChunkNibbles, mask: &mut SpillChunkMask) {
+	fn initial(&self, data: &mut NibbleCube, mask: &mut SpillBitCube) {
 		if self.no_light().is_filled(true) {
 			// Note: This assumes that the chunk is already filled with zeros...
 

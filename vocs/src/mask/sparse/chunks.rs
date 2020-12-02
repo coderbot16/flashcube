@@ -1,6 +1,6 @@
 use crate::position::{GlobalSectorPosition, GlobalChunkPosition};
 use crate::mask::sparse::recycle::{Recycler, AllocCache};
-use crate::mask::{Mask, ChunkMask, Scan, ScanClear};
+use crate::mask::{Mask, BitCube, Scan, ScanClear};
 use std::collections::HashMap;
 use std::collections::hash_map::{Entry, Keys};
 use std::ops::Index;
@@ -12,13 +12,13 @@ const FALSE_REF: &bool = &false;
 /// This only supports chunks up to Y=15, a 16 high chunk stack.
 /// This mirrors the current Anvil implementation in Minecraft, but
 /// does not support true cubic chunks.
-/// In this implementation, a ChunkMask represents the chunks in a Sector.
-/// Non present ChunkMasks are all filled with 0s.
+/// In this implementation, a BitCube represents the chunks in a Sector.
+/// Non present BitCubes are all filled with 0s.
 /// While it may appear that this is another false world abstraction,
 /// it is actually appropriate as a sparse mask.
 pub struct ChunksMask {
-	sectors: HashMap<GlobalSectorPosition, ChunkMask>,
-	cache: AllocCache<ChunkMask>
+	sectors: HashMap<GlobalSectorPosition, BitCube>,
+	cache: AllocCache<BitCube>
 }
 
 impl ChunksMask {
@@ -29,15 +29,15 @@ impl ChunksMask {
 		}
 	}
 
-	pub fn sectors(&self) -> Keys<GlobalSectorPosition, ChunkMask> {
+	pub fn sectors(&self) -> Keys<GlobalSectorPosition, BitCube> {
 		self.sectors.keys()
 	}
 
-	pub fn sector(&self, coordinates: GlobalSectorPosition) -> Option<&ChunkMask> {
+	pub fn sector(&self, coordinates: GlobalSectorPosition) -> Option<&BitCube> {
 		self.sectors.get(&coordinates)
 	}
 
-	fn require_sector(&mut self, sector: GlobalSectorPosition) -> &mut ChunkMask {
+	fn require_sector(&mut self, sector: GlobalSectorPosition) -> &mut BitCube {
 		let cache = &mut self.cache;
 		self.sectors.entry(sector).or_insert_with(|| cache.create())
 	}
@@ -101,7 +101,7 @@ impl Mask<GlobalChunkPosition> for ChunksMask {
 		self.require_sector(sector).set_or(inner, value);
 
 		// We don't need to check to see if the mask is empty here.
-		// ChunkMask::set_or can either (1) not change the mask, or (2) add another bit.
+		// BitCube::set_or can either (1) not change the mask, or (2) add another bit.
 		// Since the mask can't lose a bit, we don't need to check.
 	}
 

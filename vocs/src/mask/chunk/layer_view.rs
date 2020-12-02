@@ -1,4 +1,4 @@
-use crate::mask::{u1x64, ChunkMask, LayerMask};
+use crate::mask::{u1x64, BitCube, LayerMask};
 use crate::position::{CubePosition, LayerPosition};
 use crate::component::*;
 
@@ -76,12 +76,12 @@ impl<'l> LayerStorage<bool> for LayerZxMut<'l> {
 }
 
 pub struct LayerZyMut<'l> {
-	mask: &'l mut ChunkMask,
+	mask: &'l mut BitCube,
 	x: u8
 }
 
 impl<'l> LayerZyMut<'l> {
-	pub fn from_mask(mask: &'l mut ChunkMask, x: u8) -> Self {
+	pub fn from_mask(mask: &'l mut BitCube, x: u8) -> Self {
 		LayerZyMut { mask, x }
 	}
 
@@ -178,12 +178,12 @@ impl<'l> LayerStorage<bool> for LayerZyMut<'l> {
 }
 
 pub struct LayerYxMut<'l> {
-	mask: &'l mut ChunkMask,
+	mask: &'l mut BitCube,
 	z: u8
 }
 
 impl<'l> LayerYxMut<'l> {
-	pub fn from_mask(mask: &'l mut ChunkMask, z: u8) -> Self {
+	pub fn from_mask(mask: &'l mut BitCube, z: u8) -> Self {
 		LayerYxMut { mask, z }
 	}
 
@@ -277,11 +277,11 @@ impl<'l> LayerStorage<bool> for LayerYxMut<'l> {
 
 #[cfg(test)]
 mod test {
-	use crate::mask::{LayerMask, ChunkMask};
+	use crate::mask::{LayerMask, BitCube};
 	use crate::position::CubePosition;
 	use crate::component::*;
 
-	fn verify_masks_equal(direct: &ChunkMask, indirect: &ChunkMask) {
+	fn verify_masks_equal(direct: &BitCube, indirect: &BitCube) {
 		if direct != indirect {
 			println!("Error in layer view implementation, indirect method should be identical to direct method!");
 
@@ -298,7 +298,7 @@ mod test {
 
 	#[test]
 	fn test_zx_view() {
-		let mut direct = ChunkMask::default();
+		let mut direct = BitCube::default();
 
 		for z in 0..16 {
 			for x in 0..16 {
@@ -306,7 +306,7 @@ mod test {
 			}
 		}
 
-		let mut indirect = ChunkMask::default();
+		let mut indirect = BitCube::default();
 		indirect.layer_zx_mut(13).fill(true);
 
 		assert!(indirect.layer_zx_mut(13).is_filled(true));
@@ -314,10 +314,10 @@ mod test {
 
 		indirect.layer_zx_mut(13).fill(false);
 
-		verify_masks_equal(&ChunkMask::default(), &indirect);
+		verify_masks_equal(&BitCube::default(), &indirect);
 
 		indirect.layer_zx_mut(13).combine(&LayerMask::default());
-		verify_masks_equal(&ChunkMask::default(), &indirect);
+		verify_masks_equal(&BitCube::default(), &indirect);
 
 		let mut layer_filled = LayerMask::default();
 		layer_filled.fill(true);
@@ -328,7 +328,7 @@ mod test {
 
 	#[test]
 	fn test_zy_view() {
-		let mut direct = ChunkMask::default();
+		let mut direct = BitCube::default();
 
 		for z in 0..16 {
 			for y in 0..16 {
@@ -336,7 +336,7 @@ mod test {
 			}
 		}
 
-		let mut indirect = ChunkMask::default();
+		let mut indirect = BitCube::default();
 		indirect.layer_zy_mut(13).fill(true);
 
 		assert!(indirect.layer_zy_mut(13).is_filled(true));
@@ -344,10 +344,10 @@ mod test {
 
 		indirect.layer_zy_mut(13).fill(false);
 
-		verify_masks_equal(&ChunkMask::default(), &indirect);
+		verify_masks_equal(&BitCube::default(), &indirect);
 
 		indirect.layer_zy_mut(13).combine(&LayerMask::default());
-		verify_masks_equal(&ChunkMask::default(), &indirect);
+		verify_masks_equal(&BitCube::default(), &indirect);
 
 		let mut layer_filled = LayerMask::default();
 		layer_filled.fill(true);
@@ -358,7 +358,7 @@ mod test {
 
 	#[test]
 	fn test_yx_view() {
-		let mut direct = ChunkMask::default();
+		let mut direct = BitCube::default();
 
 		for y in 0..16 {
 			for x in 0..16 {
@@ -366,7 +366,7 @@ mod test {
 			}
 		}
 
-		let mut indirect = ChunkMask::default();
+		let mut indirect = BitCube::default();
 		indirect.layer_yx_mut(13).fill(true);
 
 		assert!(indirect.layer_yx_mut(13).is_filled(true));
@@ -374,10 +374,10 @@ mod test {
 
 		indirect.layer_yx_mut(13).fill(false);
 
-		verify_masks_equal(&ChunkMask::default(), &indirect);
+		verify_masks_equal(&BitCube::default(), &indirect);
 
 		indirect.layer_yx_mut(13).combine(&LayerMask::default());
-		verify_masks_equal(&ChunkMask::default(), &indirect);
+		verify_masks_equal(&BitCube::default(), &indirect);
 
 		let mut layer_filled = LayerMask::default();
 		layer_filled.fill(true);

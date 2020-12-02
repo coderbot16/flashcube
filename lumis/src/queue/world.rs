@@ -2,7 +2,7 @@ use crate::queue::SectorSpills;
 
 use std::collections::HashMap;
 
-use vocs::mask::ChunkMask;
+use vocs::mask::BitCube;
 use vocs::mask::LayerMask;
 use vocs::position::{CubePosition, GlobalSectorPosition, LayerPosition};
 use vocs::unpacked::Layer;
@@ -34,8 +34,8 @@ impl Phase {
 }
 
 pub struct WorldQueue {
-	odd: HashMap<GlobalSectorPosition, Sector<ChunkMask>>,
-	even: HashMap<GlobalSectorPosition, Sector<ChunkMask>>,
+	odd: HashMap<GlobalSectorPosition, Sector<BitCube>>,
+	even: HashMap<GlobalSectorPosition, Sector<BitCube>>,
 	phase: Phase,
 }
 
@@ -76,7 +76,7 @@ impl WorldQueue {
 		);
 	}
 
-	fn sector_masks(&mut self, position: GlobalSectorPosition) -> &mut Sector<ChunkMask> {
+	fn sector_masks(&mut self, position: GlobalSectorPosition) -> &mut Sector<BitCube> {
 		match Phase::from_position(position) {
 			Phase::Odd => &mut self.odd,
 			Phase::Even => &mut self.even,
@@ -90,7 +90,7 @@ impl WorldQueue {
 		mut merge: M,
 	) where
 		P: Fn(LayerPosition) -> CubePosition,
-		M: FnMut(&mut ChunkMask, LayerMask),
+		M: FnMut(&mut BitCube, LayerMask),
 	{
 		use vocs::component::LayerStorage;
 
@@ -116,7 +116,7 @@ impl WorldQueue {
 		}
 	}
 
-	pub fn flip(&mut self) -> Option<HashMap<GlobalSectorPosition, Sector<ChunkMask>>> {
+	pub fn flip(&mut self) -> Option<HashMap<GlobalSectorPosition, Sector<BitCube>>> {
 		match (self.even.is_empty(), self.odd.is_empty()) {
 			(true, true) => {
 				self.phase = Phase::Odd;

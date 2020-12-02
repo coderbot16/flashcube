@@ -1,6 +1,6 @@
 use nbt_turbo::writer::{CompoundWriter, Output};
-use vocs::indexed::{ChunkIndexed, Target};
-use vocs::nibbles::{u4, ChunkNibbles};
+use vocs::indexed::{IndexedCube, Target};
+use vocs::nibbles::{u4, NibbleCube};
 use vocs::position::CubePosition;
 
 // TODO: Cannot derive Debug (array of length 4096)
@@ -8,10 +8,10 @@ use vocs::position::CubePosition;
 pub struct SectionRef<'c> {
 	pub y: i8,
 	pub blocks: &'c [u8; 4096],
-	pub add: Option<&'c ChunkNibbles>,
-	pub data: &'c ChunkNibbles,
-	pub block_light: &'c ChunkNibbles,
-	pub sky_light: &'c ChunkNibbles,
+	pub add: Option<&'c NibbleCube>,
+	pub data: &'c NibbleCube,
+	pub block_light: &'c NibbleCube,
+	pub sky_light: &'c NibbleCube,
 }
 
 impl<'c> SectionRef<'c> {
@@ -33,10 +33,10 @@ impl<'c> SectionRef<'c> {
 pub struct Section {
 	pub y: i8,
 	pub blocks: Box<[u8; 4096]>,
-	pub add: Option<ChunkNibbles>,
-	pub data: ChunkNibbles,
-	pub block_light: ChunkNibbles,
-	pub sky_light: ChunkNibbles,
+	pub add: Option<NibbleCube>,
+	pub data: NibbleCube,
+	pub block_light: NibbleCube,
+	pub sky_light: NibbleCube,
 }
 
 impl Section {
@@ -54,15 +54,15 @@ impl Section {
 
 pub struct AnvilBlocks {
 	pub blocks: Box<[u8; 4096]>,
-	pub add: Option<ChunkNibbles>,
-	pub data: ChunkNibbles
+	pub add: Option<NibbleCube>,
+	pub data: NibbleCube
 }
 
 impl AnvilBlocks {
-	pub fn from_paletted<'b, B, F>(chunk: &'b ChunkIndexed<B>, to_anvil_id: &'b F) -> Self 
+	pub fn from_paletted<'b, B, F>(chunk: &'b IndexedCube<B>, to_anvil_id: &'b F) -> Self 
 	where B: 'b + Target, F: Fn(&'b B) -> u16, {
 		let mut blocks = Box::new([0u8; 4096]);
-		let mut meta = ChunkNibbles::default();
+		let mut meta = NibbleCube::default();
 	
 		let (storage, palette) = chunk.freeze();
 	
@@ -70,7 +70,7 @@ impl AnvilBlocks {
 		let need_add = palette.iter().map(|slot| slot.as_ref().map(to_anvil_id).unwrap_or(0)).any(|id| id > 4095);
 	
 		let add = if need_add {
-			let mut add = ChunkNibbles::default();
+			let mut add = NibbleCube::default();
 	
 			for position in CubePosition::enumerate() {
 				let raw = storage.get(position);

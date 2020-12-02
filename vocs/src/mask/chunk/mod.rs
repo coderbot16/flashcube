@@ -14,13 +14,13 @@ pub use self::layer_view::*;
 const FALSE_REF: &bool = &false;
 const TRUE_REF:  &bool = &true;
 
-pub struct ChunkMask {
+pub struct BitCube {
 	blocks: Box<[u1x64; 64]>,
 	inhabited: u1x64
 }
 
-impl ChunkMask {
-	pub fn combine(&mut self, other: &ChunkMask) {
+impl BitCube {
+	pub fn combine(&mut self, other: &BitCube) {
 		for (target, other) in self.blocks.iter_mut().zip(other.blocks.iter()) {
 			*target = *target | *other;
 		}
@@ -87,7 +87,7 @@ impl ChunkMask {
 	}
 }
 
-impl ChunkStorage<bool> for ChunkMask {
+impl ChunkStorage<bool> for BitCube {
 	fn get(&self, position: CubePosition) -> bool {
 		self[position]
 	}
@@ -113,7 +113,7 @@ impl ChunkStorage<bool> for ChunkMask {
 	}
 }
 
-impl Mask<CubePosition> for ChunkMask {
+impl Mask<CubePosition> for BitCube {
 	fn set_true(&mut self, position: CubePosition) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
@@ -150,7 +150,7 @@ impl Mask<CubePosition> for ChunkMask {
 	}
 }
 
-impl Index<CubePosition> for ChunkMask {
+impl Index<CubePosition> for BitCube {
 	type Output = bool;
 
 	fn index(&self, position: CubePosition) -> &bool {
@@ -161,9 +161,9 @@ impl Index<CubePosition> for ChunkMask {
 	}
 }
 
-impl Clone for ChunkMask {
+impl Clone for BitCube {
 	fn clone(&self) -> Self {
-		ChunkMask {
+		BitCube {
 			blocks: Box::new([
 				self.blocks[ 0], self.blocks[ 1], self.blocks[ 2], self.blocks[ 3], self.blocks[ 4], self.blocks[ 5], self.blocks[ 6], self.blocks[ 7], self.blocks[ 8], self.blocks[ 9],
 				self.blocks[10], self.blocks[11], self.blocks[12], self.blocks[13], self.blocks[14], self.blocks[15], self.blocks[16], self.blocks[17], self.blocks[18], self.blocks[19],
@@ -178,7 +178,7 @@ impl Clone for ChunkMask {
 	}
 }
 
-impl PartialEq for ChunkMask {
+impl PartialEq for BitCube {
 	fn eq(&self, other: &Self) -> bool {
 		if self.inhabited != other.inhabited {
 			 return false;
@@ -188,11 +188,11 @@ impl PartialEq for ChunkMask {
 	}
 }
 
-impl Eq for ChunkMask {}
+impl Eq for BitCube {}
 
-impl Default for ChunkMask {
+impl Default for BitCube {
 	fn default() -> Self {
-		ChunkMask {
+		BitCube {
 			blocks: Box::new([u1x64::splat(false); 64]),
 			inhabited: u1x64::splat(false)
 		}

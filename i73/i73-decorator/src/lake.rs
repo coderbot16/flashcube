@@ -3,7 +3,7 @@ use i73_base::matcher::BlockMatcher;
 use i73_base::block::Block;
 use java_rand::Random;
 use vocs::component::*;
-use vocs::mask::ChunkMask;
+use vocs::mask::BitCube;
 use vocs::position::{CubePosition, ColumnPosition, QuadPosition};
 use vocs::view::QuadMut;
 
@@ -191,17 +191,17 @@ pub fn border(x: u8, y: u8, z: u8) -> CubePosition {
 	CubePosition::new(x, (y % 8) + 8, z)
 }
 
-/// Uses a ChunkMask to store both the volume and the border blocks.
-/// Lakes are 16x8x16. A ChunkMask is 16x16x16.
+/// Uses a BitCube to store both the volume and the border blocks.
+/// Lakes are 16x8x16. A BitCube is 16x16x16.
 /// For compactness, these two masks are stacked on top of each other.
 pub struct Lake {
-	shape: ChunkMask,
+	shape: BitCube,
 	surface: u8,
 }
 
 impl Lake {
 	pub fn new(surface: u8) -> Self {
-		Lake { shape: ChunkMask::default(), surface }
+		Lake { shape: BitCube::default(), surface }
 	}
 
 	pub fn clear(&mut self) {

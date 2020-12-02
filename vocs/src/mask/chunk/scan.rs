@@ -1,8 +1,8 @@
-use crate::mask::{ChunkMask, Scan, ScanClear, u1x64};
+use crate::mask::{BitCube, Scan, ScanClear, u1x64};
 use crate::position::CubePosition;
 use std::cmp;
 
-impl<'a> IntoIterator for Scan<'a, ChunkMask, CubePosition> {
+impl<'a> IntoIterator for Scan<'a, BitCube, CubePosition> {
 	type Item = CubePosition;
 	type IntoIter = ChunkScan<'a>;
 
@@ -12,14 +12,14 @@ impl<'a> IntoIterator for Scan<'a, ChunkMask, CubePosition> {
 }
 
 pub struct ChunkScan<'a> {
-	mask: &'a ChunkMask,
+	mask: &'a BitCube,
 	keep: u1x64,
 	skip: u8,
 	done: bool
 }
 
 impl<'a> ChunkScan<'a> {
-	pub fn new(mask: &'a ChunkMask) -> Self {
+	pub fn new(mask: &'a BitCube) -> Self {
 		let mut scan = ChunkScan {
 			mask,
 			keep: u1x64::splat(true),
@@ -74,7 +74,7 @@ impl<'a> Iterator for ChunkScan<'a> {
 	}
 }
 
-impl<'a> IntoIterator for ScanClear<'a, ChunkMask, CubePosition> {
+impl<'a> IntoIterator for ScanClear<'a, BitCube, CubePosition> {
 	type Item = CubePosition;
 	type IntoIter = ChunkScanClear<'a>;
 
@@ -83,10 +83,10 @@ impl<'a> IntoIterator for ScanClear<'a, ChunkMask, CubePosition> {
 	}
 }
 
-pub struct ChunkScanClear<'a>(&'a mut ChunkMask);
+pub struct ChunkScanClear<'a>(&'a mut BitCube);
 
 impl<'a> ChunkScanClear<'a> {
-	pub fn new(mask: &'a mut ChunkMask) -> Self {
+	pub fn new(mask: &'a mut BitCube) -> Self {
 		ChunkScanClear(mask)
 	}
 }
@@ -102,13 +102,13 @@ impl<'a> Iterator for ChunkScanClear<'a> {
 #[cfg(test)]
 mod tests {
 	use crate::position::CubePosition;
-	use crate::mask::{Mask, ChunkMask};
+	use crate::mask::{Mask, BitCube};
 	use std::collections::BTreeSet;
 
 	#[test]
 	fn test_chunk_scan() {
 		for scram in 0..128u32 {
-			let mut mask = ChunkMask::default();
+			let mut mask = BitCube::default();
 			let mut positions = BTreeSet::new();
 
 			for index in 0..64u32 {
@@ -129,7 +129,7 @@ mod tests {
 	#[test]
 	fn test_chunk_scan_clear() {
 		for scram in 0..128u32 {
-			let mut mask = ChunkMask::default();
+			let mut mask = BitCube::default();
 			let mut positions = BTreeSet::new();
 
 			for index in 0..64u32 {
@@ -145,8 +145,8 @@ mod tests {
 
 			assert_eq!(expected_vec, created_vec);
 
-			if mask != ChunkMask::default() {
-				panic!("ChunkMask::scan_clear did not clear the mask!");
+			if mask != BitCube::default() {
+				panic!("BitCube::scan_clear did not clear the mask!");
 			}
 		}
 	}

@@ -1,13 +1,13 @@
 use crate::position::{CubePosition, LayerPosition};
-use crate::indexed::{ChunkIndexed, Target};
-use crate::mask::{Mask, ChunkMask};
+use crate::indexed::{IndexedCube, Target};
+use crate::mask::{Mask, BitCube};
 use crate::view::{ColumnMut, QuadMut};
 use std::slice;
 use std::ops::Index;
 
 pub struct Sector<T> {
 	chunks: Box<[Option<T>]>,
-	present: ChunkMask
+	present: BitCube
 }
 
 impl<T> Sector<T> {
@@ -18,7 +18,7 @@ impl<T> Sector<T> {
 			chunks.push(None);
 		}
 
-		Sector { chunks: chunks.into_boxed_slice(), present: ChunkMask::default() }
+		Sector { chunks: chunks.into_boxed_slice(), present: BitCube::default() }
 	}
 
 	pub fn set(&mut self, position: CubePosition, chunk: T) {
@@ -260,7 +260,7 @@ impl<T> Sector<T> where T: Default {
 	}
 }
 
-impl<B> Sector<ChunkIndexed<B>> where B: Target {
+impl<B> Sector<IndexedCube<B>> where B: Target {
 	pub fn set_block_immediate(&mut self, x: u8, y: u8, z: u8, target: &B) -> Option<()> {
 		let (chunk, block) = (
 			CubePosition::new(x / 16, y / 16, z / 16),
@@ -394,12 +394,12 @@ impl<'a, T> Iterator for SectorColumnsMut<'a, T> where T: 'a  {
 // TODO: Enumerate iterators
 pub struct SectorEnumeratePresent<'a, T> where T: 'a {
 	_sector: &'a Sector<T>,
-	// TODO: ChunkMask iter
+	// TODO: BitCube iter
 }
 
 pub struct SectorEnumeratePresentMut<'a, T> where T: 'a {
 	_sector: &'a mut Sector<T>,
-	// TODO: ChunkMask iter_mut
+	// TODO: BitCube iter_mut
 }
 
 pub struct LayerSector<T> {

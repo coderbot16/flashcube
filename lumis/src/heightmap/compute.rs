@@ -7,7 +7,7 @@ use rayon::prelude::ParallelIterator;
 
 use std::collections::HashMap;
 
-use vocs::indexed::{ChunkIndexed, Target};
+use vocs::indexed::{IndexedCube, Target};
 use vocs::mask::LayerMask;
 use vocs::position::{GlobalSectorPosition, LayerPosition};
 use vocs::unpacked::Layer;
@@ -15,7 +15,7 @@ use vocs::world::sector::Sector;
 use vocs::world::world::World;
 
 pub fn compute_world_heightmaps<'a, B, F>(
-	blocks: &'a World<ChunkIndexed<B>>, predicate: &'a F,
+	blocks: &'a World<IndexedCube<B>>, predicate: &'a F,
 ) -> HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>
 where
 	B: 'a + Target + Send + Sync,
@@ -29,7 +29,7 @@ where
 }
 
 pub fn compute_sector_heightmaps<'a, B, F>(
-	blocks: &'a Sector<ChunkIndexed<B>>, predicate: &'a F,
+	blocks: &'a Sector<IndexedCube<B>>, predicate: &'a F,
 ) -> Layer<ColumnHeightMap>
 where
 	B: 'a + Target + Send + Sync,
@@ -57,7 +57,7 @@ where
 }
 
 pub fn compute_column_heightmap<'a, B, F>(
-	column: [Option<&'a ChunkIndexed<B>>; 16], predicate: &'a F,
+	column: [Option<&'a IndexedCube<B>>; 16], predicate: &'a F,
 ) -> ColumnHeightMap
 where
 	B: 'a + Target + Send + Sync,

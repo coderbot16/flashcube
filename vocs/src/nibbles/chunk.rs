@@ -5,15 +5,15 @@ use crate::component::ChunkStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
 /// Indexed with CubePosition.
-pub struct ChunkNibbles(Box<[u8; 2048]>);
-impl ChunkNibbles {
-	/// Creates a `ChunkNibbles` from a raw array of `u4x2`s.
+pub struct NibbleCube(Box<[u8; 2048]>);
+impl NibbleCube {
+	/// Creates a `NibbleCube` from a raw array of `u4x2`s.
 	/// `a` is the even element, `b` is the odd element.
 	/// For example:
 	/// (x:0,y:0,z:0) is index 0, element `a`.
 	/// (x:15,y:0,z:15) is index 127, element `b`.
 	pub fn from_raw(raw: Box<[u8; 2048]>) -> Self {
-		ChunkNibbles(raw)
+		NibbleCube(raw)
 	}
 
 	/// Sets a value, without clearing what was there previously.
@@ -47,7 +47,7 @@ impl ChunkNibbles {
 	}
 }
 
-impl ChunkStorage<u4> for ChunkNibbles {
+impl ChunkStorage<u4> for NibbleCube {
 	fn get(&self, at: CubePosition) -> u4 {
 		let (index, shift) = nibble_index(at.yzx() as usize);
 
@@ -76,24 +76,24 @@ impl ChunkStorage<u4> for ChunkNibbles {
 	}
 }
 
-impl Default for ChunkNibbles {
+impl Default for NibbleCube {
 	fn default() -> Self {
-		ChunkNibbles(Box::new([0; 2048]))
+		NibbleCube(Box::new([0; 2048]))
 	}
 }
 
-impl Debug for ChunkNibbles {
+impl Debug for NibbleCube {
 	fn fmt(&self, f: &mut Formatter) -> Result {
 		write!(f, "{:?}", &self.0[..])
 	}
 }
 
-impl Clone for ChunkNibbles {
+impl Clone for NibbleCube {
 	fn clone(&self) -> Self {
 		let mut other = Box::new([0; 2048]);
 
 		other.copy_from_slice(&self.0[..]);
 
-		ChunkNibbles(other)
+		NibbleCube(other)
 	}
 }

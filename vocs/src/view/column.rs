@@ -1,13 +1,13 @@
-use crate::indexed::{Target, ChunkIndexed};
+use crate::indexed::{Target, IndexedCube};
 use crate::indexed::Palette;
 use crate::position::ColumnPosition;
 use crate::packed::ChunkPacked;
 
 #[derive(Debug)]
-pub struct ColumnMut<'c, B>(pub [&'c mut ChunkIndexed<B>; 16]) where B: 'c + Target;
+pub struct ColumnMut<'c, B>(pub [&'c mut IndexedCube<B>; 16]) where B: 'c + Target;
 
 impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
-	pub fn from_array(array: &'c mut [ChunkIndexed<B>; 16]) -> Self {
+	pub fn from_array(array: &'c mut [IndexedCube<B>; 16]) -> Self {
 		let (s0 , slice) = array.split_at_mut(1);
 		let (s1 , slice) = slice.split_at_mut(1);
 		let (s2 , slice) = slice.split_at_mut(1);
@@ -53,7 +53,7 @@ impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 		}
 	}
 
-	fn chunks_tuple(&mut self) -> (&mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>, &mut ChunkIndexed<B>) {
+	fn chunks_tuple(&mut self) -> (&mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>, &mut IndexedCube<B>) {
 		let (s0 , slice) = self.0.split_at_mut(1);
 		let (s1 , slice) = slice.split_at_mut(1);
 		let (s2 , slice) = slice.split_at_mut(1);

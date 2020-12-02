@@ -13,7 +13,7 @@ use i73_terrain::overworld_173::Settings;
 use image::{GenericImage, RgbImage, SubImage};
 use std::fmt::{self, Display};
 use std::ops::AddAssign;
-use vocs::indexed::ChunkIndexed;
+use vocs::indexed::IndexedCube;
 use vocs::position::{ColumnPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 use vocs::view::ColumnMut;
 
@@ -171,22 +171,22 @@ impl Renderer for FullRenderer {
 			let column_position = GlobalColumnPosition::combine(sector_position, layer_position);
 
 			let mut column_chunks = [
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
 			];
 
 			let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);

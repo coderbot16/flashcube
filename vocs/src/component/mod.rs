@@ -1,6 +1,6 @@
 // TODO: Basic ECS: Allow common tasks to fall under common 7 types, but provide extension with specs. This can avoid dynamic type casting in most cases.
-// bool: ChunkMask
-// u4: ChunkNibbles
+// bool: BitCube
+// u4: NibbleCube
 // u8: [u8; 4096]
 // uXX: Packed
 // f32: [f32; 4096]

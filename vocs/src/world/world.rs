@@ -1,7 +1,7 @@
 use crate::position::{GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 use crate::world::sector::Sector;
 use std::collections::hash_map::{HashMap, Entry, Iter, IterMut};
-use crate::indexed::{Target, ChunkIndexed};
+use crate::indexed::{Target, IndexedCube};
 use crate::view::{QuadMut, ColumnMut};
 use splitmut::SplitMut;
 
@@ -103,7 +103,7 @@ impl<T> World<T> where T: Default {
 	}
 }
 
-impl<B> World<ChunkIndexed<B>> where B: Target {
+impl<B> World<IndexedCube<B>> where B: Target {
 	pub fn get_quad_mut(&mut self, position: GlobalColumnPosition) -> Option<QuadMut<B>> {
 		let sector = position.global_sector();
 		let inner = position.local_layer();

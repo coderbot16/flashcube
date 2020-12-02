@@ -18,7 +18,7 @@ use i73_base::block::{self, Block};
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73_terrain::overworld_173::{self, Settings};
 
-use vocs::indexed::ChunkIndexed;
+use vocs::indexed::IndexedCube;
 use vocs::nibbles::u4;
 use vocs::position::{
 	GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition, QuadPosition,
@@ -30,7 +30,7 @@ use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
 use std::collections::HashMap;
-use vocs::nibbles::ChunkNibbles;
+use vocs::nibbles::NibbleCube;
 use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::position::{dir, Offset};
 
@@ -94,7 +94,7 @@ fn time<T, F: FnOnce() -> T>(name: &str, task: F) -> T {
 	value
 }
 
-fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8>>) {
+fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<(i32, i32), Vec<u8>>) {
 	let ocean = OceanPass {
 		blocks: OceanBlocks::default(),
 		sea_top: 64,
@@ -128,7 +128,7 @@ fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8
 	let caves =
 		i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
 
-	let mut world: World<ChunkIndexed<Block>> = World::new();
+	let mut world: World<IndexedCube<Block>> = World::new();
 	let mut world_biomes: HashMap<(i32, i32), Vec<u8>> = HashMap::new();
 
 	for x in 0..32 {
@@ -137,22 +137,22 @@ fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8
 			let column_position = GlobalColumnPosition::new(x, z);
 
 			let mut column_chunks = [
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
-				ChunkIndexed::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
+				IndexedCube::<Block>::new(4, block::AIR),
 			];
 
 			let climate = climates
@@ -200,7 +200,7 @@ fn generate_terrain() -> (World<ChunkIndexed<Block>>, HashMap<(i32, i32), Vec<u8
 	(world, world_biomes)
 }
 
-fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
+fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 	/*let mut decorator_registry: ::std::collections::HashMap<String, Box<i73::config::decorator::DecoratorFactory>> = ::std::collections::HashMap::new();
 	decorator_registry.insert("vein".into(), Box::new(::i73::config::decorator::vein::VeinDecoratorFactory::default()));
 	decorator_registry.insert("seaside_vein".into(), Box::new(::i73::config::decorator::vein::SeasideVeinDecoratorFactory::default()));
@@ -418,7 +418,7 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 	}*/
 }
 
-/*fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
+/*fn write_classicworld(world: &World<IndexedCube<Block>>) {
 	use vocs::position::CubePosition;
 
 	let mut blocks = vec![0; 512 * 128 * 512];
@@ -486,7 +486,7 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 }*/
 
 fn write_region(
-	world: &World<ChunkIndexed<Block>>, sky_light: &SharedWorld<NoPack<ChunkNibbles>>,
+	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<NibbleCube>>,
 	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &HashMap<(i32, i32), Vec<u8>>,
 ) {
@@ -537,14 +537,14 @@ fn write_region(
 					continue;
 				}*/
 
-				let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(ChunkNibbles::default)*/;
+				let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
 
 				sections.push(Section {
 					y: y as i8,
 					blocks: anvil_blocks.blocks,
 					add: anvil_blocks.add,
 					data: anvil_blocks.data,
-					block_light: ChunkNibbles::default(),
+					block_light: NibbleCube::default(),
 					// TODO: Cloning this is stupid
 					sky_light: (&*sky_light).clone()
 				});

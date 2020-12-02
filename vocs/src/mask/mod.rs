@@ -13,10 +13,10 @@ use crate::component::Component;
 use std::ops::{Index, BitOrAssign, BitOr, BitAndAssign, BitAnd, Not};
 use std::marker::PhantomData;
 
-// TODO: SparseIncoming mask: Like SparseMask, but ChunkMask is replaced with IncomingChunkMask.
+// TODO: SparseIncoming mask: Like SparseMask, but BitCube is replaced with IncomingBitCube.
 
 impl Component for bool {
-	type Chunk = ChunkMask;
+	type Chunk = BitCube;
 	type Layer = LayerMask;
 	type Bulk = ();
 }

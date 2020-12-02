@@ -2,7 +2,7 @@ use crate::queue::ChunkQueue;
 use crate::sources::LightSources;
 use std::cmp::max;
 use vocs::component::ChunkStorage;
-use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
+use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
 use vocs::packed::ChunkPacked;
 use vocs::position::{dir, CubePosition, Offset};
 use vocs::view::Directional;
@@ -12,8 +12,8 @@ pub struct Lighting<'n, S>
 where
 	S: LightSources,
 {
-	data: &'n mut ChunkNibbles,
-	neighbors: Directional<&'n ChunkNibbles>,
+	data: &'n mut NibbleCube,
+	neighbors: Directional<&'n NibbleCube>,
 	sources: S,
 	opacity: BulkNibbles,
 }
@@ -23,7 +23,7 @@ where
 	S: LightSources,
 {
 	pub fn new(
-		data: &'n mut ChunkNibbles, neighbors: Directional<&'n ChunkNibbles>, sources: S,
+		data: &'n mut NibbleCube, neighbors: Directional<&'n NibbleCube>, sources: S,
 		opacity: BulkNibbles,
 	) -> Self {
 		Lighting { data, neighbors, sources, opacity }
@@ -86,7 +86,7 @@ where
 		}
 	}
 
-	pub fn decompose(self) -> (&'n mut ChunkNibbles, S) {
+	pub fn decompose(self) -> (&'n mut NibbleCube, S) {
 		(self.data, self.sources)
 	}
 }

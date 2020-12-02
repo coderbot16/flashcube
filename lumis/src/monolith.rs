@@ -10,9 +10,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use vocs::indexed::{ChunkIndexed, Target};
-use vocs::mask::ChunkMask;
-use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
+use vocs::indexed::{IndexedCube, Target};
+use vocs::mask::BitCube;
+use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
 use vocs::position::{dir, CubePosition, GlobalSectorPosition, Offset};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
@@ -23,14 +23,14 @@ use vocs::world::world::World;
 // TODO: This whole file should be split up / refactored at some point
 
 fn initial_sector<'a, B, F>(
-	block_sector: &'a Sector<ChunkIndexed<B>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>,
+	block_sector: &'a Sector<IndexedCube<B>>, sky_light: &SharedSector<NoPack<NibbleCube>>,
 	heightmaps: &Layer<ColumnHeightMap>, opacities: &'a F,
 ) -> SectorQueue
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 {
-	let empty_lighting = ChunkNibbles::default();
+	let empty_lighting = NibbleCube::default();
 	let empty_neighbors = Directional::combine(SplitDirectional {
 		minus_x: &empty_lighting,
 		plus_x: &empty_lighting,
@@ -62,7 +62,7 @@ where
 			let chunk_heightmap = column_heightmap.slice(u4::new(position.y()));
 			let sources = SkyLightSources::new(&chunk_heightmap);
 
-			let mut light_data = ChunkNibbles::default();
+			let mut light_data = NibbleCube::default();
 
 			let mut light = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
 
@@ -79,8 +79,8 @@ where
 }
 
 fn full_sector<'a, B, F>(
-	block_sector: &'a Sector<ChunkIndexed<B>>, sky_light: &SharedSector<NoPack<ChunkNibbles>>,
-	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>,
+	block_sector: &'a Sector<IndexedCube<B>>, sky_light: &SharedSector<NoPack<NibbleCube>>,
+	sky_light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
 	sector_queue: &mut SectorQueue, heightmaps: &Layer<ColumnHeightMap>, opacities: &'a F,
 ) -> (u32, u32)
 where
@@ -119,9 +119,9 @@ where
 }
 
 fn complete_chunk<'a, B, F>(
-	position: CubePosition, blocks: &'a ChunkIndexed<B>,
-	sky_light: &SharedSector<NoPack<ChunkNibbles>>,
-	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, incomplete: ChunkMask,
+	position: CubePosition, blocks: &'a IndexedCube<B>,
+	sky_light: &SharedSector<NoPack<NibbleCube>>,
+	sky_light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>, incomplete: BitCube,
 	heightmap: &ChunkHeightMap, opacities: &'a F,
 ) -> ChunkQueue
 where
@@ -129,7 +129,7 @@ where
 	F: Fn(&'a B) -> u4 + Sync,
 {
 	// TODO: Cache these things!
-	let empty_lighting = ChunkNibbles::default();
+	let empty_lighting = NibbleCube::default();
 	let mut queue = ChunkQueue::new();
 
 	let (blocks, palette) = blocks.freeze();
@@ -256,16 +256,16 @@ impl SkyLightTraces for IgnoreTraces {
 }
 
 pub fn compute_world_skylight<'a, B, F, T>(
-	world: &'a World<ChunkIndexed<B>>,
+	world: &'a World<IndexedCube<B>>,
 	heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>, opacities: &'a F,
 	tracer: &T,
-) -> SharedWorld<NoPack<ChunkNibbles>>
+) -> SharedWorld<NoPack<NibbleCube>>
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 	T: SkyLightTraces + Sync,
 {
-	let empty_sector: SharedSector<NoPack<ChunkNibbles>> = SharedSector::new();
+	let empty_sector: SharedSector<NoPack<NibbleCube>> = SharedSector::new();
 	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
 		minus_x: &empty_sector,
 		plus_x: &empty_sector,
@@ -275,7 +275,7 @@ where
 		up: &empty_sector,
 	});
 
-	let mut sky_light: SharedWorld<NoPack<ChunkNibbles>> = SharedWorld::new();
+	let mut sky_light: SharedWorld<NoPack<NibbleCube>> = SharedWorld::new();
 	let world_queue = Mutex::new(WorldQueue::new());
 
 	world.sectors().map(|entry| *entry.0).for_each(|position| {
@@ -324,7 +324,7 @@ where
 		iterations += 1;
 
 		let complete_sector =
-			|(position, sector_mask): (GlobalSectorPosition, Sector<ChunkMask>)| {
+			|(position, sector_mask): (GlobalSectorPosition, Sector<BitCube>)| {
 				let block_sector = match world.get_sector(position) {
 					Some(sector) => sector,
 					None => return,

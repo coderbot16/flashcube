@@ -1,19 +1,19 @@
 use std::mem;
 use vocs::component::{ChunkStorage, LayerStorage};
-use vocs::mask::{ChunkMask, LayerMask, Mask};
+use vocs::mask::{BitCube, LayerMask, Mask};
 use vocs::position::{dir, CubePosition};
-use vocs::view::{Directional, MaskOffset, SpillChunkMask, SplitDirectional};
+use vocs::view::{Directional, MaskOffset, SpillBitCube, SplitDirectional};
 
 /// A double-buffered queue. Useful for breadth-first search algorithms.
 #[derive(Clone)]
 pub struct ChunkQueue {
-	front: ChunkMask,
-	back: SpillChunkMask,
+	front: BitCube,
+	back: SpillBitCube,
 }
 
 impl ChunkQueue {
 	pub fn new() -> ChunkQueue {
-		ChunkQueue { front: ChunkMask::default(), back: SpillChunkMask::default() }
+		ChunkQueue { front: BitCube::default(), back: SpillBitCube::default() }
 	}
 
 	pub fn clear(&mut self) {
@@ -27,7 +27,7 @@ impl ChunkQueue {
 		self.back.spills[dir::MinusZ].fill(false);
 	}
 
-	pub fn reset_from_mask(&mut self, front: ChunkMask) {
+	pub fn reset_from_mask(&mut self, front: BitCube) {
 		self.front.fill(false);
 
 		self.back.primary = front;
@@ -74,7 +74,7 @@ impl ChunkQueue {
 		self.back.set_offset_true(position, dir::PlusZ);
 	}
 
-	pub fn mask_mut(&mut self) -> &mut SpillChunkMask {
+	pub fn mask_mut(&mut self) -> &mut SpillBitCube {
 		&mut self.back
 	}
 }
