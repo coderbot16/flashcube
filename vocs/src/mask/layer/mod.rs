@@ -12,8 +12,8 @@ const FALSE_REF: &bool = &false;
 const TRUE_REF:  &bool = &true;
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
-pub struct LayerMask([u64; 4]);
-impl LayerMask {
+pub struct BitLayer([u64; 4]);
+impl BitLayer {
 	pub fn blocks(&self) -> &[u64; 4] {
 		&self.0
 	}
@@ -23,7 +23,7 @@ impl LayerMask {
 	}
 }
 
-impl LayerStorage<bool> for LayerMask {
+impl LayerStorage<bool> for BitLayer {
 	fn get(&self, position: LayerPosition) -> bool {
 		self[position]
 	}
@@ -59,7 +59,7 @@ impl LayerStorage<bool> for LayerMask {
 	}
 }
 
-impl Mask<LayerPosition> for LayerMask {
+impl Mask<LayerPosition> for BitLayer {
 	fn set_true(&mut self, position: LayerPosition) {
 		let index = position.zx() as usize;
 
@@ -87,7 +87,7 @@ impl Mask<LayerPosition> for LayerMask {
 	}
 }
 
-impl Index<LayerPosition> for LayerMask {
+impl Index<LayerPosition> for BitLayer {
 	type Output = bool;
 
 	fn index(&self, position: LayerPosition) -> &bool {
@@ -97,8 +97,8 @@ impl Index<LayerPosition> for LayerMask {
 	}
 }
 
-impl BitOrAssign<LayerMask> for LayerMask {
-	fn bitor_assign(&mut self, other: LayerMask) {
+impl BitOrAssign<BitLayer> for BitLayer {
+	fn bitor_assign(&mut self, other: BitLayer) {
 		self.0[0] |= other.0[0];
 		self.0[1] |= other.0[1];
 		self.0[2] |= other.0[2];
@@ -106,8 +106,8 @@ impl BitOrAssign<LayerMask> for LayerMask {
 	}
 }
 
-impl BitOrAssign<&LayerMask> for LayerMask {
-	fn bitor_assign(&mut self, other: &LayerMask) {
+impl BitOrAssign<&BitLayer> for BitLayer {
+	fn bitor_assign(&mut self, other: &BitLayer) {
 		self.0[0] |= other.0[0];
 		self.0[1] |= other.0[1];
 		self.0[2] |= other.0[2];
@@ -119,12 +119,12 @@ impl BitOrAssign<&LayerMask> for LayerMask {
 mod test {
 	use crate::position::LayerPosition;
 	use crate::component::LayerStorage;
-	use crate::mask::{LayerMask, Mask};
+	use crate::mask::{BitLayer, Mask};
 
 	#[test]
 	fn test_plain_set() {
 		for position in LayerPosition::enumerate() {
-			let mut mask = LayerMask::default();
+			let mut mask = BitLayer::default();
 
 			mask.set(position, true);
 			assert!(mask.get(position), "Mask set failed on index: {:?}", position);
@@ -133,7 +133,7 @@ mod test {
 
 	#[test]
 	fn test_mixed_set() {
-		let mut mask = LayerMask::default();
+		let mut mask = BitLayer::default();
 
 		for position in LayerPosition::enumerate() {
 			mask.set(position, should_set(position));
@@ -149,7 +149,7 @@ mod test {
 	#[test]
 	fn test_fill() {
 		{
-			let mut mask = LayerMask::default();
+			let mut mask = BitLayer::default();
 
 			for position in LayerPosition::enumerate() {
 				mask.set(position, should_set(position));
@@ -160,7 +160,7 @@ mod test {
 		}
 
 		{
-			let mut mask = LayerMask::default();
+			let mut mask = BitLayer::default();
 
 			for position in LayerPosition::enumerate() {
 				mask.set_true(position);
@@ -171,7 +171,7 @@ mod test {
 		}
 
 		{
-			let mut mask = LayerMask::default();
+			let mut mask = BitLayer::default();
 
 			for position in LayerPosition::enumerate() {
 				mask.set_false(position);
@@ -186,7 +186,7 @@ mod test {
 		((position.zx() as u64) * 32181) % 13 < 2
 	}
 
-	fn display_mask(mask: &LayerMask) {
+	fn display_mask(mask: &BitLayer) {
 		for z in 0..16 {
 			for x in 0..16 {
 				let position = LayerPosition::new(x, z);

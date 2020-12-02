@@ -3,7 +3,7 @@ use crate::queue::SectorSpills;
 use std::collections::HashMap;
 
 use vocs::mask::BitCube;
-use vocs::mask::LayerMask;
+use vocs::mask::BitLayer;
 use vocs::position::{CubePosition, GlobalSectorPosition, LayerPosition};
 use vocs::unpacked::Layer;
 use vocs::world::sector::Sector;
@@ -86,16 +86,16 @@ impl WorldQueue {
 	}
 
 	fn spill<P, M>(
-		&mut self, origin: GlobalSectorPosition, layer: Layer<Option<LayerMask>>, position: P,
+		&mut self, origin: GlobalSectorPosition, layer: Layer<Option<BitLayer>>, position: P,
 		mut merge: M,
 	) where
 		P: Fn(LayerPosition) -> CubePosition,
-		M: FnMut(&mut BitCube, LayerMask),
+		M: FnMut(&mut BitCube, BitLayer),
 	{
 		use vocs::component::LayerStorage;
 
 		for (index, spilled) in layer.into_inner().into_vec().drain(..).enumerate() {
-			let spilled: Option<LayerMask> = spilled;
+			let spilled: Option<BitLayer> = spilled;
 
 			let spilled = match spilled {
 				Some(mask) => mask,

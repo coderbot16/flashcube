@@ -1,4 +1,4 @@
-use crate::mask::{u1x64, BitCube, LayerMask};
+use crate::mask::{u1x64, BitCube, BitLayer};
 use crate::position::{CubePosition, LayerPosition};
 use crate::component::*;
 
@@ -15,7 +15,7 @@ impl<'l> LayerZxMut<'l> {
 		LayerZxMut { layer, inhabited, inhabited_offset }
 	}
 
-	pub fn combine(&mut self, other: &LayerMask) {
+	pub fn combine(&mut self, other: &BitLayer) {
 		assert_eq!(self.layer.len(), 4);
 
 		self.layer[0] |= u1x64::from_bits(other.blocks()[0]);
@@ -85,7 +85,7 @@ impl<'l> LayerZyMut<'l> {
 		LayerZyMut { mask, x }
 	}
 
-	pub fn combine(&mut self, other: &LayerMask) {
+	pub fn combine(&mut self, other: &BitLayer) {
 		// Clear inhabited, we'll regenerate it in the loop.
 		let mut inhabited = u1x64::default();
 
@@ -187,7 +187,7 @@ impl<'l> LayerYxMut<'l> {
 		LayerYxMut { mask, z }
 	}
 
-	pub fn combine(&mut self, other: &LayerMask) {
+	pub fn combine(&mut self, other: &BitLayer) {
 		let block_offset = self.z / 4;
 		let shift = (self.z % 4) * 16;
 
@@ -277,7 +277,7 @@ impl<'l> LayerStorage<bool> for LayerYxMut<'l> {
 
 #[cfg(test)]
 mod test {
-	use crate::mask::{LayerMask, BitCube};
+	use crate::mask::{BitLayer, BitCube};
 	use crate::position::CubePosition;
 	use crate::component::*;
 
@@ -316,10 +316,10 @@ mod test {
 
 		verify_masks_equal(&BitCube::default(), &indirect);
 
-		indirect.layer_zx_mut(13).combine(&LayerMask::default());
+		indirect.layer_zx_mut(13).combine(&BitLayer::default());
 		verify_masks_equal(&BitCube::default(), &indirect);
 
-		let mut layer_filled = LayerMask::default();
+		let mut layer_filled = BitLayer::default();
 		layer_filled.fill(true);
 		indirect.layer_zx_mut(13).combine(&layer_filled);
 
@@ -346,10 +346,10 @@ mod test {
 
 		verify_masks_equal(&BitCube::default(), &indirect);
 
-		indirect.layer_zy_mut(13).combine(&LayerMask::default());
+		indirect.layer_zy_mut(13).combine(&BitLayer::default());
 		verify_masks_equal(&BitCube::default(), &indirect);
 
-		let mut layer_filled = LayerMask::default();
+		let mut layer_filled = BitLayer::default();
 		layer_filled.fill(true);
 		indirect.layer_zy_mut(13).combine(&layer_filled);
 
@@ -376,10 +376,10 @@ mod test {
 
 		verify_masks_equal(&BitCube::default(), &indirect);
 
-		indirect.layer_yx_mut(13).combine(&LayerMask::default());
+		indirect.layer_yx_mut(13).combine(&BitLayer::default());
 		verify_masks_equal(&BitCube::default(), &indirect);
 
-		let mut layer_filled = LayerMask::default();
+		let mut layer_filled = BitLayer::default();
 		layer_filled.fill(true);
 		indirect.layer_yx_mut(13).combine(&layer_filled);
 

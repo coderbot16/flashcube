@@ -1,7 +1,7 @@
-use crate::mask::{Mask, LayerMask, ScanClear};
+use crate::mask::{Mask, BitLayer, ScanClear};
 use crate::position::LayerPosition;
 
-impl<'a> IntoIterator for ScanClear<'a, LayerMask, LayerPosition> {
+impl<'a> IntoIterator for ScanClear<'a, BitLayer, LayerPosition> {
 	type Item = LayerPosition;
 	type IntoIter = LayerScanClear<'a>;
 
@@ -11,13 +11,13 @@ impl<'a> IntoIterator for ScanClear<'a, LayerMask, LayerPosition> {
 }
 
 pub struct LayerScanClear<'a> {
-	mask: &'a mut LayerMask,
+	mask: &'a mut BitLayer,
 	skip: u8,
 	done: bool
 }
 
 impl<'a> LayerScanClear<'a> {
-	pub fn new(mask: &'a mut LayerMask) -> Self {
+	pub fn new(mask: &'a mut BitLayer) -> Self {
 		let mut scan_clear = LayerScanClear {
 			mask,
 			skip: 0,

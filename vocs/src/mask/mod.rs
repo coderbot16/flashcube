@@ -17,7 +17,7 @@ use std::marker::PhantomData;
 
 impl Component for bool {
 	type Chunk = BitCube;
-	type Layer = LayerMask;
+	type Layer = BitLayer;
 	type Bulk = ();
 }
 

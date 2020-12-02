@@ -8,7 +8,7 @@ use rayon::prelude::ParallelIterator;
 use std::collections::HashMap;
 
 use vocs::indexed::{IndexedCube, Target};
-use vocs::mask::LayerMask;
+use vocs::mask::BitLayer;
 use vocs::position::{GlobalSectorPosition, LayerPosition};
 use vocs::unpacked::Layer;
 use vocs::world::sector::Sector;
@@ -63,7 +63,7 @@ where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> bool,
 {
-	let mut mask = LayerMask::default();
+	let mut mask = BitLayer::default();
 	let mut heightmap_builder = HeightMapBuilder::new();
 
 	for chunk in column.iter().rev() {

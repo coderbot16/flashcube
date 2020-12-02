@@ -4,8 +4,8 @@ use bit_vec::BitVec;
 use std::cmp;
 use std::ops::{Index, IndexMut};
 use vocs::component::LayerStorage;
-use vocs::mask::{LayerMask, Mask};
-use vocs::nibbles::{u4, LayerNibbles};
+use vocs::mask::{BitLayer, Mask};
+use vocs::nibbles::{u4, NibbleLayer};
 use vocs::packed::PackedCube;
 use vocs::position::{CubePosition, LayerPosition};
 
@@ -13,12 +13,12 @@ pub use compute::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CubeHeightMap {
-	heights: LayerNibbles,
-	is_filled: LayerMask,
+	heights: NibbleLayer,
+	is_filled: BitLayer,
 }
 
 impl CubeHeightMap {
-	pub fn build(chunk: &PackedCube, matches: &BitVec, mut is_filled: LayerMask) -> Self {
+	pub fn build(chunk: &PackedCube, matches: &BitVec, mut is_filled: BitLayer) -> Self {
 		for position in LayerPosition::enumerate() {
 			let chunk_position = CubePosition::from_layer(15, position);
 			let matches = matches.get(chunk.get(chunk_position) as usize).unwrap();
@@ -27,10 +27,10 @@ impl CubeHeightMap {
 		}
 
 		if is_filled.is_filled(true) {
-			return CubeHeightMap { heights: LayerNibbles::default(), is_filled };
+			return CubeHeightMap { heights: NibbleLayer::default(), is_filled };
 		}
 
-		let mut heights = LayerNibbles::default();
+		let mut heights = NibbleLayer::default();
 
 		for layer in LayerPosition::enumerate() {
 			if is_filled[layer] {
@@ -51,15 +51,15 @@ impl CubeHeightMap {
 		CubeHeightMap { heights, is_filled }
 	}
 
-	pub fn heightmap(&self) -> &LayerNibbles {
+	pub fn heightmap(&self) -> &NibbleLayer {
 		&self.heights
 	}
 
-	pub fn is_filled(&self) -> &LayerMask {
+	pub fn is_filled(&self) -> &BitLayer {
 		&self.is_filled
 	}
 
-	pub fn into_mask(mut self) -> LayerMask {
+	pub fn into_mask(mut self) -> BitLayer {
 		for position in LayerPosition::enumerate() {
 			let height = self.heights.get(position);
 
@@ -81,7 +81,7 @@ impl ColumnHeightMap {
 
 	pub fn slice(&self, chunk_y: u4) -> CubeHeightMap {
 		let mut sliced =
-			CubeHeightMap { heights: LayerNibbles::default(), is_filled: LayerMask::default() };
+			CubeHeightMap { heights: NibbleLayer::default(), is_filled: BitLayer::default() };
 
 		let base = chunk_y.raw() as u32 * 16;
 
@@ -134,7 +134,7 @@ impl HeightMapBuilder {
 		HeightMapBuilder { heightmap: ColumnHeightMap::new(), chunk_y: 15 }
 	}
 
-	pub fn add(&mut self, slice: CubeHeightMap) -> LayerMask {
+	pub fn add(&mut self, slice: CubeHeightMap) -> BitLayer {
 		assert_ne!(
 			self.chunk_y, 255,
 			"Tried to add too many CubeHeightMap slices to HeightMapBuilder"

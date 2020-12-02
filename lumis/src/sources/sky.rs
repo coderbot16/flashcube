@@ -2,8 +2,8 @@ use crate::heightmap::CubeHeightMap;
 use crate::sources::LightSources;
 use std::cmp;
 use vocs::component::{CubeStorage, LayerStorage};
-use vocs::mask::{LayerMask, Mask};
-use vocs::nibbles::{u4, NibbleCube, LayerNibbles};
+use vocs::mask::{BitLayer, Mask};
+use vocs::nibbles::{u4, NibbleCube, NibbleLayer};
 use vocs::position::{dir, CubePosition, LayerPosition};
 use vocs::view::{MaskOffset, SpillBitCube};
 
@@ -15,11 +15,11 @@ impl<'h> SkyLightSources<'h> {
 		SkyLightSources(height_map)
 	}
 
-	pub fn heightmap(&self) -> &LayerNibbles {
+	pub fn heightmap(&self) -> &NibbleLayer {
 		self.0.heightmap()
 	}
 
-	fn no_light(&self) -> &LayerMask {
+	fn no_light(&self) -> &BitLayer {
 		self.0.is_filled()
 	}
 }

@@ -1,6 +1,6 @@
 use std::mem;
 use vocs::component::{CubeStorage, LayerStorage};
-use vocs::mask::{BitCube, LayerMask, Mask};
+use vocs::mask::{BitCube, BitLayer, Mask};
 use vocs::position::{dir, CubePosition};
 use vocs::view::{Directional, MaskOffset, SpillBitCube, SplitDirectional};
 
@@ -79,10 +79,10 @@ impl CubeQueue {
 	}
 }
 
-pub struct CubeQueueSpills(Directional<LayerMask>);
+pub struct CubeQueueSpills(Directional<BitLayer>);
 
 impl CubeQueueSpills {
-	pub(crate) fn split(self) -> SplitDirectional<LayerMask> {
+	pub(crate) fn split(self) -> SplitDirectional<BitLayer> {
 		self.0.split()
 	}
 }
@@ -90,12 +90,12 @@ impl CubeQueueSpills {
 impl Default for CubeQueueSpills {
 	fn default() -> CubeQueueSpills {
 		CubeQueueSpills(Directional::combine(SplitDirectional {
-			plus_x: LayerMask::default(),
-			minus_x: LayerMask::default(),
-			plus_z: LayerMask::default(),
-			minus_z: LayerMask::default(),
-			up: LayerMask::default(),
-			down: LayerMask::default(),
+			plus_x: BitLayer::default(),
+			minus_x: BitLayer::default(),
+			plus_z: BitLayer::default(),
+			minus_z: BitLayer::default(),
+			up: BitLayer::default(),
+			down: BitLayer::default(),
 		}))
 	}
 }

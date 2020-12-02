@@ -1,5 +1,5 @@
 use crate::position::{GlobalSectorPosition, GlobalColumnPosition};
-use crate::mask::{Mask, LayerMask, Scan, ScanClear};
+use crate::mask::{Mask, BitLayer, Scan, ScanClear};
 use std::collections::HashMap;
 use std::collections::hash_map::{Entry, Iter, IterMut};
 use std::ops::Index;
@@ -7,23 +7,23 @@ use crate::component::*;
 
 const FALSE_REF: &bool = &false;
 
-pub struct ColumnsMask(HashMap<GlobalSectorPosition, LayerMask>);
+pub struct ColumnsMask(HashMap<GlobalSectorPosition, BitLayer>);
 
 impl ColumnsMask {
 	pub fn new() -> Self {
 		ColumnsMask(HashMap::new())
 	}
 
-	pub fn sectors(&self) -> Iter<GlobalSectorPosition, LayerMask> {
+	pub fn sectors(&self) -> Iter<GlobalSectorPosition, BitLayer> {
 		self.0.iter()
 	}
 
 	// TODO: If the user clears the masks returned by iter_mut, the ColumnsMask will never remove them.
-	pub fn sectors_mut(&mut self) -> IterMut<GlobalSectorPosition, LayerMask> {
+	pub fn sectors_mut(&mut self) -> IterMut<GlobalSectorPosition, BitLayer> {
 		self.0.iter_mut()
 	}
 
-	pub fn sector(&self, coordinates: GlobalSectorPosition) -> Option<&LayerMask> {
+	pub fn sector(&self, coordinates: GlobalSectorPosition) -> Option<&BitLayer> {
 		self.0.get(&coordinates)
 	}
 
@@ -32,7 +32,7 @@ impl ColumnsMask {
 	}
 
 	pub fn fill_sector(&mut self, coordinates: GlobalSectorPosition) {
-		let mut mask = LayerMask::default();
+		let mut mask = BitLayer::default();
 		mask.fill(true);
 
 		self.0.insert(coordinates, mask);
@@ -64,7 +64,7 @@ impl Mask<GlobalColumnPosition> for ColumnsMask {
 	fn set_true(&mut self, column: GlobalColumnPosition) {
 		let (sector, position) = (column.global_sector(), column.local_layer());
 
-		self.0.entry(sector).or_insert(LayerMask::default()).set_true(position);
+		self.0.entry(sector).or_insert(BitLayer::default()).set_true(position);
 	}
 
 	fn set_or(&mut self, column: GlobalColumnPosition, value: bool) {

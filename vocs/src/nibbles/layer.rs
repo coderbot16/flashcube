@@ -5,8 +5,8 @@ use crate::component::LayerStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
 /// Indexed with LayerPosition.
-pub struct LayerNibbles([u4x2; 128]);
-impl LayerNibbles {
+pub struct NibbleLayer([u4x2; 128]);
+impl NibbleLayer {
 	/// Sets a value, without clearing what was there previously.
 	/// This uses the `u4x2::replace_or` function internally, and shares the same semantics.
 	/// This can be used as an optimization to avoid clearing an already cleared value when operating
@@ -27,7 +27,7 @@ impl LayerNibbles {
 	}
 }
 
-impl LayerStorage<u4> for LayerNibbles {
+impl LayerStorage<u4> for NibbleLayer {
 	fn get(&self, at: LayerPosition) -> u4 {
 		let (index, shift) = nibble_index(at.zx() as usize);
 
@@ -61,32 +61,32 @@ impl LayerStorage<u4> for LayerNibbles {
 	}
 }
 
-impl Default for LayerNibbles {
+impl Default for NibbleLayer {
 	fn default() -> Self {
-		LayerNibbles([u4x2::default(); 128])
+		NibbleLayer([u4x2::default(); 128])
 	}
 }
 
-impl Debug for LayerNibbles {
+impl Debug for NibbleLayer {
 	fn fmt(&self, f: &mut Formatter) -> Result {
 		write!(f, "{:?}", &self.0[..])
 	}
 }
 
-impl Clone for LayerNibbles {
+impl Clone for NibbleLayer {
 	fn clone(&self) -> Self {
 		let mut other = [u4x2::default(); 128];
 
 		other.copy_from_slice(&self.0[..]);
 
-		LayerNibbles(other)
+		NibbleLayer(other)
 	}
 }
 
-impl PartialEq for LayerNibbles {
-	fn eq(&self, other: &LayerNibbles) -> bool {
+impl PartialEq for NibbleLayer {
+	fn eq(&self, other: &NibbleLayer) -> bool {
 		&self.0[..] == &other.0[..]
 	}
 }
 
-impl Eq for LayerNibbles {}
+impl Eq for NibbleLayer {}

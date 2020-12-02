@@ -66,7 +66,7 @@ pub mod position;
 ///  * Queues for block updates
 ///  * Marking exploded blocks in a chunk
 ///
-/// There are 3 variants: LayerMask, BitCube, and an implementation of Mask for BitVec. LayerMask is for a 16x16 flat layer.
+/// There are 3 variants: BitLayer, BitCube, and an implementation of Mask for BitVec. BitLayer is for a 16x16 flat layer.
 /// BitCube is for a 16x16x16 cube. Finally, BitVec is for arbitrary arrays of bits.
 pub mod mask;
 

@@ -4,7 +4,7 @@ use i73_noise::octaves::SimplexOctaves;
 use i73_noise::sample::Sample;
 use java_rand::Random;
 use vocs::component::LayerStorage;
-use vocs::mask::LayerMask;
+use vocs::mask::BitLayer;
 use vocs::position::LayerPosition;
 
 #[derive(Copy, Clone, Debug)]
@@ -153,8 +153,8 @@ impl Climate {
 	}
 }
 
-pub fn freezing_layer(climates: &Layer<Climate>) -> LayerMask {
-	let mut out = LayerMask::default();
+pub fn freezing_layer(climates: &Layer<Climate>) -> BitLayer {
+	let mut out = BitLayer::default();
 
 	for position in LayerPosition::enumerate() {
 		out.set(position, climates.get(position).freezing());

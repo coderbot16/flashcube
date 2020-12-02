@@ -9,7 +9,7 @@ use crate::position::{CubePosition, LayerPosition};
 pub use self::palette::Palette;
 
 pub type IndexedCube<B> = IndexedStorage<B, CubePosition>;
-pub type LayerIndexed<B> = IndexedStorage<B, LayerPosition>;
+pub type IndexedLayer<B> = IndexedStorage<B, LayerPosition>;
 
 pub trait Target: Eq + Hash + Clone + Debug {}
 impl<T> Target for T where T: Eq + Hash + Clone + Debug {}

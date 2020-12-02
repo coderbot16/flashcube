@@ -13,7 +13,7 @@ use i73_base::Layer;
 use i73_base::block::Block;
 use segmented::Segmented;
 use std::borrow::Cow;
-use vocs::indexed::{LayerIndexed, Target};
+use vocs::indexed::{IndexedLayer, Target};
 use vocs::position::LayerPosition;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
@@ -116,9 +116,9 @@ impl<B: Clone> Lookup<B> {
 }
 
 impl<B: Target> Lookup<B> {
-	pub fn climates_to_biomes(&self, climates: &Layer<Climate>) -> LayerIndexed<B> {
+	pub fn climates_to_biomes(&self, climates: &Layer<Climate>) -> IndexedLayer<B> {
 		// TODO: Avoid the default lookup and clone.
-		let mut layer = LayerIndexed::new(2, self.lookup(Climate::alpha()).clone());
+		let mut layer = IndexedLayer::new(2, self.lookup(Climate::alpha()).clone());
 
 		for position in LayerPosition::enumerate() {
 			let climate = climates.get(position);

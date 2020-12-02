@@ -2,7 +2,7 @@ use crate::queue::CubeQueueSpills;
 use std::mem;
 use vocs::component::LayerStorage;
 use vocs::mask::BitCube;
-use vocs::mask::LayerMask;
+use vocs::mask::BitLayer;
 use vocs::position::{dir, CubePosition, LayerPosition, Offset};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
@@ -70,13 +70,13 @@ impl SectorQueue {
 		});
 	}
 
-	fn spill<D, F>(&mut self, origin: CubePosition, dir: D, layer: LayerMask, mut f: F)
+	fn spill<D, F>(&mut self, origin: CubePosition, dir: D, layer: BitLayer, mut f: F)
 	where
 		CubePosition: Offset<D, Spill = LayerPosition>,
-		F: FnMut(&mut BitCube, LayerMask),
+		F: FnMut(&mut BitCube, BitLayer),
 		D: Copy,
-		Directional<Layer<Option<LayerMask>>>:
-			std::ops::IndexMut<D, Output = Layer<Option<LayerMask>>>,
+		Directional<Layer<Option<BitLayer>>>:
+			std::ops::IndexMut<D, Output = Layer<Option<BitLayer>>>,
 	{
 		// If the layer is empty, don't bother adding / merging it.
 		if layer.is_filled(false) {
@@ -98,7 +98,7 @@ impl SectorQueue {
 	}
 }
 
-pub struct SectorSpills(/*TODO: make private*/ pub Directional<Layer<Option<LayerMask>>>);
+pub struct SectorSpills(/*TODO: make private*/ pub Directional<Layer<Option<BitLayer>>>);
 
 impl Default for SectorSpills {
 	fn default() -> SectorSpills {

@@ -1,5 +1,5 @@
 use crate::position::{CubePosition, LayerPosition, Offset};
-use crate::mask::{Mask, LayerMask};
+use crate::mask::{Mask, BitLayer};
 use crate::view::Directional;
 use std::ops::IndexMut;
 use crate::component::{Component, CubeStorage, LayerStorage};
@@ -35,7 +35,7 @@ impl<D, C> StorageOffset<CubePosition, D, C> for SpillChunk<C>
 }
 
 impl<D> MaskOffset<CubePosition, D> for SpillChunk<bool>
-	where Directional<LayerMask>: IndexMut<D, Output=LayerMask>,
+	where Directional<BitLayer>: IndexMut<D, Output=BitLayer>,
 		  CubePosition: Offset<D, Spill=LayerPosition>,
 		  D: Copy {
 	fn set_offset_true(&mut self, position: CubePosition, d: D) {
