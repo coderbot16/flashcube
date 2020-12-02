@@ -1,22 +1,22 @@
 pub struct ClassicWorld {
-	name: String,
-	uuid: [u8; 16],
-	time_created: i64,
-	last_accessed: i64,
-	last_modified: i64,
-	spawn: (i16, i16, i16),
-	blocks: BlockVolume
+	pub name: String,
+	pub uuid: [u8; 16],
+	pub time_created: i64,
+	pub last_accessed: i64,
+	pub last_modified: i64,
+	pub spawn: (i16, i16, i16),
+	pub blocks: BlockVolume
 }
 
 pub struct BlockVolume {
-	blocks: Box<[u8]>,
-	x_size: usize,
-	y_size: usize,
-	z_size: usize
+	pub blocks: Box<[u8]>,
+	pub x_size: usize,
+	pub y_size: usize,
+	pub z_size: usize
 }
 
 impl BlockVolume {
-	fn index(&self, x: usize, y: usize, z: usize) -> usize {
+	pub fn index(&self, x: usize, y: usize, z: usize) -> usize {
 		assert!(x < self.x_size);
 		assert!(y < self.y_size);
 		assert!(z < self.z_size);

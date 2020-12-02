@@ -12,7 +12,7 @@ use i73_image::colorizer::{colorize_grass, coordinates_to_climate};
 fn main() {
 	let reference_file = fs::File::open("out/image/grasscolor.png").unwrap();
 	let reference =
-		image::load(BufReader::new(reference_file), image::ImageFormat::Png).unwrap().to_rgb();
+		image::load(BufReader::new(reference_file), image::ImageFormat::Png).unwrap().to_rgb8();
 	let mut map = RgbImage::new(256, 256);
 	let mut diff = RgbImage::new(256, 256);
 
