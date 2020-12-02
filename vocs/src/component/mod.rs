@@ -29,9 +29,7 @@ pub trait CubeStorage<V> where V: Clone {
 
 	/// Fills the storage with the value.
 	fn fill(&mut self, value: V) {
-		for index in 0..4096 {
-			let position = CubePosition::from_yzx(index);
-
+		for position in CubePosition::enumerate() {
 			self.set(position, value.clone())
 		}
 	}
@@ -48,9 +46,7 @@ pub trait LayerStorage<V> where V: Clone {
 
 	/// Fills the storage with the value.
 	fn fill(&mut self, value: V) {
-		for index in 0..256u16 {
-			let position = LayerPosition::from_zx(index as u8);
-
+		for position in LayerPosition::enumerate() {
 			self.set(position, value.clone())
 		}
 	}

@@ -59,7 +59,6 @@ extern crate splitmut;
 
 pub mod world;
 pub mod position;
-// TODO[not yet implemented]: pub mod system;
 
 /// Bit mask facilities. Very useful for marking things, such as:
 ///
