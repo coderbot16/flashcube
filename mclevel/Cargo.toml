@@ -1,0 +1,6 @@
+[workspace]
+members = [
+	"classicworld",
+	"mca",
+	"region"
+]
