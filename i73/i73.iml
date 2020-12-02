@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="RUST_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-frontend/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/frontend/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/frontend/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/frontend/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-noise/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/noise/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/noise/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/noise/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-biome/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/biome/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/biome/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/biome/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-shape/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/shape/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/shape/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/shape/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-biome/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-biome/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-biome/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-shape/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-shape/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-shape/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-noise/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-noise/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-noise/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-frontend/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-frontend/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-frontend/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-trig/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-base/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-terrain/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-structure/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-decorator/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/i73-image/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/biome/target" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-base/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-biome/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-decorator/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-frontend/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-image/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-noise/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-shape/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-structure/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-terrain/target" />
+      <excludeFolder url="file://$MODULE_DIR$/i73-trig/target" />
+      <excludeFolder url="file://$MODULE_DIR$/incr" />
+      <excludeFolder url="file://$MODULE_DIR$/noise/target" />
+      <excludeFolder url="file://$MODULE_DIR$/shape/target" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

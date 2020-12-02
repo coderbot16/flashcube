@@ -1,0 +1,7 @@
+hard_tabs = true
+newline_style = "Unix"
+use_small_heuristics = "Max"
+fn_args_layout = "Compressed"
+edition = "2018"
+use_try_shorthand = true
+print_misformatted_file_names = true

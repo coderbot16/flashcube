@@ -1,0 +1,24 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+authors = ["coderbot <coderbot16@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+vocs = { path = "../../vocs" }
+lumis = { path = "../../lumis" }
+java-rand = "0.2.0"
+nbt-turbo = { git = "https://gitlab.com/coderbot16/nbt-turbo" }
+mca = { path = "../../mclevel/mca" }
+region = { path = "../../mclevel/region" }
+
+i73-noise = { path = "../i73-noise" }
+i73-biome = { path = "../i73-biome" }
+i73-base = { path = "../i73-base" }
+i73-terrain = { path = "../i73-terrain" }
+i73-structure = { path = "../i73-structure" }
+i73-decorator = { path = "../i73-decorator" }
+
+[dependencies.deflate]
+version = "0.7"
+features = ["gzip"]

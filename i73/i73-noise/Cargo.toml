@@ -1,0 +1,11 @@
+[package]
+name = "i73-noise"
+version = "0.1.0"
+authors = ["coderbot <coderbot16@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+cgmath = "0.16"
+java-rand = "0.2.0"
+vocs = { path = "../../vocs" }
+i73-base = { path = "../i73-base" }
