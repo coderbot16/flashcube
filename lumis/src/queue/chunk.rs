@@ -1,19 +1,19 @@
 use std::mem;
-use vocs::component::{ChunkStorage, LayerStorage};
+use vocs::component::{CubeStorage, LayerStorage};
 use vocs::mask::{BitCube, LayerMask, Mask};
 use vocs::position::{dir, CubePosition};
 use vocs::view::{Directional, MaskOffset, SpillBitCube, SplitDirectional};
 
-/// A double-buffered queue. Useful for breadth-first search algorithms.
+/// A double-buffered cube queue. Useful for breadth-first search algorithms.
 #[derive(Clone)]
-pub struct ChunkQueue {
+pub struct CubeQueue {
 	front: BitCube,
 	back: SpillBitCube,
 }
 
-impl ChunkQueue {
-	pub fn new() -> ChunkQueue {
-		ChunkQueue { front: BitCube::default(), back: SpillBitCube::default() }
+impl CubeQueue {
+	pub fn new() -> CubeQueue {
+		CubeQueue { front: BitCube::default(), back: SpillBitCube::default() }
 	}
 
 	pub fn clear(&mut self) {
@@ -39,8 +39,8 @@ impl ChunkQueue {
 		self.back.spills[dir::MinusZ].fill(false);
 	}
 
-	pub fn reset_spills(&mut self) -> ChunkSpills {
-		let mut spills = ChunkSpills::default();
+	pub fn reset_spills(&mut self) -> CubeQueueSpills {
+		let mut spills = CubeQueueSpills::default();
 
 		mem::swap(&mut spills.0, &mut self.back.spills);
 
@@ -79,17 +79,17 @@ impl ChunkQueue {
 	}
 }
 
-pub struct ChunkSpills(Directional<LayerMask>);
+pub struct CubeQueueSpills(Directional<LayerMask>);
 
-impl ChunkSpills {
+impl CubeQueueSpills {
 	pub(crate) fn split(self) -> SplitDirectional<LayerMask> {
 		self.0.split()
 	}
 }
 
-impl Default for ChunkSpills {
-	fn default() -> ChunkSpills {
-		ChunkSpills(Directional::combine(SplitDirectional {
+impl Default for CubeQueueSpills {
+	fn default() -> CubeQueueSpills {
+		CubeQueueSpills(Directional::combine(SplitDirectional {
 			plus_x: LayerMask::default(),
 			minus_x: LayerMask::default(),
 			plus_z: LayerMask::default(),

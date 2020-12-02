@@ -1,6 +1,6 @@
-use crate::heightmap::{ChunkHeightMap, ColumnHeightMap};
+use crate::heightmap::{CubeHeightMap, ColumnHeightMap};
 use crate::light::Lighting;
-use crate::queue::{ChunkQueue, SectorQueue, WorldQueue};
+use crate::queue::{CubeQueue, SectorQueue, WorldQueue};
 use crate::sources::SkyLightSources;
 
 use rayon::iter::ParallelBridge;
@@ -67,7 +67,7 @@ where
 			let mut light = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
 
 			// TODO: Reuse this!
-			let mut queue = ChunkQueue::new();
+			let mut queue = CubeQueue::new();
 			light.initial(&mut queue);
 			light.apply(blocks, &mut queue);
 
@@ -122,15 +122,15 @@ fn complete_chunk<'a, B, F>(
 	position: CubePosition, blocks: &'a IndexedCube<B>,
 	sky_light: &SharedSector<NoPack<NibbleCube>>,
 	sky_light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>, incomplete: BitCube,
-	heightmap: &ChunkHeightMap, opacities: &'a F,
-) -> ChunkQueue
+	heightmap: &CubeHeightMap, opacities: &'a F,
+) -> CubeQueue
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 {
 	// TODO: Cache these things!
 	let empty_lighting = NibbleCube::default();
-	let mut queue = ChunkQueue::new();
+	let mut queue = CubeQueue::new();
 
 	let (blocks, palette) = blocks.freeze();
 

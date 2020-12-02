@@ -1,18 +1,18 @@
-use crate::heightmap::ChunkHeightMap;
+use crate::heightmap::CubeHeightMap;
 use crate::sources::LightSources;
 use std::cmp;
-use vocs::component::{ChunkStorage, LayerStorage};
+use vocs::component::{CubeStorage, LayerStorage};
 use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, NibbleCube, LayerNibbles};
 use vocs::position::{dir, CubePosition, LayerPosition};
 use vocs::view::{MaskOffset, SpillBitCube};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct SkyLightSources<'h>(&'h ChunkHeightMap);
+pub struct SkyLightSources<'h>(&'h CubeHeightMap);
 
 impl<'h> SkyLightSources<'h> {
-	pub fn new(heightmap: &'h ChunkHeightMap) -> Self {
-		SkyLightSources(heightmap)
+	pub fn new(height_map: &'h CubeHeightMap) -> Self {
+		SkyLightSources(height_map)
 	}
 
 	pub fn heightmap(&self) -> &LayerNibbles {
@@ -33,7 +33,7 @@ impl<'h> LightSources for SkyLightSources<'h> {
 		u4::new(if position.y() >= height { 15 } else { 0 })
 	}
 
-	fn initial(&self, data: &mut NibbleCube, mask: &mut SpillBitCube) {
+	fn initial(&self, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
 		if self.no_light().is_filled(true) {
 			// Note: This assumes that the chunk is already filled with zeros...
 
@@ -56,11 +56,11 @@ impl<'h> LightSources for SkyLightSources<'h> {
 			if self.heightmap().is_filled(u4::new(0)) {
 				data.fill(u4::new(15));
 
-				mask.spills[dir::Down].fill(true);
-				mask.spills[dir::PlusX].fill(true);
-				mask.spills[dir::MinusX].fill(true);
-				mask.spills[dir::PlusZ].fill(true);
-				mask.spills[dir::MinusZ].fill(true);
+				enqueued.spills[dir::Down].fill(true);
+				enqueued.spills[dir::PlusX].fill(true);
+				enqueued.spills[dir::MinusX].fill(true);
+				enqueued.spills[dir::PlusZ].fill(true);
+				enqueued.spills[dir::MinusZ].fill(true);
 
 				// The chunk is entirely filled with light.
 				return;
@@ -87,8 +87,8 @@ impl<'h> LightSources for SkyLightSources<'h> {
 				for y in max_heightmap..16 {
 					let layer = LayerPosition::new(y, z);
 
-					mask.spills[dir::PlusX].set_true(layer);
-					mask.spills[dir::MinusX].set_true(layer);
+					enqueued.spills[dir::PlusX].set_true(layer);
+					enqueued.spills[dir::MinusX].set_true(layer);
 				}
 			}
 
@@ -97,8 +97,8 @@ impl<'h> LightSources for SkyLightSources<'h> {
 				for x in 0..16 {
 					let layer = LayerPosition::new(x, y);
 
-					mask.spills[dir::PlusZ].set_true(layer);
-					mask.spills[dir::MinusZ].set_true(layer);
+					enqueued.spills[dir::PlusZ].set_true(layer);
+					enqueued.spills[dir::MinusZ].set_true(layer);
 				}
 			}
 
@@ -122,17 +122,17 @@ impl<'h> LightSources for SkyLightSources<'h> {
 			// We do not need to enqueue the block in the upper direction, as it is already the maximum light value.
 			// But, we need to enqueue the block below the heightmap value.
 
-			mask.set_offset_true(CubePosition::from_layer(lowest, position), dir::Down);
+			enqueued.set_offset_true(CubePosition::from_layer(lowest, position), dir::Down);
 
 			for y in lowest..max_heightmap {
 				let position = CubePosition::from_layer(y, position);
 
 				data.set(position, u4::new(15));
 
-				mask.set_offset_true(position, dir::MinusX);
-				mask.set_offset_true(position, dir::MinusZ);
-				mask.set_offset_true(position, dir::PlusX);
-				mask.set_offset_true(position, dir::PlusZ);
+				enqueued.set_offset_true(position, dir::MinusX);
+				enqueued.set_offset_true(position, dir::MinusZ);
+				enqueued.set_offset_true(position, dir::PlusX);
+				enqueued.set_offset_true(position, dir::PlusZ);
 			}
 		}
 	}

@@ -6,19 +6,19 @@ use std::ops::{Index, IndexMut};
 use vocs::component::LayerStorage;
 use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, LayerNibbles};
-use vocs::packed::ChunkPacked;
+use vocs::packed::PackedCube;
 use vocs::position::{CubePosition, LayerPosition};
 
 pub use compute::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ChunkHeightMap {
+pub struct CubeHeightMap {
 	heights: LayerNibbles,
 	is_filled: LayerMask,
 }
 
-impl ChunkHeightMap {
-	pub fn build(chunk: &ChunkPacked, matches: &BitVec, mut is_filled: LayerMask) -> Self {
+impl CubeHeightMap {
+	pub fn build(chunk: &PackedCube, matches: &BitVec, mut is_filled: LayerMask) -> Self {
 		for position in LayerPosition::enumerate() {
 			let chunk_position = CubePosition::from_layer(15, position);
 			let matches = matches.get(chunk.get(chunk_position) as usize).unwrap();
@@ -27,10 +27,10 @@ impl ChunkHeightMap {
 		}
 
 		if is_filled.is_filled(true) {
-			return ChunkHeightMap { heights: LayerNibbles::default(), is_filled };
+			return CubeHeightMap { heights: LayerNibbles::default(), is_filled };
 		}
 
-		let mut heightmap = LayerNibbles::default();
+		let mut heights = LayerNibbles::default();
 
 		for layer in LayerPosition::enumerate() {
 			if is_filled[layer] {
@@ -41,14 +41,14 @@ impl ChunkHeightMap {
 				let position = CubePosition::from_layer(y, layer);
 
 				if matches.get(chunk.get(position) as usize).unwrap() {
-					heightmap.set(position.layer(), u4::new(y + 1));
+					heights.set(position.layer(), u4::new(y + 1));
 
 					break;
 				}
 			}
 		}
 
-		ChunkHeightMap { heights: heightmap, is_filled }
+		CubeHeightMap { heights, is_filled }
 	}
 
 	pub fn heightmap(&self) -> &LayerNibbles {
@@ -79,9 +79,9 @@ impl ColumnHeightMap {
 		ColumnHeightMap { heights: Box::new([0; 256]) }
 	}
 
-	pub fn slice(&self, chunk_y: u4) -> ChunkHeightMap {
+	pub fn slice(&self, chunk_y: u4) -> CubeHeightMap {
 		let mut sliced =
-			ChunkHeightMap { heights: LayerNibbles::default(), is_filled: LayerMask::default() };
+			CubeHeightMap { heights: LayerNibbles::default(), is_filled: LayerMask::default() };
 
 		let base = chunk_y.raw() as u32 * 16;
 
@@ -134,10 +134,10 @@ impl HeightMapBuilder {
 		HeightMapBuilder { heightmap: ColumnHeightMap::new(), chunk_y: 15 }
 	}
 
-	pub fn add(&mut self, slice: ChunkHeightMap) -> LayerMask {
+	pub fn add(&mut self, slice: CubeHeightMap) -> LayerMask {
 		assert_ne!(
 			self.chunk_y, 255,
-			"Tried to add too many ChunkHeightMap slices to HeightMapBuilder"
+			"Tried to add too many CubeHeightMap slices to HeightMapBuilder"
 		);
 
 		let base = (self.chunk_y as u32) * 16;
@@ -169,7 +169,7 @@ impl HeightMapBuilder {
 	pub fn build(self) -> ColumnHeightMap {
 		assert_eq!(
 			self.chunk_y, 255,
-			"HeightMapBuilder::build called before all ChunkHeightMap slices were provided"
+			"HeightMapBuilder::build called before all CubeHeightMap slices were provided"
 		);
 
 		self.heightmap

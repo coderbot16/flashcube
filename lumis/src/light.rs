@@ -1,9 +1,9 @@
-use crate::queue::ChunkQueue;
+use crate::queue::CubeQueue;
 use crate::sources::LightSources;
 use std::cmp::max;
-use vocs::component::ChunkStorage;
+use vocs::component::CubeStorage;
 use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
-use vocs::packed::ChunkPacked;
+use vocs::packed::PackedCube;
 use vocs::position::{dir, CubePosition, Offset};
 use vocs::view::Directional;
 
@@ -33,11 +33,11 @@ where
 		self.data.get(at)
 	}
 
-	pub fn initial(&mut self, queue: &mut ChunkQueue) {
+	pub fn initial(&mut self, queue: &mut CubeQueue) {
 		self.sources.initial(&mut self.data, queue.mask_mut())
 	}
 
-	fn update(&mut self, queue: &mut ChunkQueue, at: CubePosition, opacity: u4) {
+	fn update(&mut self, queue: &mut CubeQueue, at: CubePosition, opacity: u4) {
 		let max_value = max(
 			max(
 				max(
@@ -76,7 +76,7 @@ where
 		}
 	}
 
-	pub fn apply(&mut self, chunk: &ChunkPacked, queue: &mut ChunkQueue) {
+	pub fn apply(&mut self, chunk: &PackedCube, queue: &mut CubeQueue) {
 		while queue.flip() {
 			while let Some(at) = queue.pop_first() {
 				let opacity = self.opacity.get(chunk.get(at) as usize);

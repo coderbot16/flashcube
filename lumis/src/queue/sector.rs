@@ -1,4 +1,4 @@
-use crate::queue::ChunkSpills;
+use crate::queue::CubeQueueSpills;
 use std::mem;
 use vocs::component::LayerStorage;
 use vocs::mask::BitCube;
@@ -49,7 +49,7 @@ impl SectorQueue {
 		!self.front.is_empty()
 	}
 
-	pub fn enqueue_spills(&mut self, origin: CubePosition, spills: ChunkSpills) {
+	pub fn enqueue_spills(&mut self, origin: CubePosition, spills: CubeQueueSpills) {
 		let spills = spills.split();
 
 		self.spill(origin, dir::Up, spills.up, |mask, layer| mask.layer_zx_mut(0).combine(&layer));

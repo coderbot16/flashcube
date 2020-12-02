@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter, Result};
 use crate::position::CubePosition;
 use super::{u4, nibble_index};
-use crate::component::ChunkStorage;
+use crate::component::CubeStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
 /// Indexed with CubePosition.
@@ -47,7 +47,7 @@ impl NibbleCube {
 	}
 }
 
-impl ChunkStorage<u4> for NibbleCube {
+impl CubeStorage<u4> for NibbleCube {
 	fn get(&self, at: CubePosition) -> u4 {
 		let (index, shift) = nibble_index(at.yzx() as usize);
 

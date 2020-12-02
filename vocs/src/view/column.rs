@@ -1,7 +1,7 @@
 use crate::indexed::{Target, IndexedCube};
 use crate::indexed::Palette;
 use crate::position::ColumnPosition;
-use crate::packed::ChunkPacked;
+use crate::packed::PackedCube;
 
 #[derive(Debug)]
 pub struct ColumnMut<'c, B>(pub [&'c mut IndexedCube<B>; 16]) where B: 'c + Target;
@@ -106,7 +106,7 @@ impl<'c, B> ColumnMut<'c, B> where B: 'c + Target {
 }
 
 #[derive(Debug)]
-pub struct ColumnBlocks<'a>([&'a mut ChunkPacked; 16]);
+pub struct ColumnBlocks<'a>([&'a mut PackedCube; 16]);
 impl<'a> ColumnBlocks<'a> {
 	pub fn get<'p, B>(&self, at: ColumnPosition, palettes: &ColumnPalettes<'p, B>) -> &'p B where B: Target {
 		let chunk_y = at.chunk_y() as usize;

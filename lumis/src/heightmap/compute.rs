@@ -1,6 +1,6 @@
 use bit_vec::BitVec;
 
-use crate::heightmap::{ChunkHeightMap, ColumnHeightMap, HeightMapBuilder};
+use crate::heightmap::{CubeHeightMap, ColumnHeightMap, HeightMapBuilder};
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::ParallelIterator;
@@ -76,7 +76,7 @@ where
 		let predicate_palette: BitVec =
 			palette.iter().map(|block| block.as_ref().map(predicate).unwrap_or(false)).collect();
 
-		let chunk_heightmap = ChunkHeightMap::build(blocks, &predicate_palette, mask);
+		let chunk_heightmap = CubeHeightMap::build(blocks, &predicate_palette, mask);
 		mask = heightmap_builder.add(chunk_heightmap);
 	}
 

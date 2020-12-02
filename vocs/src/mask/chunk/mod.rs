@@ -1,5 +1,5 @@
 use crate::mask::{Mask, u1x64};
-use crate::component::ChunkStorage;
+use crate::component::CubeStorage;
 use crate::position::{CubePosition, dir, Offset};
 use std::ops::Index;
 use std::cmp::PartialEq;
@@ -87,7 +87,7 @@ impl BitCube {
 	}
 }
 
-impl ChunkStorage<bool> for BitCube {
+impl CubeStorage<bool> for BitCube {
 	fn get(&self, position: CubePosition) -> bool {
 		self[position]
 	}

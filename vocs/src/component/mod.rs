@@ -13,14 +13,14 @@ use crate::position::{LayerPosition, CubePosition};
 /// A component usable in a comoponent system.
 pub trait Component: Sized + Clone + Default {
 	/// Dense storage in a 16x16x16 chunk.
-	type Chunk: ChunkStorage<Self> + Default;
+	type Chunk: CubeStorage<Self> + Default;
 	/// Dense storage in a 16x16 layer.
 	type Layer: LayerStorage<Self> + Default;
 	/// Dense storage of an unknown length.
 	type Bulk;
 }
 
-pub trait ChunkStorage<V> where V: Clone {
+pub trait CubeStorage<V> where V: Clone {
 	/// Gets the value at the position.
 	fn get(&self, position: CubePosition) -> V;
 

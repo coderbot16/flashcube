@@ -1,17 +1,17 @@
 use crate::sources::LightSources;
 use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
-use vocs::packed::ChunkPacked;
+use vocs::packed::PackedCube;
 use vocs::position::CubePosition;
 use vocs::view::SpillBitCube;
 
 #[derive(Debug)]
 pub struct BlockLightSources<'c> {
 	emission: BulkNibbles,
-	chunk: &'c ChunkPacked,
+	chunk: &'c PackedCube,
 }
 
 impl<'c> BlockLightSources<'c> {
-	pub fn new(chunk: &'c ChunkPacked) -> Self {
+	pub fn new(chunk: &'c PackedCube) -> Self {
 		BlockLightSources { emission: BulkNibbles::new(1 << chunk.bits()), chunk }
 	}
 
