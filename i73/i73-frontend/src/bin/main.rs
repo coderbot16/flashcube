@@ -436,7 +436,7 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 					(y * 512 + z) * 512 + x
 				}
 
-				for position in ChunkPosition::enumerate() {
+				for position in CubePosition::enumerate() {
 					let i = index(
 						position.x() as u32 + x as u32 * 16,
 						position.y() as u32 + y as u32 * 16,

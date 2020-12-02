@@ -25,7 +25,7 @@ impl ColumnPosition {
 		)
 	}
 
-	/// Creates a new ColumnPosition from the given ChunkPosition with an additional section_y value,
+	/// Creates a new ColumnPosition from the given CubePosition with an additional section_y value,
 	/// which determines the column "section" (from 0-16) in which this position resides.
 	pub fn from_chunk(section_y: u8, chunk: CubePosition) -> Self {
 		ColumnPosition::from_yzx (
