@@ -1,4 +1,4 @@
-use crate::position::{ChunkPosition, LayerPosition};
+use crate::position::{CubePosition, LayerPosition};
 use std::fmt::{Debug, Display, Result, Formatter};
 
 const MAX_U56: u64 =  72057594037927935;
@@ -17,8 +17,8 @@ impl GlobalPosition {
 		GlobalPosition { x, y, z }
 	}
 
-	pub fn local_block(&self) -> ChunkPosition {
-		ChunkPosition::new(
+	pub fn local_block(&self) -> CubePosition {
+		CubePosition::new(
 			((self.x) & 15) as u8,
 			  self.y  & 15,
 			((self.z) & 15) as u8
@@ -118,13 +118,13 @@ impl GlobalChunkPosition {
 		GlobalColumnPosition(self.0 & MAX_U56)
 	}
 
-	pub fn local_chunk(&self) -> ChunkPosition {
+	pub fn local_chunk(&self) -> CubePosition {
 		let (z, x) = (
 			(self.0 >> 28) & 15,
 			 self.0        & 15
 		);
 
-		ChunkPosition::new(x as u8, self.y(), z as u8)
+		CubePosition::new(x as u8, self.y(), z as u8)
 	}
 
 	pub fn global_sector(&self) -> GlobalSectorPosition {
@@ -329,7 +329,7 @@ impl Debug for GlobalSectorPosition {
 
 #[cfg(test)]
 mod test {
-	use crate::position::{ChunkPosition, LayerPosition, GlobalPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
+	use crate::position::{CubePosition, LayerPosition, GlobalPosition, GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition};
 
 	// TODO: Test negative coordinates
 
@@ -384,13 +384,13 @@ mod test {
 
 		let (local_block, global_chunk, global_column) = (block.local_block(), block.global_chunk(), block.global_column());
 
-		assert_eq!(local_block, ChunkPosition::new(11, 12, 13));
+		assert_eq!(local_block, CubePosition::new(11, 12, 13));
 		assert_eq!(global_chunk, GlobalChunkPosition::new(13323, 2, 59506));
 		assert_eq!(global_column, GlobalColumnPosition::new(13323, 59506));
 
 		let (local_chunk, local_column, global_sector) = (global_chunk.local_chunk(), global_column.local_layer(), global_chunk.global_sector());
 
-		assert_eq!(local_chunk, ChunkPosition::new(11, 2, 2));
+		assert_eq!(local_chunk, CubePosition::new(11, 2, 2));
 		assert_eq!(local_column, LayerPosition::new(11, 2));
 		assert_eq!(global_sector, GlobalSectorPosition::new(832, 3719));
 	}

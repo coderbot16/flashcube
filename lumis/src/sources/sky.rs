@@ -4,7 +4,7 @@ use std::cmp;
 use vocs::component::{ChunkStorage, LayerStorage};
 use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, ChunkNibbles, LayerNibbles};
-use vocs::position::{dir, ChunkPosition, LayerPosition};
+use vocs::position::{dir, CubePosition, LayerPosition};
 use vocs::view::{MaskOffset, SpillChunkMask};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -25,7 +25,7 @@ impl<'h> SkyLightSources<'h> {
 }
 
 impl<'h> LightSources for SkyLightSources<'h> {
-	fn emission(&self, position: ChunkPosition) -> u4 {
+	fn emission(&self, position: CubePosition) -> u4 {
 		// no_light -> height of 16 or more
 		let height = ((self.no_light()[position.layer()] as u8) << 4)
 			| self.heightmap().get(position.layer()).raw();
@@ -78,7 +78,7 @@ impl<'h> LightSources for SkyLightSources<'h> {
 
 			for y in max_heightmap..16 {
 				for position in LayerPosition::enumerate() {
-					data.set(ChunkPosition::from_layer(y, position), u4::new(15));
+					data.set(CubePosition::from_layer(y, position), u4::new(15));
 				}
 			}
 
@@ -122,10 +122,10 @@ impl<'h> LightSources for SkyLightSources<'h> {
 			// We do not need to enqueue the block in the upper direction, as it is already the maximum light value.
 			// But, we need to enqueue the block below the heightmap value.
 
-			mask.set_offset_true(ChunkPosition::from_layer(lowest, position), dir::Down);
+			mask.set_offset_true(CubePosition::from_layer(lowest, position), dir::Down);
 
 			for y in lowest..max_heightmap {
-				let position = ChunkPosition::from_layer(y, position);
+				let position = CubePosition::from_layer(y, position);
 
 				data.set(position, u4::new(15));
 

@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use vocs::indexed::{ChunkIndexed, Target};
 use vocs::mask::ChunkMask;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
-use vocs::position::{dir, ChunkPosition, GlobalSectorPosition, Offset};
+use vocs::position::{dir, CubePosition, GlobalSectorPosition, Offset};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
@@ -47,7 +47,7 @@ where
 		.enumerate()
 		.par_bridge()
 		.map(|(index, chunk)| {
-			(ChunkPosition::from_yzx(index as u16), chunk.as_ref().expect("TODO").freeze())
+			(CubePosition::from_yzx(index as u16), chunk.as_ref().expect("TODO").freeze())
 		})
 		.for_each(|(position, (blocks, palette))| {
 			let mut opacity = BulkNibbles::new(palette.len());
@@ -119,7 +119,7 @@ where
 }
 
 fn complete_chunk<'a, B, F>(
-	position: ChunkPosition, blocks: &'a ChunkIndexed<B>,
+	position: CubePosition, blocks: &'a ChunkIndexed<B>,
 	sky_light: &SharedSector<NoPack<ChunkNibbles>>,
 	sky_light_neighbors: Directional<&SharedSector<NoPack<ChunkNibbles>>>, incomplete: ChunkMask,
 	heightmap: &ChunkHeightMap, opacities: &'a F,

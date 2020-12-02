@@ -1,5 +1,5 @@
 use crate::mask::{u1x64, ChunkMask, LayerMask};
-use crate::position::{ChunkPosition, LayerPosition};
+use crate::position::{CubePosition, LayerPosition};
 use crate::component::*;
 
 pub struct LayerZxMut<'l> {
@@ -114,7 +114,7 @@ impl<'l> LayerZyMut<'l> {
 
 impl<'l> LayerStorage<bool> for LayerZyMut<'l> {
 	fn get(&self, position: LayerPosition) -> bool {
-		self.mask.get(ChunkPosition::new(self.x, position.x(), position.z()))
+		self.mask.get(CubePosition::new(self.x, position.x(), position.z()))
 	}
 
 	fn is_filled(&self, value: bool) -> bool {
@@ -154,7 +154,7 @@ impl<'l> LayerStorage<bool> for LayerZyMut<'l> {
 	}
 
 	fn set(&mut self, position: LayerPosition, value: bool) {
-		self.mask.set(ChunkPosition::new(self.x, position.x(), position.z()), value)
+		self.mask.set(CubePosition::new(self.x, position.x(), position.z()), value)
 	}
 
 	fn fill(&mut self, value: bool) {
@@ -216,7 +216,7 @@ impl<'l> LayerYxMut<'l> {
 
 impl<'l> LayerStorage<bool> for LayerYxMut<'l> {
 	fn get(&self, position: LayerPosition) -> bool {
-		self.mask.get(ChunkPosition::new(position.x(), position.z(), self.z))
+		self.mask.get(CubePosition::new(position.x(), position.z(), self.z))
 	}
 
 	fn is_filled(&self, value: bool) -> bool {
@@ -245,7 +245,7 @@ impl<'l> LayerStorage<bool> for LayerYxMut<'l> {
 	}
 
 	fn set(&mut self, position: LayerPosition, value: bool) {
-		self.mask.set(ChunkPosition::new(position.x(), position.z(), self.z), value)
+		self.mask.set(CubePosition::new(position.x(), position.z(), self.z), value)
 	}
 
 	fn fill(&mut self, value: bool) {
@@ -278,7 +278,7 @@ impl<'l> LayerStorage<bool> for LayerYxMut<'l> {
 #[cfg(test)]
 mod test {
 	use crate::mask::{LayerMask, ChunkMask};
-	use crate::position::ChunkPosition;
+	use crate::position::CubePosition;
 	use crate::component::*;
 
 	fn verify_masks_equal(direct: &ChunkMask, indirect: &ChunkMask) {
@@ -302,7 +302,7 @@ mod test {
 
 		for z in 0..16 {
 			for x in 0..16 {
-				direct.set(ChunkPosition::new(x, 13, z), true);
+				direct.set(CubePosition::new(x, 13, z), true);
 			}
 		}
 
@@ -332,7 +332,7 @@ mod test {
 
 		for z in 0..16 {
 			for y in 0..16 {
-				direct.set(ChunkPosition::new(13, y, z), true);
+				direct.set(CubePosition::new(13, y, z), true);
 			}
 		}
 
@@ -362,7 +362,7 @@ mod test {
 
 		for y in 0..16 {
 			for x in 0..16 {
-				direct.set(ChunkPosition::new(x, y, 13), true);
+				direct.set(CubePosition::new(x, y, 13), true);
 			}
 		}
 

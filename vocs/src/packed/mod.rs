@@ -1,4 +1,4 @@
-use crate::position::{LayerPosition, ChunkPosition};
+use crate::position::{LayerPosition, CubePosition};
 
 mod internal;
 mod setter;
@@ -6,7 +6,7 @@ mod setter;
 pub use self::internal::{PackedIndex, PackedStorage};
 pub use self::setter::Setter;
 
-pub type ChunkPacked = self::internal::PackedStorage<ChunkPosition>;
+pub type ChunkPacked = self::internal::PackedStorage<CubePosition>;
 pub type LayerPacked = self::internal::PackedStorage<LayerPosition>;
 
 pub type PackedBlockStorage<P> = self::internal::PackedStorage<P>;

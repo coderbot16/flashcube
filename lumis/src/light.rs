@@ -4,7 +4,7 @@ use std::cmp::max;
 use vocs::component::ChunkStorage;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
 use vocs::packed::ChunkPacked;
-use vocs::position::{dir, ChunkPosition, Offset};
+use vocs::position::{dir, CubePosition, Offset};
 use vocs::view::Directional;
 
 #[derive(Debug)]
@@ -29,7 +29,7 @@ where
 		Lighting { data, neighbors, sources, opacity }
 	}
 
-	fn get(&self, at: ChunkPosition) -> u4 {
+	fn get(&self, at: CubePosition) -> u4 {
 		self.data.get(at)
 	}
 
@@ -37,7 +37,7 @@ where
 		self.sources.initial(&mut self.data, queue.mask_mut())
 	}
 
-	fn update(&mut self, queue: &mut ChunkQueue, at: ChunkPosition, opacity: u4) {
+	fn update(&mut self, queue: &mut ChunkQueue, at: CubePosition, opacity: u4) {
 		let max_value = max(
 			max(
 				max(

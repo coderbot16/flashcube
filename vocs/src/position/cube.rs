@@ -3,43 +3,43 @@ use crate::position::{LayerPosition, Offset, dir};
 use crate::packed::PackedIndex;
 
 #[derive(Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
-pub struct ChunkPosition(u16);
+pub struct CubePosition(u16);
 
-impl ChunkPosition {
-	/// Creates a new ChunkPosition from the X, Y, and Z components.
+impl CubePosition {
+	/// Creates a new CubePosition from the X, Y, and Z components.
 	/// ### Out of bounds behavior
 	/// If the arguments are out of bounds, then they are truncated.
 	pub fn new(x: u8, y: u8, z: u8) -> Self {
-		ChunkPosition (
+		CubePosition (
 			(((y&0xF) as u16) << 8) |
 			(((z&0xF) as u16) << 4) |
 			 ((x&0xF) as u16)
 		)
 	}
 
-	/// Creates a new ChunkPosition from the Y component and LayerPosition containing the X and Z components.
+	/// Creates a new CubePosition from the Y component and LayerPosition containing the X and Z components.
 	/// Out of bounds is not possible with this function.
 	pub fn from_layer(y: u8, layer: LayerPosition) -> Self {
-		ChunkPosition(
+		CubePosition(
 			(((y&0xF) as u16) << 8) | (layer.zx() as u16)
 		)
 	}
 
-	/// Creates a new ChunkPosition from a YZX index.
+	/// Creates a new CubePosition from a YZX index.
 	/// ### Out of bounds behavior
 	/// If the index is out of bounds, it is truncated.
 	pub fn from_yzx(yzx: u16) -> Self {
-		ChunkPosition(yzx % 4096)
+		CubePosition(yzx % 4096)
 	}
 
-	/// Creates a new ChunkPosition from a XYZ index.
+	/// Creates a new CubePosition from a XYZ index.
 	/// ### Out of bounds behavior
 	/// If the index is out of bounds, it is truncated.
 	pub fn from_xyz(xyz: u16) -> Self {
 		let xyz = xyz & 0xFFF; // Truncate the value if too large
 		// X YZ - Start
 		// YZ X - End
-		ChunkPosition(((xyz & 0xF00) >> 8) | ((xyz & 0x0FF) << 4))
+		CubePosition(((xyz & 0xF00) >> 8) | ((xyz & 0x0FF) << 4))
 	}
 
 	// Component access
@@ -125,21 +125,21 @@ impl ChunkPosition {
 	pub fn with_x(&self, x: u8) -> Self {
 		let x = x as u16;
 
-		ChunkPosition((self.0 & 0x0FF0) | (x & 0x000F))
+		CubePosition((self.0 & 0x0FF0) | (x & 0x000F))
 	}
 
 	/// Replaces the Y component with the specified value, leaving X and Z the same.
 	pub fn with_y(&self, y: u8) -> Self {
 		let y = y as u16;
 
-		ChunkPosition((self.0 & 0x00FF) | ((y & 0x000F) << 8))
+		CubePosition((self.0 & 0x00FF) | ((y & 0x000F) << 8))
 	}
 
 	/// Replaces the Z component with the specified value, leaving X and Y the same.
 	pub fn with_z(&self, z: u8) -> Self {
 		let z = z as u16;
 
-		ChunkPosition((self.0 & 0x0F0F) | ((z & 0x000F) << 4))
+		CubePosition((self.0 & 0x0F0F) | ((z & 0x000F) << 4))
 	}
 
 	// Iteration
@@ -149,7 +149,7 @@ impl ChunkPosition {
 	}
 }
 
-impl PackedIndex for ChunkPosition {
+impl PackedIndex for CubePosition {
 	fn size_factor() -> usize {
 		64
 	}
@@ -157,7 +157,7 @@ impl PackedIndex for ChunkPosition {
 	fn from_usize(index: usize) -> Self {
 		debug_assert!(index < 4096);
 
-		ChunkPosition::from_yzx(index as u16)
+		CubePosition::from_yzx(index as u16)
 	}
 
 	fn to_usize(&self) -> usize {
@@ -165,73 +165,73 @@ impl PackedIndex for ChunkPosition {
 	}
 }
 
-impl fmt::Display for ChunkPosition {
+impl fmt::Display for CubePosition {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "({}, {}, {})", self.x(), self.y(), self.z())
 	}
 }
 
-impl fmt::Debug for ChunkPosition {
+impl fmt::Debug for CubePosition {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "ChunkPosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
+		write!(f, "CubePosition {{ x: {}, y: {}, z: {} }}", self.x(), self.y(), self.z())
 	}
 }
 
-impl Offset<dir::Up> for ChunkPosition {
+impl Offset<dir::Up> for CubePosition {
 	type Spill = LayerPosition;
 
 	fn offset(self, _: dir::Up) -> Option<Self> {
 		if self.y() < 15 {
-			Some(ChunkPosition(self.0 + 0x0100))
+			Some(CubePosition(self.0 + 0x0100))
 		} else {
 			None
 		}
 	}
 
 	fn offset_wrapping(self, _: dir::Up) -> Self {
-		ChunkPosition::from_yzx(self.0 + 0x0100)
+		CubePosition::from_yzx(self.0 + 0x0100)
 	}
 
 	fn offset_spilling(self, _: dir::Up) -> Result<Self, LayerPosition> {
 		if self.y() < 15 {
-			Ok(ChunkPosition(self.0 + 0x0100))
+			Ok(CubePosition(self.0 + 0x0100))
 		} else {
 			Err(self.layer())
 		}
 	}
 }
 
-impl Offset<dir::Down> for ChunkPosition {
+impl Offset<dir::Down> for CubePosition {
 	type Spill = LayerPosition;
 
 	fn offset(self, _: dir::Down) -> Option<Self> {
 		if self.y() > 0 {
-			Some(ChunkPosition(self.0 - 0x0100))
+			Some(CubePosition(self.0 - 0x0100))
 		} else {
 			None
 		}
 	}
 
 	fn offset_wrapping(self, _: dir::Down) -> Self {
-		ChunkPosition::from_yzx(self.0.wrapping_sub(0x0100))
+		CubePosition::from_yzx(self.0.wrapping_sub(0x0100))
 	}
 
 	fn offset_spilling(self, _: dir::Down) -> Result<Self, LayerPosition> {
 		if self.y() > 0 {
-			Ok(ChunkPosition(self.0 - 0x0100))
+			Ok(CubePosition(self.0 - 0x0100))
 		} else {
 			Err(self.layer())
 		}
 	}
 }
 
-impl Offset<dir::PlusX> for ChunkPosition {
+impl Offset<dir::PlusX> for CubePosition {
 	// X coordinate is erased, leaving the zy coordinates.
 	type Spill = LayerPosition;
 
 	fn offset(self, _: dir::PlusX) -> Option<Self> {
 		if self.x() != 15 {
-			Some(ChunkPosition(self.0 + 0x0001))
+			Some(CubePosition(self.0 + 0x0001))
 		} else {
 			None
 		}
@@ -241,25 +241,25 @@ impl Offset<dir::PlusX> for ChunkPosition {
 		let base = self.0 & 0x0FF0;
 		let add = ((self.x() + 1) & 15) as u16;
 
-		ChunkPosition(base | add)
+		CubePosition(base | add)
 	}
 
 	fn offset_spilling(self, _: dir::PlusX) -> Result<Self, LayerPosition> {
 		if self.x() != 15 {
-			Ok(ChunkPosition(self.0 + 0x0001))
+			Ok(CubePosition(self.0 + 0x0001))
 		} else {
 			Err(self.layer_zy())
 		}
 	}
 }
 
-impl Offset<dir::MinusX> for ChunkPosition {
+impl Offset<dir::MinusX> for CubePosition {
 	// X coordinate is erased, leaving the zy coordinates.
 	type Spill = LayerPosition;
 
 	fn offset(self, _: dir::MinusX) -> Option<Self> {
 		if self.x() != 0 {
-			Some(ChunkPosition(self.0 - 0x0001))
+			Some(CubePosition(self.0 - 0x0001))
 		} else {
 			None
 		}
@@ -269,25 +269,25 @@ impl Offset<dir::MinusX> for ChunkPosition {
 		let base = self.0 & 0x0FF0;
 		let add = ((self.x().wrapping_sub(1)) & 15) as u16;
 
-		ChunkPosition(base | add)
+		CubePosition(base | add)
 	}
 
 	fn offset_spilling(self, _: dir::MinusX) -> Result<Self, LayerPosition> {
 		if self.x() != 0 {
-			Ok(ChunkPosition(self.0 - 0x0001))
+			Ok(CubePosition(self.0 - 0x0001))
 		} else {
 			Err(self.layer_zy())
 		}
 	}
 }
 
-impl Offset<dir::PlusZ> for ChunkPosition {
+impl Offset<dir::PlusZ> for CubePosition {
 	// Z coordinate is erased, leaving the yx coordinates.
 	type Spill = LayerPosition;
 
 	fn offset(self, _: dir::PlusZ) -> Option<Self> {
 		if self.z() != 15 {
-			Some(ChunkPosition(self.0 + 0x0010))
+			Some(CubePosition(self.0 + 0x0010))
 		} else {
 			None
 		}
@@ -297,25 +297,25 @@ impl Offset<dir::PlusZ> for ChunkPosition {
 		let base = self.0 & 0x0F0F;
 		let add = ((self.z() + 1) & 15) as u16;
 
-		ChunkPosition(base | (add << 4))
+		CubePosition(base | (add << 4))
 	}
 
 	fn offset_spilling(self, _: dir::PlusZ) -> Result<Self, LayerPosition> {
 		if self.z() != 15 {
-			Ok(ChunkPosition(self.0 + 0x0010))
+			Ok(CubePosition(self.0 + 0x0010))
 		} else {
 			Err(self.layer_yx())
 		}
 	}
 }
 
-impl Offset<dir::MinusZ> for ChunkPosition {
+impl Offset<dir::MinusZ> for CubePosition {
 	// Z coordinate is erased, leaving the yx coordinates.
 	type Spill = LayerPosition;
 
 	fn offset(self, _: dir::MinusZ) -> Option<Self> {
 		if self.z() != 0 {
-			Some(ChunkPosition(self.0 - 0x0010))
+			Some(CubePosition(self.0 - 0x0010))
 		} else {
 			None
 		}
@@ -325,12 +325,12 @@ impl Offset<dir::MinusZ> for ChunkPosition {
 		let base = self.0 & 0x0F0F;
 		let add = ((self.z().wrapping_sub(1)) & 15) as u16;
 
-		ChunkPosition(base | (add << 4))
+		CubePosition(base | (add << 4))
 	}
 
 	fn offset_spilling(self, _: dir::MinusZ) -> Result<Self, LayerPosition> {
 		if self.z() != 0 {
-			Ok(ChunkPosition(self.0 - 0x0010))
+			Ok(CubePosition(self.0 - 0x0010))
 		} else {
 			Err(self.layer_yx())
 		}
@@ -342,11 +342,11 @@ pub struct Enumerate {
 }
 
 impl Iterator for Enumerate {
-	type Item = ChunkPosition;
+	type Item = CubePosition;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.index < 4096 {
-			let position = ChunkPosition::from_yzx(self.index);
+			let position = CubePosition::from_yzx(self.index);
 
 			self.index += 1;
 
@@ -363,9 +363,9 @@ mod test {
 
 	#[test]
 	fn test_with() {
-		let position = ChunkPosition::new(6, 6, 6);
-		assert_eq!(position.with_x(9), ChunkPosition::new(9, 6, 6));
-		assert_eq!(position.with_y(9), ChunkPosition::new(6, 9, 6));
-		assert_eq!(position.with_z(9), ChunkPosition::new(6, 6, 9));
+		let position = CubePosition::new(6, 6, 6);
+		assert_eq!(position.with_x(9), CubePosition::new(9, 6, 6));
+		assert_eq!(position.with_y(9), CubePosition::new(6, 9, 6));
+		assert_eq!(position.with_z(9), CubePosition::new(6, 6, 9));
 	}
 }

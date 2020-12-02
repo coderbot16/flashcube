@@ -1,4 +1,4 @@
-use crate::position::{ChunkPosition, LayerPosition};
+use crate::position::{CubePosition, LayerPosition};
 use crate::indexed::{ChunkIndexed, Target};
 use crate::mask::{Mask, ChunkMask};
 use crate::view::{ColumnMut, QuadMut};
@@ -21,7 +21,7 @@ impl<T> Sector<T> {
 		Sector { chunks: chunks.into_boxed_slice(), present: ChunkMask::default() }
 	}
 
-	pub fn set(&mut self, position: ChunkPosition, chunk: T) {
+	pub fn set(&mut self, position: CubePosition, chunk: T) {
 		let target = &mut self.chunks[position.yzx() as usize];
 
 		if target.is_none() {
@@ -31,7 +31,7 @@ impl<T> Sector<T> {
 		*target = Some(chunk);
 	}
 
-	pub fn pop_first(&mut self) -> Option<(ChunkPosition, T)> {
+	pub fn pop_first(&mut self) -> Option<(CubePosition, T)> {
 		self.present.pop_first().and_then(|position| self.chunks[position.yzx() as usize].take().map(|chunk| (position, chunk)))
 	}
 
@@ -42,13 +42,13 @@ impl<T> Sector<T> {
 		let mut chunks = (Box::new(column) as Box<[_]>).into_vec();
 
 		for (index, chunk) in chunks.drain(..).enumerate() {
-			let position = ChunkPosition::from_layer(index as u8, position);
+			let position = CubePosition::from_layer(index as u8, position);
 
 			self.set(position, chunk);
 		}
 	}
 
-	pub fn remove(&mut self, position: ChunkPosition) -> Option<T> {
+	pub fn remove(&mut self, position: CubePosition) -> Option<T> {
 		let value = self.chunks[position.yzx() as usize].take();
 
 		if value.is_some() {
@@ -82,7 +82,7 @@ impl<T> Sector<T> {
 
 	/// Gets a mutable reference to an individual element of the sector,
 	/// This is not implemented as IndexMut because it would cause the internal present mask to get out of sync.
-	pub fn get_mut(&mut self, position: ChunkPosition) -> Option<&mut T> {
+	pub fn get_mut(&mut self, position: CubePosition) -> Option<&mut T> {
 		self.chunks[position.yzx() as usize].as_mut()
 	}
 
@@ -254,7 +254,7 @@ impl<T> Sector<T> {
 }
 
 impl<T> Sector<T> where T: Default {
-	pub fn get_or_create_mut(&mut self, position: ChunkPosition) -> &mut T {
+	pub fn get_or_create_mut(&mut self, position: CubePosition) -> &mut T {
 		let present = &mut self.present;
 		self.chunks[position.yzx() as usize].get_or_insert_with(|| { present.set_true(position); T::default() })
 	}
@@ -263,8 +263,8 @@ impl<T> Sector<T> where T: Default {
 impl<B> Sector<ChunkIndexed<B>> where B: Target {
 	pub fn set_block_immediate(&mut self, x: u8, y: u8, z: u8, target: &B) -> Option<()> {
 		let (chunk, block) = (
-			ChunkPosition::new(x / 16, y / 16, z / 16),
-			ChunkPosition::new(x % 16, y % 16, z % 16)
+			CubePosition::new(x / 16, y / 16, z / 16),
+			CubePosition::new(x % 16, y % 16, z % 16)
 		);
 
 		self.get_mut(chunk).map(|chunk| chunk.set_immediate(block, &target))
@@ -272,8 +272,8 @@ impl<B> Sector<ChunkIndexed<B>> where B: Target {
 
 	pub fn get_block(&self, x: u8, y: u8, z: u8) -> Option<&B> {
 		let (chunk, block) = (
-			ChunkPosition::new(x / 16, y / 16, z / 16),
-			ChunkPosition::new(x % 16, y % 16, z % 16)
+			CubePosition::new(x / 16, y / 16, z / 16),
+			CubePosition::new(x % 16, y % 16, z % 16)
 		);
 
 		self[chunk].as_ref().map(|chunk| chunk.get(block))
@@ -291,10 +291,10 @@ impl<B> Sector<ChunkIndexed<B>> where B: Target {
 	}
 }
 
-impl<T> Index<ChunkPosition> for Sector<T> {
+impl<T> Index<CubePosition> for Sector<T> {
 	type Output = Option<T>;
 
-	fn index(&self, position: ChunkPosition) -> &Self::Output {
+	fn index(&self, position: CubePosition) -> &Self::Output {
 		&self.chunks[position.yzx() as usize]
 	}
 }
@@ -328,7 +328,7 @@ impl<'a, T> Iterator for SectorEnumerateColumns<'a, T> where T: 'a {
 		let mut chunks = [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None];
 
 		for y in 0..16 {
-			let position = ChunkPosition::from_layer(y, self.column);
+			let position = CubePosition::from_layer(y, self.column);
 
 			chunks[y as usize] = self.sector[position].as_ref();
 		}

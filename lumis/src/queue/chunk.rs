@@ -1,7 +1,7 @@
 use std::mem;
 use vocs::component::{ChunkStorage, LayerStorage};
 use vocs::mask::{ChunkMask, LayerMask, Mask};
-use vocs::position::{dir, ChunkPosition};
+use vocs::position::{dir, CubePosition};
 use vocs::view::{Directional, MaskOffset, SpillChunkMask, SplitDirectional};
 
 /// A double-buffered queue. Useful for breadth-first search algorithms.
@@ -47,7 +47,7 @@ impl ChunkQueue {
 		spills
 	}
 
-	pub fn pop_first(&mut self) -> Option<ChunkPosition> {
+	pub fn pop_first(&mut self) -> Option<CubePosition> {
 		self.front.pop_first()
 	}
 
@@ -57,17 +57,17 @@ impl ChunkQueue {
 		!self.front.empty()
 	}
 
-	pub fn enqueue(&mut self, position: ChunkPosition) {
+	pub fn enqueue(&mut self, position: CubePosition) {
 		self.back.primary.set_true(position)
 	}
 
-	pub fn enqueue_neighbors(&mut self, position: ChunkPosition) {
+	pub fn enqueue_neighbors(&mut self, position: CubePosition) {
 		self.enqueue_h_neighbors(position);
 		self.back.set_offset_true(position, dir::Down);
 		self.back.set_offset_true(position, dir::Up);
 	}
 
-	pub fn enqueue_h_neighbors(&mut self, position: ChunkPosition) {
+	pub fn enqueue_h_neighbors(&mut self, position: CubePosition) {
 		self.back.set_offset_true(position, dir::MinusX);
 		self.back.set_offset_true(position, dir::MinusZ);
 		self.back.set_offset_true(position, dir::PlusX);

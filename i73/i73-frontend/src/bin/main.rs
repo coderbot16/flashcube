@@ -419,7 +419,7 @@ fn decorate_terrain(world: &mut World<ChunkIndexed<Block>>) {
 }
 
 /*fn write_classicworld(world: &World<ChunkIndexed<Block>>) {
-	use vocs::position::ChunkPosition;
+	use vocs::position::CubePosition;
 
 	let mut blocks = vec![0; 512 * 128 * 512];
 	for z in 0..32 {

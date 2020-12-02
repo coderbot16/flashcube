@@ -3,7 +3,7 @@ use std::mem;
 use vocs::component::LayerStorage;
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
-use vocs::position::{dir, ChunkPosition, LayerPosition, Offset};
+use vocs::position::{dir, CubePosition, LayerPosition, Offset};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
 use vocs::world::sector::Sector;
@@ -39,7 +39,7 @@ impl SectorQueue {
 		std::mem::replace(&mut self.spills, SectorSpills::default())
 	}
 
-	pub fn pop_first(&mut self) -> Option<(ChunkPosition, ChunkMask)> {
+	pub fn pop_first(&mut self) -> Option<(CubePosition, ChunkMask)> {
 		self.front.pop_first()
 	}
 
@@ -49,7 +49,7 @@ impl SectorQueue {
 		!self.front.is_empty()
 	}
 
-	pub fn enqueue_spills(&mut self, origin: ChunkPosition, spills: ChunkSpills) {
+	pub fn enqueue_spills(&mut self, origin: CubePosition, spills: ChunkSpills) {
 		let spills = spills.split();
 
 		self.spill(origin, dir::Up, spills.up, |mask, layer| mask.layer_zx_mut(0).combine(&layer));
@@ -70,9 +70,9 @@ impl SectorQueue {
 		});
 	}
 
-	fn spill<D, F>(&mut self, origin: ChunkPosition, dir: D, layer: LayerMask, mut f: F)
+	fn spill<D, F>(&mut self, origin: CubePosition, dir: D, layer: LayerMask, mut f: F)
 	where
-		ChunkPosition: Offset<D, Spill = LayerPosition>,
+		CubePosition: Offset<D, Spill = LayerPosition>,
 		F: FnMut(&mut ChunkMask, LayerMask),
 		D: Copy,
 		Directional<Layer<Option<LayerMask>>>:

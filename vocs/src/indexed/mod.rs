@@ -4,11 +4,11 @@ use std::hash::Hash;
 use std::mem;
 use std::fmt::Debug;
 use crate::packed::{PackedStorage, PackedIndex, Setter};
-use crate::position::{ChunkPosition, LayerPosition};
+use crate::position::{CubePosition, LayerPosition};
 
 pub use self::palette::Palette;
 
-pub type ChunkIndexed<B> = IndexedStorage<B, ChunkPosition>;
+pub type ChunkIndexed<B> = IndexedStorage<B, CubePosition>;
 pub type LayerIndexed<B> = IndexedStorage<B, LayerPosition>;
 
 pub trait Target: Eq + Hash + Clone + Debug {}

@@ -2,7 +2,7 @@ use i73_base::block::{self, Block};
 use i73_base::{Layer, Pass};
 use i73_biome::climate::{self, Climate};
 use vocs::component::LayerStorage;
-use vocs::position::{ChunkPosition, GlobalColumnPosition, LayerPosition};
+use vocs::position::{CubePosition, GlobalColumnPosition, LayerPosition};
 use vocs::view::ColumnMut;
 
 pub struct OceanBlocks {
@@ -70,7 +70,7 @@ impl Pass<Climate> for OceanPass {
 		let sea_layers = (self.sea_top - has_ice as usize) % 16;
 
 		for index in 0..((sea_layers * 256) as u16) {
-			let position = ChunkPosition::from_yzx(index);
+			let position = CubePosition::from_yzx(index);
 
 			if chunk.get(position) == air {
 				chunk.set(position, ocean);
@@ -81,7 +81,7 @@ impl Pass<Climate> for OceanPass {
 			let y = ((self.sea_top - 1) % 16) as u8;
 
 			for layer_position in LayerPosition::enumerate() {
-				let position = ChunkPosition::from_layer(y, layer_position);
+				let position = CubePosition::from_layer(y, layer_position);
 
 				if chunk.get(position) == air {
 					chunk.set(position, if ice_mask[layer_position] { ice } else { ocean });

@@ -1,4 +1,4 @@
-use crate::position::ChunkPosition;
+use crate::position::CubePosition;
 use crate::position::{LayerPosition, Offset, dir};
 use std::fmt;
 
@@ -27,7 +27,7 @@ impl ColumnPosition {
 
 	/// Creates a new ColumnPosition from the given ChunkPosition with an additional section_y value,
 	/// which determines the column "section" (from 0-16) in which this position resides.
-	pub fn from_chunk(section_y: u8, chunk: ChunkPosition) -> Self {
+	pub fn from_chunk(section_y: u8, chunk: CubePosition) -> Self {
 		ColumnPosition::from_yzx (
 			((section_y as u16) << 12) |
 			chunk.yzx()
@@ -92,7 +92,7 @@ impl ColumnPosition {
 	}
 
 	/// Returns the chunk position.
-	pub fn chunk(&self) -> ChunkPosition { ChunkPosition::from_yzx(self.chunk_yzx()) }
+	pub fn chunk(&self) -> CubePosition { CubePosition::from_yzx(self.chunk_yzx()) }
 
 	/// Returns the layer position. This is equivalent to `LayerPosition::from_zx(position.zx())`.
 	pub fn layer(&self) -> LayerPosition {

@@ -7,7 +7,7 @@ use vocs::component::LayerStorage;
 use vocs::mask::{LayerMask, Mask};
 use vocs::nibbles::{u4, LayerNibbles};
 use vocs::packed::ChunkPacked;
-use vocs::position::{ChunkPosition, LayerPosition};
+use vocs::position::{CubePosition, LayerPosition};
 
 pub use compute::*;
 
@@ -20,7 +20,7 @@ pub struct ChunkHeightMap {
 impl ChunkHeightMap {
 	pub fn build(chunk: &ChunkPacked, matches: &BitVec, mut is_filled: LayerMask) -> Self {
 		for position in LayerPosition::enumerate() {
-			let chunk_position = ChunkPosition::from_layer(15, position);
+			let chunk_position = CubePosition::from_layer(15, position);
 			let matches = matches.get(chunk.get(chunk_position) as usize).unwrap();
 
 			is_filled.set_or(position, matches);
@@ -38,7 +38,7 @@ impl ChunkHeightMap {
 			}
 
 			for y in (0..15).rev() {
-				let position = ChunkPosition::from_layer(y, layer);
+				let position = CubePosition::from_layer(y, layer);
 
 				if matches.get(chunk.get(position) as usize).unwrap() {
 					heightmap.set(position.layer(), u4::new(y + 1));

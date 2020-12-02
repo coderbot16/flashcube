@@ -1,4 +1,4 @@
-mod chunk;
+mod cube;
 mod layer;
 mod column;
 mod quad;
@@ -11,7 +11,7 @@ mod direction;
 /// Finally, it can be represented as a sparse 16777216 by 16777216 grid of sectors.
 mod global;
 
-pub use self::chunk::ChunkPosition;
+pub use self::cube::CubePosition;
 pub use self::layer::LayerPosition;
 pub use self::column::ColumnPosition;
 pub use self::quad::QuadPosition;

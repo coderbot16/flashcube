@@ -1,6 +1,6 @@
 use spin::RwLock;
 use std::ops::Index;
-use crate::position::{LayerPosition, ChunkPosition};
+use crate::position::{LayerPosition, CubePosition};
 use std::slice;
 use crate::world::shared::{Packed, Guard};
 
@@ -21,7 +21,7 @@ impl<T> SharedSector<T> where T: Packed {
 		SharedSector { chunks: chunks.into_boxed_slice() }
 	}
 
-	pub fn set(&self, position: ChunkPosition, chunk: T) {
+	pub fn set(&self, position: CubePosition, chunk: T) {
 		*self[position].write() = Some(chunk);
 	}
 
@@ -34,17 +34,17 @@ impl<T> SharedSector<T> where T: Packed {
 		let mut chunks = (Box::new(column) as Box<[_]>).into_vec();
 
 		for (index, chunk) in chunks.drain(..).enumerate() {
-			let position = ChunkPosition::from_layer(index as u8, position);
+			let position = CubePosition::from_layer(index as u8, position);
 
 			self.set(position, chunk);
 		}
 	}
 
-	pub fn remove(&self, position: ChunkPosition) -> Option<T> {
+	pub fn remove(&self, position: CubePosition) -> Option<T> {
 		self[position].write().take()
 	}
 
-	pub fn get(&self, position: ChunkPosition) -> Option<Guard<T>> {
+	pub fn get(&self, position: CubePosition) -> Option<Guard<T>> {
 		let mut slot = self[position].write();
 		let packed = match slot.take() {
 			Some(packed) => packed,
@@ -60,7 +60,7 @@ impl<T> SharedSector<T> where T: Packed {
 }
 
 impl<T> SharedSector<T> where T: Packed + Default {
-	pub fn get_or_create(&self, position: ChunkPosition) -> Guard<T> {
+	pub fn get_or_create(&self, position: CubePosition) -> Guard<T> {
 		let mut slot = self[position].write();
 		let packed = slot.take().unwrap_or_else(T::default);
 
@@ -72,8 +72,8 @@ impl<T> SharedSector<T> where T: Packed + Default {
 impl<B> SharedSector<ChunkIndexed<B>> where B: Target {
 	pub fn set_block_immediate(&mut self, x: u8, y: u8, z: u8, target: &B) -> Option<()> {
 		let (chunk, block) = (
-			ChunkPosition::new(x / 16, y / 16, z / 16),
-			ChunkPosition::new(x % 16, y % 16, z % 16)
+			CubePosition::new(x / 16, y / 16, z / 16),
+			CubePosition::new(x % 16, y % 16, z % 16)
 		);
 
 		self.get_mut(chunk).map(|chunk| chunk.set_immediate(block, &target))
@@ -81,18 +81,18 @@ impl<B> SharedSector<ChunkIndexed<B>> where B: Target {
 
 	pub fn get_block(&self, x: u8, y: u8, z: u8) -> Option<&B> {
 		let (chunk, block) = (
-			ChunkPosition::new(x / 16, y / 16, z / 16),
-			ChunkPosition::new(x % 16, y % 16, z % 16)
+			CubePosition::new(x / 16, y / 16, z / 16),
+			CubePosition::new(x % 16, y % 16, z % 16)
 		);
 
 		self[chunk].as_ref().map(|chunk| chunk.get(block))
 	}
 }*/
 
-impl<T> Index<ChunkPosition> for SharedSector<T> where T: Packed {
+impl<T> Index<CubePosition> for SharedSector<T> where T: Packed {
 	type Output = RwLock<Option<T>>;
 
-	fn index(&self, index: ChunkPosition) -> &Self::Output {
+	fn index(&self, index: CubePosition) -> &Self::Output {
 		&self.chunks[index.yzx() as usize]
 	}
 }

@@ -1,7 +1,7 @@
 use nbt_turbo::writer::{CompoundWriter, Output};
 use vocs::indexed::{ChunkIndexed, Target};
 use vocs::nibbles::{u4, ChunkNibbles};
-use vocs::position::ChunkPosition;
+use vocs::position::CubePosition;
 
 // TODO: Cannot derive Debug (array of length 4096)
 #[derive(Clone)]
@@ -72,7 +72,7 @@ impl AnvilBlocks {
 		let add = if need_add {
 			let mut add = ChunkNibbles::default();
 	
-			for position in ChunkPosition::enumerate() {
+			for position in CubePosition::enumerate() {
 				let raw = storage.get(position);
 				let anvil = to_anvil_id(palette[raw as usize].as_ref().unwrap());
 	
@@ -83,7 +83,7 @@ impl AnvilBlocks {
 	
 			Some(add)
 		} else {
-			for position in ChunkPosition::enumerate() {
+			for position in CubePosition::enumerate() {
 				let raw = storage.get(position);
 				let anvil = to_anvil_id(palette[raw as usize].as_ref().unwrap());
 	

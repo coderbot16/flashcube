@@ -5,10 +5,10 @@
 // uXX: Packed
 // f32: [f32; 4096]
 // f64: [f64; 4096]
-// String: HashMap<ChunkPosition, String>
+// String: HashMap<CubePosition, String>
 // Entity: A complex struct stored in the local specs ECS.
 
-use crate::position::{LayerPosition, ChunkPosition};
+use crate::position::{LayerPosition, CubePosition};
 
 /// A component usable in a comoponent system.
 pub trait Component: Sized + Clone + Default {
@@ -22,15 +22,15 @@ pub trait Component: Sized + Clone + Default {
 
 pub trait ChunkStorage<V> where V: Clone {
 	/// Gets the value at the position.
-	fn get(&self, position: ChunkPosition) -> V;
+	fn get(&self, position: CubePosition) -> V;
 
 	/// Sets the value at the position.
-	fn set(&mut self, position: ChunkPosition, value: V);
+	fn set(&mut self, position: CubePosition, value: V);
 
 	/// Fills the storage with the value.
 	fn fill(&mut self, value: V) {
 		for index in 0..4096 {
-			let position = ChunkPosition::from_yzx(index);
+			let position = CubePosition::from_yzx(index);
 
 			self.set(position, value.clone())
 		}

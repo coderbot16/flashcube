@@ -1,4 +1,4 @@
-use crate::position::{ChunkPosition, LayerPosition, Offset};
+use crate::position::{CubePosition, LayerPosition, Offset};
 use crate::mask::{Mask, LayerMask};
 use crate::view::Directional;
 use std::ops::IndexMut;
@@ -21,12 +21,12 @@ pub struct SpillChunk<C: Component> {
 	pub spills: Directional<C::Layer>
 }
 
-impl<D, C> StorageOffset<ChunkPosition, D, C> for SpillChunk<C>
+impl<D, C> StorageOffset<CubePosition, D, C> for SpillChunk<C>
 	where Directional<C::Layer>: IndexMut<D, Output=C::Layer>,
-		  ChunkPosition: Offset<D, Spill=LayerPosition>,
+		  CubePosition: Offset<D, Spill=LayerPosition>,
 		  D: Copy,
 		  C: Component {
-	fn set_offset(&mut self, position: ChunkPosition, d: D, value: C) {
+	fn set_offset(&mut self, position: CubePosition, d: D, value: C) {
 		match position.offset_spilling(d) {
 			Ok(position) => self.primary.set(position, value),
 			Err(layer) => self.spills[d].set(layer, value)
@@ -34,18 +34,18 @@ impl<D, C> StorageOffset<ChunkPosition, D, C> for SpillChunk<C>
 	}
 }
 
-impl<D> MaskOffset<ChunkPosition, D> for SpillChunk<bool>
+impl<D> MaskOffset<CubePosition, D> for SpillChunk<bool>
 	where Directional<LayerMask>: IndexMut<D, Output=LayerMask>,
-		  ChunkPosition: Offset<D, Spill=LayerPosition>,
+		  CubePosition: Offset<D, Spill=LayerPosition>,
 		  D: Copy {
-	fn set_offset_true(&mut self, position: ChunkPosition, d: D) {
+	fn set_offset_true(&mut self, position: CubePosition, d: D) {
 		match position.offset_spilling(d) {
 			Ok(position) => self.primary.set_true(position),
 			Err(layer) => self.spills[d].set_true(layer)
 		}
 	}
 
-	fn set_offset_false(&mut self, position: ChunkPosition, d: D) {
+	fn set_offset_false(&mut self, position: CubePosition, d: D) {
 		match position.offset_spilling(d) {
 			Ok(position) => self.primary.set_true(position),
 			Err(layer) => self.spills[d].set_false(layer)

@@ -6,7 +6,7 @@ use i73_biome::climate::Climate;
 use i73_shape::height::lerp_to_layer;
 use i73_shape::height::HeightSource;
 use i73_shape::volume::{ShapeSettings, TriNoiseSource};
-use vocs::position::{ChunkPosition, GlobalColumnPosition};
+use vocs::position::{CubePosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
 
 pub struct ShapeBlocks {
@@ -75,7 +75,7 @@ impl Pass<Climate> for ShapePass {
 			let air = palette.reverse_lookup(&self.blocks.air).unwrap();
 			let solid = palette.reverse_lookup(&self.blocks.solid).unwrap();
 
-			for position in ChunkPosition::enumerate() {
+			for position in CubePosition::enumerate() {
 				let block = if trilinear(&section, position) > 0.0 { solid } else { air };
 
 				blocks.set(position, block);
@@ -109,7 +109,7 @@ pub fn is_filled(array: &[[[f64; 5]; 5]; 3]) -> Option<bool> {
 	}
 }
 
-pub fn trilinear(array: &[[[f64; 5]; 5]; 3], position: ChunkPosition) -> f64 {
+pub fn trilinear(array: &[[[f64; 5]; 5]; 3], position: CubePosition) -> f64 {
 	let inner = (
 		((position.y() % 8) as f64) / 8.0,
 		((position.z() % 4) as f64) / 4.0,

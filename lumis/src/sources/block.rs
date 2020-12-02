@@ -1,7 +1,7 @@
 use crate::sources::LightSources;
 use vocs::nibbles::{u4, BulkNibbles, ChunkNibbles};
 use vocs::packed::ChunkPacked;
-use vocs::position::ChunkPosition;
+use vocs::position::CubePosition;
 use vocs::view::SpillChunkMask;
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl<'c> BlockLightSources<'c> {
 }
 
 impl<'c> LightSources for BlockLightSources<'c> {
-	fn emission(&self, position: ChunkPosition) -> u4 {
+	fn emission(&self, position: CubePosition) -> u4 {
 		self.emission.get(self.chunk.get(position) as usize)
 	}
 

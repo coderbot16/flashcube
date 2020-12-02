@@ -4,7 +4,7 @@ use i73_base::block::Block;
 use java_rand::Random;
 use vocs::component::*;
 use vocs::mask::ChunkMask;
-use vocs::position::{ChunkPosition, ColumnPosition, QuadPosition};
+use vocs::position::{CubePosition, ColumnPosition, QuadPosition};
 use vocs::view::QuadMut;
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
@@ -183,12 +183,12 @@ pub struct Spheroid {
 	pub radius: (f64, f64, f64),
 }
 
-pub fn volume(x: u8, y: u8, z: u8) -> ChunkPosition {
-	ChunkPosition::new(x, y % 8, z)
+pub fn volume(x: u8, y: u8, z: u8) -> CubePosition {
+	CubePosition::new(x, y % 8, z)
 }
 
-pub fn border(x: u8, y: u8, z: u8) -> ChunkPosition {
-	ChunkPosition::new(x, (y % 8) + 8, z)
+pub fn border(x: u8, y: u8, z: u8) -> CubePosition {
+	CubePosition::new(x, (y % 8) + 8, z)
 }
 
 /// Uses a ChunkMask to store both the volume and the border blocks.
@@ -208,16 +208,16 @@ impl Lake {
 		self.shape.fill(false)
 	}
 
-	pub fn set_or(&mut self, at: ChunkPosition, value: bool) {
+	pub fn set_or(&mut self, at: CubePosition, value: bool) {
 		use vocs::mask::Mask;
 		self.shape.set_or(at, value)
 	}
 
-	pub fn set(&mut self, at: ChunkPosition, value: bool) {
+	pub fn set(&mut self, at: CubePosition, value: bool) {
 		self.shape.set(at, value)
 	}
 
-	pub fn get(&self, at: ChunkPosition) -> bool {
+	pub fn get(&self, at: CubePosition) -> bool {
 		self.shape[at]
 	}
 

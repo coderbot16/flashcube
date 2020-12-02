@@ -1,9 +1,9 @@
 use crate::mask::{ChunkMask, Scan, ScanClear, u1x64};
-use crate::position::ChunkPosition;
+use crate::position::CubePosition;
 use std::cmp;
 
-impl<'a> IntoIterator for Scan<'a, ChunkMask, ChunkPosition> {
-	type Item = ChunkPosition;
+impl<'a> IntoIterator for Scan<'a, ChunkMask, CubePosition> {
+	type Item = CubePosition;
 	type IntoIter = ChunkScan<'a>;
 
 	fn into_iter(self) -> Self::IntoIter {
@@ -51,7 +51,7 @@ impl<'a> ChunkScan<'a> {
 }
 
 impl<'a> Iterator for ChunkScan<'a> {
-	type Item = ChunkPosition;
+	type Item = CubePosition;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		if self.done {
@@ -70,12 +70,12 @@ impl<'a> Iterator for ChunkScan<'a> {
 
 		self.fast_forward();
 
-		Some(ChunkPosition::from_yzx(index))
+		Some(CubePosition::from_yzx(index))
 	}
 }
 
-impl<'a> IntoIterator for ScanClear<'a, ChunkMask, ChunkPosition> {
-	type Item = ChunkPosition;
+impl<'a> IntoIterator for ScanClear<'a, ChunkMask, CubePosition> {
+	type Item = CubePosition;
 	type IntoIter = ChunkScanClear<'a>;
 
 	fn into_iter(self) -> Self::IntoIter {
@@ -92,7 +92,7 @@ impl<'a> ChunkScanClear<'a> {
 }
 
 impl<'a> Iterator for ChunkScanClear<'a> {
-	type Item = ChunkPosition;
+	type Item = CubePosition;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.0.pop_first()
@@ -101,7 +101,7 @@ impl<'a> Iterator for ChunkScanClear<'a> {
 
 #[cfg(test)]
 mod tests {
-	use crate::position::ChunkPosition;
+	use crate::position::CubePosition;
 	use crate::mask::{Mask, ChunkMask};
 	use std::collections::BTreeSet;
 
@@ -113,14 +113,14 @@ mod tests {
 
 			for index in 0..64u32 {
 				let pos = scram * 529 + index*507;
-				let position = ChunkPosition::from_yzx((pos as u16) & 4095);
+				let position = CubePosition::from_yzx((pos as u16) & 4095);
 
 				positions.insert(position);
 				mask.set_true(position);
 			}
 
-			let expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
-			let created_vec = mask.scan().into_iter().collect::<Vec<ChunkPosition>>();
+			let expected_vec = positions.iter().map(|x| *x).collect::<Vec<CubePosition>>();
+			let created_vec = mask.scan().into_iter().collect::<Vec<CubePosition>>();
 
 			assert_eq!(expected_vec, created_vec);
 		}
@@ -134,14 +134,14 @@ mod tests {
 
 			for index in 0..64u32 {
 				let pos = scram * 529 + index*507;
-				let position = ChunkPosition::from_yzx((pos as u16) & 4095);
+				let position = CubePosition::from_yzx((pos as u16) & 4095);
 
 				positions.insert(position);
 				mask.set_true(position);
 			}
 
-			let expected_vec = positions.iter().map(|x| *x).collect::<Vec<ChunkPosition>>();
-			let created_vec = mask.scan_clear().into_iter().collect::<Vec<ChunkPosition>>();
+			let expected_vec = positions.iter().map(|x| *x).collect::<Vec<CubePosition>>();
+			let created_vec = mask.scan_clear().into_iter().collect::<Vec<CubePosition>>();
 
 			assert_eq!(expected_vec, created_vec);
 

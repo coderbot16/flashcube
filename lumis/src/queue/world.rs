@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use vocs::mask::ChunkMask;
 use vocs::mask::LayerMask;
-use vocs::position::{ChunkPosition, GlobalSectorPosition, LayerPosition};
+use vocs::position::{CubePosition, GlobalSectorPosition, LayerPosition};
 use vocs::unpacked::Layer;
 use vocs::world::sector::Sector;
 
@@ -50,28 +50,28 @@ impl WorldQueue {
 		self.spill(
 			GlobalSectorPosition::new(position.x() + 1, position.z()),
 			spills.plus_x,
-			|layer_position| ChunkPosition::new(0, layer_position.x(), layer_position.z()),
+			|layer_position| CubePosition::new(0, layer_position.x(), layer_position.z()),
 			|mask, layer| mask.layer_zy_mut(0).combine(&layer),
 		);
 
 		self.spill(
 			GlobalSectorPosition::new(position.x() - 1, position.z()),
 			spills.minus_x,
-			|layer_position| ChunkPosition::new(15, layer_position.x(), layer_position.z()),
+			|layer_position| CubePosition::new(15, layer_position.x(), layer_position.z()),
 			|mask, layer| mask.layer_zy_mut(15).combine(&layer),
 		);
 
 		self.spill(
 			GlobalSectorPosition::new(position.x(), position.z() + 1),
 			spills.plus_z,
-			|layer_position| ChunkPosition::new(layer_position.x(), layer_position.z(), 0),
+			|layer_position| CubePosition::new(layer_position.x(), layer_position.z(), 0),
 			|mask, layer| mask.layer_yx_mut(0).combine(&layer),
 		);
 
 		self.spill(
 			GlobalSectorPosition::new(position.x(), position.z() - 1),
 			spills.minus_z,
-			|layer_position| ChunkPosition::new(layer_position.x(), layer_position.z(), 15),
+			|layer_position| CubePosition::new(layer_position.x(), layer_position.z(), 15),
 			|mask, layer| mask.layer_yx_mut(15).combine(&layer),
 		);
 	}
@@ -89,7 +89,7 @@ impl WorldQueue {
 		&mut self, origin: GlobalSectorPosition, layer: Layer<Option<LayerMask>>, position: P,
 		mut merge: M,
 	) where
-		P: Fn(LayerPosition) -> ChunkPosition,
+		P: Fn(LayerPosition) -> CubePosition,
 		M: FnMut(&mut ChunkMask, LayerMask),
 	{
 		use vocs::component::LayerStorage;

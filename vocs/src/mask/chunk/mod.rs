@@ -1,6 +1,6 @@
 use crate::mask::{Mask, u1x64};
 use crate::component::ChunkStorage;
-use crate::position::{ChunkPosition, dir, Offset};
+use crate::position::{CubePosition, dir, Offset};
 use std::ops::Index;
 use std::cmp::PartialEq;
 
@@ -29,21 +29,21 @@ impl ChunkMask {
 	}
 
 	#[inline]
-	pub fn set_neighbors(&mut self, position: ChunkPosition) {
+	pub fn set_neighbors(&mut self, position: CubePosition) {
 		self.set_h_neighbors(position);
 		position.offset(dir::Down  ).map(|at| self.set_true(at));
 		position.offset(dir::Up    ).map(|at| self.set_true(at));
 	}
 
 	#[inline]
-	pub fn set_h_neighbors(&mut self, position: ChunkPosition) {
+	pub fn set_h_neighbors(&mut self, position: CubePosition) {
 		position.offset(dir::MinusX).map(|at| self.set_true(at));
 		position.offset(dir::PlusX ).map(|at| self.set_true(at));
 		position.offset(dir::MinusZ).map(|at| self.set_true(at));
 		position.offset(dir::PlusZ ).map(|at| self.set_true(at));
 	}
 
-	pub fn pop_first(&mut self) -> Option<ChunkPosition> {
+	pub fn pop_first(&mut self) -> Option<CubePosition> {
 		let block_index = self.inhabited.first_bit();
 
 		if block_index > 63 {
@@ -57,7 +57,7 @@ impl ChunkMask {
 
 		self.inhabited = self.inhabited.replace(block_index, !first.empty());
 
-		Some(ChunkPosition::from_yzx(
+		Some(CubePosition::from_yzx(
 			((block_index as u16) * 64) |
 				  (  sub_index as u16)
 		))
@@ -88,11 +88,11 @@ impl ChunkMask {
 }
 
 impl ChunkStorage<bool> for ChunkMask {
-	fn get(&self, position: ChunkPosition) -> bool {
+	fn get(&self, position: CubePosition) -> bool {
 		self[position]
 	}
 
-	fn set(&mut self, position: ChunkPosition, value: bool) {
+	fn set(&mut self, position: CubePosition, value: bool) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
@@ -113,8 +113,8 @@ impl ChunkStorage<bool> for ChunkMask {
 	}
 }
 
-impl Mask<ChunkPosition> for ChunkMask {
-	fn set_true(&mut self, position: ChunkPosition) {
+impl Mask<CubePosition> for ChunkMask {
+	fn set_true(&mut self, position: CubePosition) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
@@ -122,7 +122,7 @@ impl Mask<ChunkPosition> for ChunkMask {
 		self.inhabited = self.inhabited.set(block_index as u8);
 	}
 
-	fn set_false(&mut self, position: ChunkPosition) {
+	fn set_false(&mut self, position: CubePosition) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
@@ -133,7 +133,7 @@ impl Mask<ChunkPosition> for ChunkMask {
 
 	}
 
-	fn set_or(&mut self, position: ChunkPosition, value: bool) {
+	fn set_or(&mut self, position: CubePosition, value: bool) {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 
@@ -150,10 +150,10 @@ impl Mask<ChunkPosition> for ChunkMask {
 	}
 }
 
-impl Index<ChunkPosition> for ChunkMask {
+impl Index<CubePosition> for ChunkMask {
 	type Output = bool;
 
-	fn index(&self, position: ChunkPosition) -> &bool {
+	fn index(&self, position: CubePosition) -> &bool {
 		let index = position.yzx() as usize;
 		let (block_index, sub_index) = (index / 64, index % 64);
 

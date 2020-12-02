@@ -1,10 +1,10 @@
 use std::fmt::{Debug, Formatter, Result};
-use crate::position::ChunkPosition;
+use crate::position::CubePosition;
 use super::{u4, nibble_index};
 use crate::component::ChunkStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
-/// Indexed with ChunkPosition.
+/// Indexed with CubePosition.
 pub struct ChunkNibbles(Box<[u8; 2048]>);
 impl ChunkNibbles {
 	/// Creates a `ChunkNibbles` from a raw array of `u4x2`s.
@@ -20,7 +20,7 @@ impl ChunkNibbles {
 	/// This uses the `u4x2::replace_or` function internally, and shares the same semantics.
 	/// This can be used as an optimization to avoid clearing an already cleared value when operating
 	/// on a fresh buffer.
-	pub fn set_uncleared(&mut self, at: ChunkPosition, value: u4) {
+	pub fn set_uncleared(&mut self, at: CubePosition, value: u4) {
 		let value = value.raw() & 15;
 
 		let (index, shift) = nibble_index(at.yzx() as usize);
@@ -48,7 +48,7 @@ impl ChunkNibbles {
 }
 
 impl ChunkStorage<u4> for ChunkNibbles {
-	fn get(&self, at: ChunkPosition) -> u4 {
+	fn get(&self, at: CubePosition) -> u4 {
 		let (index, shift) = nibble_index(at.yzx() as usize);
 
 		let single = self.0[index] & (0xF << shift);
@@ -56,7 +56,7 @@ impl ChunkStorage<u4> for ChunkNibbles {
 		u4::new(single >> shift)
 	}
 
-	fn set(&mut self, at: ChunkPosition, value: u4) {
+	fn set(&mut self, at: CubePosition, value: u4) {
 		let value = value.raw() & 15;
 
 		let (index, shift) = nibble_index(at.yzx() as usize);
