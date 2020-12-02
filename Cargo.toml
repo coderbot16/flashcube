@@ -1,0 +1,25 @@
+[workspace]
+members = [
+	"nbt-turbo",
+	"vocs",
+	"lumis",
+	"mclevel/region",
+	"mclevel/mca",
+	"mclevel/classicworld",
+	"i73/i73-frontend",
+	"i73/i73-image",
+	"i73/i73-noise",
+	"i73/i73-biome",
+	"i73/i73-shape",
+	"i73/i73-trig",
+	"i73/i73-base",
+	"i73/i73-terrain",
+	"i73/i73-structure",
+	"i73/i73-decorator"
+]
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+lto = true

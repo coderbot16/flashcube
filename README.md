@@ -7,7 +7,7 @@ A fast parallel voxel engine for Minecraft-like worlds written in Rust
 1. [Install Rust and Cargo, 1.48 or later is required](https://www.rust-lang.org/tools/install)
 2. Execute `cargo build --release` in the terminal of your choice
 3. (Optional) Execute `cargo run --release --bin <name>` to run a given program
-	* `main` generates a single region file of a Minecraft Beta 1.7.3 world
+	* `i73-frontend` generates a single region file of a Minecraft Beta 1.7.3 world
 	* `mapper` creates images of Minecraft Beta 1.7.3 worlds
 
 

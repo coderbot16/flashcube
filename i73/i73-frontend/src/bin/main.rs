@@ -493,7 +493,24 @@ fn write_region(
 	use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
 	use region::{RegionWriter, ZlibOutput};
 
-	let region_file = File::create("out/region/r.0.0.mca").unwrap();
+	match std::fs::create_dir_all("out/region/") {
+		Ok(()) => (),
+		Err(e) => {
+			eprintln!("Unable to crete output directory \"out/region/\": {}", e);
+			return;
+		}
+	}
+
+	let path = "out/region/r.0.0.mca";
+
+	let region_file = match File::create(path) {
+		Ok(file) => file,
+		Err(e) => {
+			eprintln!("Unable to write region file \"{}\": {}", path, e);
+			return;
+		}
+	};
+
 	let mut writer = RegionWriter::start(region_file).unwrap();
 
 	for z in 0..32 {

@@ -1,0 +1,5 @@
+# i73 output directory
+out
+
+# Cargo compilation results and caches
+target

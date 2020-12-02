@@ -22,3 +22,7 @@ i73-decorator = { path = "../i73-decorator" }
 [dependencies.deflate]
 version = "0.7"
 features = ["gzip"]
+
+[[bin]]
+name = "i73-frontend"
+path = "src/bin/main.rs"
