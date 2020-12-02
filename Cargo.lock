@@ -105,7 +105,7 @@ name = "classicworld"
 version = "0.1.0"
 dependencies = [
  "deflate 0.8.6",
- "nbt-turbo 0.1.0",
+ "nbt-turbo",
  "vocs",
 ]
 
@@ -217,7 +217,7 @@ dependencies = [
  "java-rand",
  "lumis",
  "mca",
- "nbt-turbo 0.1.0 (git+https://gitlab.com/coderbot16/nbt-turbo)",
+ "nbt-turbo",
  "region",
  "vocs",
 ]
@@ -399,7 +399,7 @@ dependencies = [
 name = "mca"
 version = "0.1.0"
 dependencies = [
- "nbt-turbo 0.1.0",
+ "nbt-turbo",
  "vocs",
 ]
 
@@ -424,11 +424,6 @@ dependencies = [
 [[package]]
 name = "nbt-turbo"
 version = "0.1.0"
-
-[[package]]
-name = "nbt-turbo"
-version = "0.1.0"
-source = "git+https://gitlab.com/coderbot16/nbt-turbo#9e7690d3c59c5bef2777d52b67e7e1f15031733e"
 
 [[package]]
 name = "num-integer"
@@ -569,7 +564,7 @@ name = "region"
 version = "0.1.0"
 dependencies = [
  "deflate 0.8.6",
- "nbt-turbo 0.1.0",
+ "nbt-turbo",
 ]
 
 [[package]]
