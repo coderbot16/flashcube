@@ -22,15 +22,14 @@ use vocs::world::world::World;
 
 // TODO: This whole file should be split up / refactored at some point
 
-fn initial_sector<'a, B, F, S, SF>(
+fn initial_sector<'a, B, F, S>(
 	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
-	sector_sources: SF, opacities: &'a F,
+	sector_sources: &S::SectorSources, opacities: &'a F,
 ) -> SectorQueue
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 	S: LightSources,
-	SF: Fn(CubePosition) -> S + Sync,
 {
 	let empty_lighting = NibbleCube::default();
 	let empty_neighbors = Directional::splat(&empty_lighting);
@@ -53,7 +52,7 @@ where
 				opacity.set(index, opacity_value);
 			}
 
-			let sources = sector_sources(position);
+			let sources = S::chunk_sources(sector_sources, position);
 
 			let mut light_data = NibbleCube::default();
 
@@ -71,16 +70,15 @@ where
 	sector_queue.into_inner().unwrap()
 }
 
-fn full_sector<'a, B, F, S, SF>(
+fn full_sector<'a, B, F, S>(
 	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
 	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
-	sector_queue: &mut SectorQueue, sector_sources: &SF, opacities: &'a F,
+	sector_queue: &mut SectorQueue, sector_sources: &S::SectorSources, opacities: &'a F,
 ) -> (u32, u32)
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 	S: LightSources,
-	SF: Fn(CubePosition) -> S,
 {
 	let mut iterations = 0;
 	let mut chunk_operations = 0;
@@ -92,7 +90,7 @@ where
 			chunk_operations += 1;
 
 			let blocks = block_sector[position].as_ref().unwrap();
-			let sources = sector_sources(position);
+			let sources = S::chunk_sources(sector_sources, position);
 
 			let mut queue = complete_chunk(
 				position,
@@ -242,15 +240,17 @@ impl SkyLightTraces for IgnoreTraces {
 	fn complete_sector(&self, _: GlobalSectorPosition, _: u32, _: u32, _: u32, _: Duration) {}
 }
 
-pub fn compute_world_skylight<'a, B, F, T>(
+pub fn compute_world_light<'a, B, F, T, S>(
 	world: &'a World<IndexedCube<B>>,
-	heightmaps: &'a HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>, opacities: &'a F,
+	opacities: &'a F,
+	world_sources: &S::WorldSources,
 	tracer: &T,
 ) -> SharedWorld<NoPack<NibbleCube>>
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 	T: SkyLightTraces + Sync,
+	S: LightSources,
 {
 	let empty_sector: SharedSector<NoPack<NibbleCube>> = SharedSector::new();
 	let empty_light_neighbors = Directional::splat(&empty_sector);
@@ -266,21 +266,15 @@ where
 		let initial_start = Instant::now();
 
 		let sky_light = sky_light.get_sector(position).unwrap();
-		let sector_heightmaps = heightmaps.get(&position).unwrap();
-		let sector_sources = &|position: CubePosition| {
-			let column_heightmap = &sector_heightmaps[position.layer()];
-	
-			let heightmap = column_heightmap.slice(u4::new(position.y()));
-			SkyLightSources::new(heightmap)
-		};
+		let sector_sources = S::sector_sources(world_sources, position);
 
 		let mut sector_queue =
-			initial_sector(block_sector, sky_light, sector_sources, opacities);
+			initial_sector::<B, F, S>(block_sector, sky_light, &sector_sources, opacities);
 
 		let inner_start = Instant::now();
 		tracer.initial_sector(position, inner_start.duration_since(initial_start));
 
-		let (iterations, chunk_operations) = full_sector(
+		let (iterations, chunk_operations) = full_sector::<B, F, S>(
 			block_sector,
 			sky_light,
 			empty_light_neighbors,
@@ -339,16 +333,9 @@ where
 
 				let mut sector_queue = SectorQueue::new();
 				sector_queue.reset_from_mask(sector_mask);
+				let sector_sources = S::sector_sources(world_sources, position);
 
-				let sector_heightmaps = heightmaps.get(&position).unwrap();
-				let sector_sources = &|position: CubePosition| {
-					let column_heightmap = &sector_heightmaps[position.layer()];
-			
-					let heightmap = column_heightmap.slice(u4::new(position.y()));
-					SkyLightSources::new(heightmap)
-				};
-
-				let (inner_iterations, chunk_operations) = full_sector(
+				let (inner_iterations, chunk_operations) = full_sector::<B, F, S>(
 					block_sector,
 					sky_light_center,
 					sky_light_neighbors,
@@ -372,4 +359,20 @@ where
 	}
 
 	sky_light
+}
+
+pub fn compute_world_skylight<'a, B, F, T>(
+	world: &'a World<IndexedCube<B>>,
+	heightmaps: &'a HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>,
+	opacities: &'a F,
+	tracer: &T,
+) -> SharedWorld<NoPack<NibbleCube>>
+where
+	B: 'a + Target + Send + Sync,
+	F: Fn(&'a B) -> u4 + Sync,
+	T: SkyLightTraces + Sync,
+{
+	let world_sources = heightmaps;
+
+	compute_world_light::< _, _, _, SkyLightSources>(world, opacities, world_sources, tracer)
 }

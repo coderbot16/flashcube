@@ -1,11 +1,13 @@
-use crate::heightmap::CubeHeightMap;
+use crate::heightmap::{ColumnHeightMap, CubeHeightMap};
 use crate::sources::LightSources;
 use std::cmp;
+use std::collections::HashMap;
 use vocs::component::{CubeStorage, LayerStorage};
 use vocs::mask::{BitLayer, Mask};
 use vocs::nibbles::{u4, NibbleCube, NibbleLayer};
-use vocs::position::{dir, CubePosition, LayerPosition};
+use vocs::position::{dir, CubePosition, LayerPosition, GlobalSectorPosition};
 use vocs::view::{MaskOffset, SpillBitCube};
+use vocs::unpacked::Layer;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SkyLightSources(CubeHeightMap);
@@ -25,6 +27,20 @@ impl SkyLightSources {
 }
 
 impl LightSources for SkyLightSources {
+	type WorldSources = HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>;
+	type SectorSources = Layer<ColumnHeightMap>;
+
+	fn sector_sources(world_sources: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>, position: GlobalSectorPosition) -> &Self::SectorSources {
+		world_sources.get(&position).unwrap()
+	}
+
+	fn chunk_sources(sector_sources: &Layer<ColumnHeightMap>, position: CubePosition) -> Self {
+		let column_heightmap = &sector_sources[position.layer()];
+	
+		let heightmap = column_heightmap.slice(u4::new(position.y()));
+		SkyLightSources::new(heightmap)
+	}
+
 	fn emission(&self, position: CubePosition) -> u4 {
 		// no_light -> height of 16 or more
 		let height = ((self.no_light()[position.layer()] as u8) << 4)

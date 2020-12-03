@@ -1,20 +1,26 @@
 use crate::sources::LightSources;
+use vocs::indexed::{Target, IndexedCube};
 use vocs::nibbles::{u4, NibbleArray, NibbleCube};
 use vocs::packed::PackedCube;
-use vocs::position::{dir, CubePosition};
+use vocs::position::{dir, CubePosition, GlobalSectorPosition};
 use vocs::view::{MaskOffset, SpillBitCube};
+use vocs::world::world::World;
+use vocs::world::sector::Sector;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
-pub struct BlockLightSources<'c> {
+pub struct BlockLightSources<'c, B: Target> {
 	emission: NibbleArray,
 	chunk: &'c PackedCube,
+	phantom: PhantomData<B>
 }
 
-impl<'c> BlockLightSources<'c> {
+impl<'c, B: Target> BlockLightSources<'c, B> {
 	pub fn new(chunk: &'c PackedCube) -> Self {
 		BlockLightSources {
 			emission: NibbleArray::new(1 << chunk.bits()),
-			chunk
+			chunk,
+			phantom: PhantomData
 		}
 	}
 
@@ -23,7 +29,18 @@ impl<'c> BlockLightSources<'c> {
 	}
 }
 
-impl<'c> LightSources for BlockLightSources<'c> {
+impl<'c, B: Target + Sync> LightSources for BlockLightSources<'c, B> {
+	type SectorSources = Sector<IndexedCube<B>>;
+	type WorldSources = World<IndexedCube<B>>;
+
+	fn sector_sources(world_sources: &Self::WorldSources, position: GlobalSectorPosition) -> &Self::SectorSources {
+		todo!()
+	}
+
+	fn chunk_sources(sector_sources: &Self::SectorSources, position: CubePosition) -> Self {
+		todo!()
+	}
+
 	fn emission(&self, position: CubePosition) -> u4 {
 		self.emission.get(self.chunk.get(position) as usize)
 	}
