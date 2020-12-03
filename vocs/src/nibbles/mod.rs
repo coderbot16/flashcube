@@ -1,10 +1,10 @@
 mod chunk;
 mod layer;
-mod bulk;
+mod array;
 
 pub use self::chunk::NibbleCube;
 pub use self::layer::NibbleLayer;
-pub use self::bulk::BulkNibbles;
+pub use self::array::NibbleArray;
 
 use crate::component::Component;
 

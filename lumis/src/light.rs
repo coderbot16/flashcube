@@ -2,7 +2,7 @@ use crate::queue::CubeQueue;
 use crate::sources::LightSources;
 use std::cmp::max;
 use vocs::component::CubeStorage;
-use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
+use vocs::nibbles::{u4, NibbleArray, NibbleCube};
 use vocs::packed::PackedCube;
 use vocs::position::{dir, CubePosition, Offset};
 use vocs::view::Directional;
@@ -15,7 +15,7 @@ where
 	data: &'n mut NibbleCube,
 	neighbors: Directional<&'n NibbleCube>,
 	sources: S,
-	opacity: BulkNibbles,
+	opacity: NibbleArray,
 }
 
 impl<'n, S> Lighting<'n, S>
@@ -24,7 +24,7 @@ where
 {
 	pub fn new(
 		data: &'n mut NibbleCube, neighbors: Directional<&'n NibbleCube>, sources: S,
-		opacity: BulkNibbles,
+		opacity: NibbleArray,
 	) -> Self {
 		Lighting { data, neighbors, sources, opacity }
 	}

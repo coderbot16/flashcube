@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use vocs::indexed::{IndexedCube, Target};
 use vocs::mask::BitCube;
-use vocs::nibbles::{u4, BulkNibbles, NibbleCube};
+use vocs::nibbles::{u4, NibbleArray, NibbleCube};
 use vocs::position::{dir, CubePosition, GlobalSectorPosition, Offset};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
@@ -50,7 +50,7 @@ where
 			(CubePosition::from_yzx(index as u16), chunk.as_ref().expect("TODO").freeze())
 		})
 		.for_each(|(position, (blocks, palette))| {
-			let mut opacity = BulkNibbles::new(palette.len());
+			let mut opacity = NibbleArray::new(palette.len());
 
 			for (index, value) in palette.iter().enumerate() {
 				let opacity_value = value.as_ref().map(opacities).unwrap_or(u4::new(15));
@@ -134,7 +134,7 @@ where
 
 	let (blocks, palette) = blocks.freeze();
 
-	let mut opacity = BulkNibbles::new(palette.len());
+	let mut opacity = NibbleArray::new(palette.len());
 
 	for (index, value) in palette.iter().enumerate() {
 		let opacity_value = value.as_ref().map(opacities).unwrap_or(u4::new(15));
