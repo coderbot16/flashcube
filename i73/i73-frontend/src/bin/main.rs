@@ -76,7 +76,7 @@ fn run() {
 		emissions.insert(block::STILL_LAVA, u4::new(15));
 		emissions.insert(block::FLOWING_LAVA, u4::new(15));
 
-		let emissions = |block: &Block| emissions.get(block).copied().unwrap_or(u4::new(15));
+		let emissions = |block: &Block| emissions.get(block).copied().unwrap_or(u4::ZERO);
 
 		// Also logs timing messages
 		lumis::compute_world_blocklight(&world, &opacities, &emissions, &lumis::PrintTraces)
