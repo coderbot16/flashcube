@@ -60,7 +60,7 @@ where
 
 			let column_heightmap = &heightmaps[position.layer()];
 			let chunk_heightmap = column_heightmap.slice(u4::new(position.y()));
-			let sources = SkyLightSources::new(&chunk_heightmap);
+			let sources = SkyLightSources::new(chunk_heightmap);
 
 			let mut light_data = NibbleCube::default();
 
@@ -78,14 +78,16 @@ where
 	sector_queue.into_inner().unwrap()
 }
 
-fn full_sector<'a, B, F>(
-	block_sector: &'a Sector<IndexedCube<B>>, sky_light: &SharedSector<NoPack<NibbleCube>>,
-	sky_light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
-	sector_queue: &mut SectorQueue, heightmaps: &Layer<ColumnHeightMap>, opacities: &'a F,
+fn full_sector<'a, B, F, S, SF>(
+	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
+	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
+	sector_queue: &mut SectorQueue, sector_sources: &SF, opacities: &'a F,
 ) -> (u32, u32)
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
+	S: LightSources,
+	SF: Fn(CubePosition) -> S
 {
 	let mut iterations = 0;
 	let mut chunk_operations = 0;
@@ -97,17 +99,15 @@ where
 			chunk_operations += 1;
 
 			let blocks = block_sector[position].as_ref().unwrap();
-			let column_heightmap = &heightmaps[position.layer()];
-
-			let heightmap = column_heightmap.slice(u4::new(position.y()));
+			let sources = sector_sources(position);
 
 			let mut queue = complete_chunk(
 				position,
 				blocks,
-				sky_light,
-				sky_light_neighbors,
+				light,
+				light_neighbors,
 				incomplete,
-				SkyLightSources::new(&heightmap),
+				sources,
 				opacities,
 			);
 
@@ -286,6 +286,12 @@ where
 
 		let sky_light = sky_light.get_sector(position).unwrap();
 		let sector_heightmaps = heightmaps.get(&position).unwrap();
+		let sector_sources = &|position: CubePosition| {
+			let column_heightmap = &sector_heightmaps[position.layer()];
+	
+			let heightmap = column_heightmap.slice(u4::new(position.y()));
+			SkyLightSources::new(heightmap)
+		};
 
 		let mut sector_queue =
 			initial_sector(block_sector, sky_light, sector_heightmaps, opacities);
@@ -298,7 +304,7 @@ where
 			sky_light,
 			empty_sky_light_neighbors,
 			&mut sector_queue,
-			&sector_heightmaps,
+			sector_sources,
 			opacities,
 		);
 
@@ -354,13 +360,19 @@ where
 				sector_queue.reset_from_mask(sector_mask);
 
 				let sector_heightmaps = heightmaps.get(&position).unwrap();
+				let sector_sources = &|position: CubePosition| {
+					let column_heightmap = &sector_heightmaps[position.layer()];
+			
+					let heightmap = column_heightmap.slice(u4::new(position.y()));
+					SkyLightSources::new(heightmap)
+				};
 
 				let (inner_iterations, chunk_operations) = full_sector(
 					block_sector,
 					sky_light_center,
 					sky_light_neighbors,
 					&mut sector_queue,
-					sector_heightmaps,
+					sector_sources,
 					opacities,
 				);
 

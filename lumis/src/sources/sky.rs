@@ -8,10 +8,10 @@ use vocs::position::{dir, CubePosition, LayerPosition};
 use vocs::view::{MaskOffset, SpillBitCube};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct SkyLightSources<'h>(&'h CubeHeightMap);
+pub struct SkyLightSources(CubeHeightMap);
 
-impl<'h> SkyLightSources<'h> {
-	pub fn new(height_map: &'h CubeHeightMap) -> Self {
+impl SkyLightSources {
+	pub fn new(height_map: CubeHeightMap) -> Self {
 		SkyLightSources(height_map)
 	}
 
@@ -24,7 +24,7 @@ impl<'h> SkyLightSources<'h> {
 	}
 }
 
-impl<'h> LightSources for SkyLightSources<'h> {
+impl LightSources for SkyLightSources {
 	fn emission(&self, position: CubePosition) -> u4 {
 		// no_light -> height of 16 or more
 		let height = ((self.no_light()[position.layer()] as u8) << 4)
