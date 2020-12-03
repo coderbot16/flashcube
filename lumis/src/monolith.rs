@@ -1,7 +1,7 @@
-use crate::heightmap::{CubeHeightMap, ColumnHeightMap};
+use crate::heightmap::ColumnHeightMap;
 use crate::light::Lighting;
 use crate::queue::{CubeQueue, SectorQueue, WorldQueue};
-use crate::sources::SkyLightSources;
+use crate::sources::{LightSources, SkyLightSources};
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -107,7 +107,7 @@ where
 				sky_light,
 				sky_light_neighbors,
 				incomplete,
-				&heightmap,
+				SkyLightSources::new(&heightmap),
 				opacities,
 			);
 
@@ -118,15 +118,16 @@ where
 	(iterations, chunk_operations)
 }
 
-fn complete_chunk<'a, B, F>(
+fn complete_chunk<'a, B, F, S>(
 	position: CubePosition, blocks: &'a IndexedCube<B>,
-	sky_light: &SharedSector<NoPack<NibbleCube>>,
-	sky_light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>, incomplete: BitCube,
-	heightmap: &CubeHeightMap, opacities: &'a F,
+	light: &SharedSector<NoPack<NibbleCube>>,
+	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>, incomplete: BitCube,
+	sources: S, opacities: &'a F,
 ) -> CubeQueue
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
+	S: LightSources,
 {
 	// TODO: Cache these things!
 	let empty_lighting = NibbleCube::default();
@@ -142,39 +143,37 @@ where
 		opacity.set(index, opacity_value);
 	}
 
-	let sources = SkyLightSources::new(heightmap);
-
-	let mut central = sky_light.get_or_create(position);
+	let mut central = light.get_or_create(position);
 	let locks = SplitDirectional {
-		up: position.offset(dir::Up).map(|position| sky_light[position].read()).unwrap_or_else(
-			|| sky_light_neighbors[dir::Up][position.offset_wrapping(dir::Up)].read(),
+		up: position.offset(dir::Up).map(|position| light[position].read()).unwrap_or_else(
+			|| light_neighbors[dir::Up][position.offset_wrapping(dir::Up)].read(),
 		),
-		down: position.offset(dir::Down).map(|position| sky_light[position].read()).unwrap_or_else(
-			|| sky_light_neighbors[dir::Down][position.offset_wrapping(dir::Down)].read(),
+		down: position.offset(dir::Down).map(|position| light[position].read()).unwrap_or_else(
+			|| light_neighbors[dir::Down][position.offset_wrapping(dir::Down)].read(),
 		),
 		plus_x: position
 			.offset(dir::PlusX)
-			.map(|position| sky_light[position].read())
+			.map(|position| light[position].read())
 			.unwrap_or_else(|| {
-				sky_light_neighbors[dir::PlusX][position.offset_wrapping(dir::PlusX)].read()
+				light_neighbors[dir::PlusX][position.offset_wrapping(dir::PlusX)].read()
 			}),
 		minus_x: position
 			.offset(dir::MinusX)
-			.map(|position| sky_light[position].read())
+			.map(|position| light[position].read())
 			.unwrap_or_else(|| {
-				sky_light_neighbors[dir::MinusX][position.offset_wrapping(dir::MinusX)].read()
+				light_neighbors[dir::MinusX][position.offset_wrapping(dir::MinusX)].read()
 			}),
 		plus_z: position
 			.offset(dir::PlusZ)
-			.map(|position| sky_light[position].read())
+			.map(|position| light[position].read())
 			.unwrap_or_else(|| {
-				sky_light_neighbors[dir::PlusZ][position.offset_wrapping(dir::PlusZ)].read()
+				light_neighbors[dir::PlusZ][position.offset_wrapping(dir::PlusZ)].read()
 			}),
 		minus_z: position
 			.offset(dir::MinusZ)
-			.map(|position| sky_light[position].read())
+			.map(|position| light[position].read())
 			.unwrap_or_else(|| {
-				sky_light_neighbors[dir::MinusZ][position.offset_wrapping(dir::MinusZ)].read()
+				light_neighbors[dir::MinusZ][position.offset_wrapping(dir::MinusZ)].read()
 			}),
 	};
 
@@ -187,10 +186,10 @@ where
 		minus_z: locks.minus_z.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
 	};
 
-	let mut light = Lighting::new(&mut central, Directional::combine(neighbors), sources, opacity);
+	let mut light_operation = Lighting::new(&mut central, Directional::combine(neighbors), sources, opacity);
 
 	queue.reset_from_mask(incomplete);
-	light.apply(blocks, &mut queue);
+	light_operation.apply(blocks, &mut queue);
 
 	queue
 }
