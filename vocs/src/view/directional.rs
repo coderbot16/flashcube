@@ -11,8 +11,51 @@ pub struct SplitDirectional<T> {
 	pub minus_z: T
 }
 
+impl<T: Copy> SplitDirectional<T> {
+	pub fn splat(value: T) -> Self {
+		SplitDirectional {
+			plus_x: value,
+			minus_x: value,
+			up: value,
+			down: value,
+			plus_z: value,
+			minus_z: value
+		}
+	}
+}
+
+impl<T> SplitDirectional<T> {
+	pub fn as_ref<'a>(&'a self) -> SplitDirectional<&'a T> {
+		SplitDirectional {
+			plus_x: &self.plus_x,
+			minus_x: &self.minus_x,
+			up: &self.up,
+			down: &self.down,
+			plus_z: &self.plus_z,
+			minus_z: &self.minus_z
+		}
+	}
+
+	pub fn map<F, M>(self, f: F) -> SplitDirectional<M> where F: Fn(T) -> M {
+		SplitDirectional {
+			plus_x: f(self.plus_x),
+			minus_x: f(self.minus_x),
+			up: f(self.up),
+			down: f(self.down),
+			plus_z: f(self.plus_z),
+			minus_z: f(self.minus_z)
+		}
+	}
+}
+
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Directional<T>([T; 6]);
+
+impl<T: Copy> Directional<T> {
+	pub fn splat(value: T) -> Self {
+		Directional([value; 6])
+	}
+}
 
 impl<T> Directional<T> {
 	pub fn combine(split: SplitDirectional<T>) -> Self {

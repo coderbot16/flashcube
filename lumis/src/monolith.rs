@@ -31,14 +31,7 @@ where
 	F: Fn(&'a B) -> u4 + Sync,
 {
 	let empty_lighting = NibbleCube::default();
-	let empty_neighbors = Directional::combine(SplitDirectional {
-		minus_x: &empty_lighting,
-		plus_x: &empty_lighting,
-		minus_z: &empty_lighting,
-		plus_z: &empty_lighting,
-		down: &empty_lighting,
-		up: &empty_lighting,
-	});
+	let empty_neighbors = Directional::splat(&empty_lighting);
 
 	let sector_queue = Mutex::new(SectorQueue::new());
 
@@ -177,14 +170,9 @@ where
 			}),
 	};
 
-	let neighbors = SplitDirectional {
-		up: locks.up.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
-		down: locks.down.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
-		plus_x: locks.plus_x.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
-		minus_x: locks.minus_x.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
-		plus_z: locks.plus_z.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
-		minus_z: locks.minus_z.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting),
-	};
+	let neighbors = locks.as_ref().map(|guard| {
+		guard.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting)
+	});
 
 	let mut light_operation = Lighting::new(&mut central, Directional::combine(neighbors), sources, opacity);
 
@@ -265,14 +253,7 @@ where
 	T: SkyLightTraces + Sync,
 {
 	let empty_sector: SharedSector<NoPack<NibbleCube>> = SharedSector::new();
-	let empty_sky_light_neighbors = Directional::combine(SplitDirectional {
-		minus_x: &empty_sector,
-		plus_x: &empty_sector,
-		minus_z: &empty_sector,
-		plus_z: &empty_sector,
-		down: &empty_sector,
-		up: &empty_sector,
-	});
+	let empty_light_neighbors = Directional::splat(&empty_sector);
 
 	let mut sky_light: SharedWorld<NoPack<NibbleCube>> = SharedWorld::new();
 	let world_queue = Mutex::new(WorldQueue::new());
@@ -302,7 +283,7 @@ where
 		let (iterations, chunk_operations) = full_sector(
 			block_sector,
 			sky_light,
-			empty_sky_light_neighbors,
+			empty_light_neighbors,
 			&mut sector_queue,
 			sector_sources,
 			opacities,
