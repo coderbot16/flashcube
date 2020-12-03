@@ -28,20 +28,42 @@ impl<O> RegionWriter<O> where O: Write + Seek {
 	
 	pub fn column(&mut self, x: u8, z: u8, buffer: &ZlibBuffer) -> Result<()> {
 		let header = ChunkHeader {
-			len: buffer.compressed_len() as u32 + 4,
+			len: buffer.compressed_len() as u32 + 1,
 			compression: 2
 		};
+
+		// compressed data len + a header of size 5
+		let total_len = (buffer.compressed_len() + 5) as u32;
 
 		let padding = header.required_padding();
 
 		let start = self.offset_pages as u32;
-		let len_pages = (header.len / 4096 + (padding != 0) as u32) as u8;
+		let len_pages = (total_len / 4096 + (padding != 0) as u32) as u8;
 
 		self.offset_pages += len_pages as u64;
 
 		RegionHeaderMut::new(&mut self.header).location(x, z, ChunkLocation::from_parts(
 			start, len_pages
 		));
+
+		// Some sanity checks to make sure that we aren't writing corrupted data
+		let mut written_len = 0;
+
+		written_len += header.into_bytes().len();
+		written_len += buffer.0.len();
+		written_len += padding as usize;
+
+		let pos = self.out.seek(SeekFrom::Current(0))?;
+		let expected_pos = (start as u64) * 4096;
+
+		// The position of the written chunk in the file should match what we wrote to the header
+		assert_eq!(pos, expected_pos);
+
+		// We are always writing a multiple of 4096 bytes
+		assert_eq!(written_len % 4096, 0);
+
+		// The length stored to the header should match
+		assert_eq!(written_len / 4096, len_pages as usize);
 
 		self.out.write_all(&header.into_bytes())?;
 		self.out.write_all(&buffer.0)?;
@@ -222,7 +244,7 @@ impl ChunkHeader {
 	}
 
 	pub fn required_padding(self) -> u32 {
-		4096 - (self.len + 1) % 4096
+		4096 - (self.len + 4) % 4096
 	}
 	
 	pub fn into_bytes(self) -> [u8; 5] {
