@@ -22,13 +22,13 @@ use vocs::world::world::World;
 
 // TODO: This whole file should be split up / refactored at some point
 
-fn initial_sector<'a, B, F, S>(
-	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
-	sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &'a F,
+fn initial_sector<B, F, S>(
+	block_sector: &Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
+	sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &F,
 ) -> SectorQueue
 where
-	B: 'a + Target + Send + Sync,
-	F: Fn(&'a B) -> u4 + Sync,
+	B: Target + Send + Sync,
+	F: Fn(&B) -> u4 + Sync,
 	S: LightSources,
 {
 	let empty_lighting = NibbleCube::default();
@@ -70,14 +70,14 @@ where
 	sector_queue.into_inner().unwrap()
 }
 
-fn full_sector<'a, B, F, S>(
-	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
+fn full_sector<B, F, S>(
+	block_sector: &Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
 	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
-	sector_queue: &mut SectorQueue, sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &'a F,
+	sector_queue: &mut SectorQueue, sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &F,
 ) -> (u32, u32)
 where
-	B: 'a + Target + Send + Sync,
-	F: Fn(&'a B) -> u4 + Sync,
+	B: Target + Send + Sync,
+	F: Fn(&B) -> u4 + Sync,
 	S: LightSources,
 {
 	let mut iterations = 0;
@@ -109,15 +109,15 @@ where
 	(iterations, chunk_operations)
 }
 
-fn complete_chunk<'a, B, F, S>(
-	position: CubePosition, blocks: &'a IndexedCube<B>,
+fn complete_chunk<B, F, S>(
+	position: CubePosition, blocks: &IndexedCube<B>,
 	light: &SharedSector<NoPack<NibbleCube>>,
 	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>, incomplete: BitCube,
-	sources: S, opacities: &'a F,
+	sources: S, opacities: &F,
 ) -> CubeQueue
 where
-	B: 'a + Target + Send + Sync,
-	F: Fn(&'a B) -> u4 + Sync,
+	B: Target + Send + Sync,
+	F: Fn(&B) -> u4 + Sync,
 	S: LightSources,
 {
 	// TODO: Cache these things!
@@ -240,16 +240,16 @@ impl SkyLightTraces for IgnoreTraces {
 	fn complete_sector(&self, _: GlobalSectorPosition, _: u32, _: u32, _: u32, _: Duration) {}
 }
 
-pub fn compute_world_light<'a, B, F, T, S>(
-	world: &'a World<IndexedCube<B>>,
-	opacities: &'a F,
+pub fn compute_world_light<B, F, T, S>(
+	world: &World<IndexedCube<B>>,
+	opacities: &F,
 	world_sources: &S::WorldSources,
 	emission_palette: &S::EmissionPalette,
 	tracer: &T,
 ) -> SharedWorld<NoPack<NibbleCube>>
 where
-	B: 'a + Target + Send + Sync,
-	F: Fn(&'a B) -> u4 + Sync,
+	B: Target + Send + Sync,
+	F: Fn(&B) -> u4 + Sync,
 	T: SkyLightTraces + Sync,
 	S: LightSources,
 {
@@ -364,15 +364,15 @@ where
 	sky_light
 }
 
-pub fn compute_world_skylight<'a, B, F, T>(
-	world: &'a World<IndexedCube<B>>,
-	heightmaps: &'a HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>,
-	opacities: &'a F,
+pub fn compute_world_skylight<B, F, T>(
+	world: &World<IndexedCube<B>>,
+	heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>,
+	opacities: &F,
 	tracer: &T,
 ) -> SharedWorld<NoPack<NibbleCube>>
 where
-	B: 'a + Target + Send + Sync,
-	F: Fn(&'a B) -> u4 + Sync,
+	B: Target + Send + Sync,
+	F: Fn(&B) -> u4 + Sync,
 	T: SkyLightTraces + Sync,
 {
 	let world_sources = heightmaps;

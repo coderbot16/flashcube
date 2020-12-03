@@ -62,7 +62,7 @@ fn run() {
 	});
 
 	let sky_light = time("Computing sky lighting", || {
-		let opacities = |block| opacities.get(block).copied().unwrap_or(u4::new(15));
+		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		// Also logs timing messages
 		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces)
