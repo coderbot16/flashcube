@@ -22,13 +22,15 @@ use vocs::world::world::World;
 
 // TODO: This whole file should be split up / refactored at some point
 
-fn initial_sector<'a, B, F>(
-	block_sector: &'a Sector<IndexedCube<B>>, sky_light: &SharedSector<NoPack<NibbleCube>>,
-	heightmaps: &Layer<ColumnHeightMap>, opacities: &'a F,
+fn initial_sector<'a, B, F, S, SF>(
+	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
+	sector_sources: SF, opacities: &'a F,
 ) -> SectorQueue
 where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
+	S: LightSources,
+	SF: Fn(CubePosition) -> S + Sync,
 {
 	let empty_lighting = NibbleCube::default();
 	let empty_neighbors = Directional::splat(&empty_lighting);
@@ -51,21 +53,19 @@ where
 				opacity.set(index, opacity_value);
 			}
 
-			let column_heightmap = &heightmaps[position.layer()];
-			let chunk_heightmap = column_heightmap.slice(u4::new(position.y()));
-			let sources = SkyLightSources::new(chunk_heightmap);
+			let sources = sector_sources(position);
 
 			let mut light_data = NibbleCube::default();
 
-			let mut light = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
+			let mut light_operation = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
 
 			// TODO: Reuse this!
 			let mut queue = CubeQueue::new();
-			light.initial(&mut queue);
-			light.apply(blocks, &mut queue);
+			light_operation.initial(&mut queue);
+			light_operation.apply(blocks, &mut queue);
 
 			sector_queue.lock().unwrap().enqueue_spills(position, queue.reset_spills());
-			sky_light.set(position, NoPack(light_data));
+			light.set(position, NoPack(light_data));
 		});
 
 	sector_queue.into_inner().unwrap()
@@ -80,7 +80,7 @@ where
 	B: 'a + Target + Send + Sync,
 	F: Fn(&'a B) -> u4 + Sync,
 	S: LightSources,
-	SF: Fn(CubePosition) -> S
+	SF: Fn(CubePosition) -> S,
 {
 	let mut iterations = 0;
 	let mut chunk_operations = 0;
@@ -244,7 +244,7 @@ impl SkyLightTraces for IgnoreTraces {
 
 pub fn compute_world_skylight<'a, B, F, T>(
 	world: &'a World<IndexedCube<B>>,
-	heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>, opacities: &'a F,
+	heightmaps: &'a HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>, opacities: &'a F,
 	tracer: &T,
 ) -> SharedWorld<NoPack<NibbleCube>>
 where
@@ -275,7 +275,7 @@ where
 		};
 
 		let mut sector_queue =
-			initial_sector(block_sector, sky_light, sector_heightmaps, opacities);
+			initial_sector(block_sector, sky_light, sector_sources, opacities);
 
 		let inner_start = Instant::now();
 		tracer.initial_sector(position, inner_start.duration_since(initial_start));
