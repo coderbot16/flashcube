@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use vocs::component::{CubeStorage, LayerStorage};
 use vocs::mask::{BitLayer, Mask};
 use vocs::nibbles::{u4, NibbleCube, NibbleLayer};
+use vocs::packed::PackedCube;
 use vocs::position::{dir, CubePosition, LayerPosition, GlobalSectorPosition};
 use vocs::view::{MaskOffset, SpillBitCube};
 use vocs::unpacked::Layer;
@@ -29,19 +30,20 @@ impl SkyLightSources {
 impl LightSources for SkyLightSources {
 	type WorldSources = HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>;
 	type SectorSources = Layer<ColumnHeightMap>;
+	type EmissionPalette = ();
 
 	fn sector_sources(world_sources: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>, position: GlobalSectorPosition) -> &Self::SectorSources {
 		world_sources.get(&position).unwrap()
 	}
 
-	fn chunk_sources(sector_sources: &Layer<ColumnHeightMap>, position: CubePosition) -> Self {
+	fn chunk_sources(sector_sources: &Layer<ColumnHeightMap>, _emission_palette: &(), position: CubePosition) -> Self {
 		let column_heightmap = &sector_sources[position.layer()];
 	
 		let heightmap = column_heightmap.slice(u4::new(position.y()));
 		SkyLightSources::new(heightmap)
 	}
 
-	fn emission(&self, position: CubePosition) -> u4 {
+	fn emission(&self, _blocks: &PackedCube, position: CubePosition) -> u4 {
 		// no_light -> height of 16 or more
 		let height = ((self.no_light()[position.layer()] as u8) << 4)
 			| self.heightmap().get(position.layer()).raw();
@@ -49,7 +51,7 @@ impl LightSources for SkyLightSources {
 		u4::new(if position.y() >= height { 15 } else { 0 })
 	}
 
-	fn initial(&self, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
+	fn initial(&self, _blocks: &PackedCube, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
 		if self.no_light().is_filled(true) {
 			// Note: This assumes that the chunk is already filled with zeros...
 

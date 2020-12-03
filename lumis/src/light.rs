@@ -33,11 +33,11 @@ where
 		self.data.get(at)
 	}
 
-	pub fn initial(&mut self, queue: &mut CubeQueue) {
-		self.sources.initial(&mut self.data, queue.mask_mut())
+	pub fn initial(&mut self, blocks: &PackedCube, queue: &mut CubeQueue) {
+		self.sources.initial(blocks, &mut self.data, queue.mask_mut())
 	}
 
-	fn update(&mut self, queue: &mut CubeQueue, at: CubePosition, opacity: u4) {
+	fn update(&mut self, blocks: &PackedCube, queue: &mut CubeQueue, at: CubePosition, opacity: u4) {
 		let max_value = max(
 			max(
 				max(
@@ -67,7 +67,7 @@ where
 			),
 		);
 
-		let light = max(max_value.saturating_sub(u4::new(1)), self.sources.emission(at))
+		let light = max(max_value.saturating_sub(u4::new(1)), self.sources.emission(blocks, at))
 			.saturating_sub(opacity);
 
 		if light != self.data.get(at) {
@@ -81,7 +81,7 @@ where
 			while let Some(at) = queue.pop_first() {
 				let opacity = self.opacity.get(chunk.get(at) as usize);
 
-				self.update(queue, at, opacity);
+				self.update(chunk, queue, at, opacity);
 			}
 		}
 	}

@@ -8,19 +8,23 @@ use vocs::world::world::World;
 use vocs::world::sector::Sector;
 use std::marker::PhantomData;
 
-#[derive(Debug)]
-pub struct BlockLightSources<'c, B: Target> {
-	emission: NibbleArray,
-	chunk: &'c PackedCube,
-	phantom: PhantomData<B>
+pub trait EmissionPalette<B: Target> {
+	fn emission(&self, block: &B) -> u4;
 }
 
-impl<'c, B: Target> BlockLightSources<'c, B> {
-	pub fn new(chunk: &'c PackedCube) -> Self {
+#[derive(Debug)]
+pub struct BlockLightSources<B: Target, E: EmissionPalette<B>> {
+	emission: NibbleArray,
+	phantom_block: PhantomData<B>,
+	phantom_emission: PhantomData<E>
+}
+
+impl<B: Target, E: EmissionPalette<B>> BlockLightSources<B, E> {
+	pub fn new(chunk: &PackedCube) -> Self {
 		BlockLightSources {
 			emission: NibbleArray::new(1 << chunk.bits()),
-			chunk,
-			phantom: PhantomData
+			phantom_block: PhantomData,
+			phantom_emission: PhantomData
 		}
 	}
 
@@ -29,25 +33,37 @@ impl<'c, B: Target> BlockLightSources<'c, B> {
 	}
 }
 
-impl<'c, B: Target + Sync> LightSources for BlockLightSources<'c, B> {
+impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLightSources<B, E> {
 	type SectorSources = Sector<IndexedCube<B>>;
 	type WorldSources = World<IndexedCube<B>>;
+	type EmissionPalette = E;
 
 	fn sector_sources(world_sources: &Self::WorldSources, position: GlobalSectorPosition) -> &Self::SectorSources {
-		todo!()
+		world_sources.get_sector(position).unwrap()
 	}
 
-	fn chunk_sources(sector_sources: &Self::SectorSources, position: CubePosition) -> Self {
-		todo!()
+	fn chunk_sources(sector_sources: &Self::SectorSources, emission_palette: &Self::EmissionPalette, position: CubePosition) -> Self {
+		let chunk = &sector_sources[position];
+		let (blocks, palette) = chunk.as_ref().unwrap().freeze();
+
+		let mut sources: BlockLightSources<B, E> = BlockLightSources::new(blocks);
+
+		for (index, entry) in palette.iter().enumerate() {
+			let emission = entry.as_ref().map(|entry| emission_palette.emission(entry));
+
+			sources.set_emission(index, emission.unwrap_or(u4::ZERO));
+		}
+
+		sources
 	}
 
-	fn emission(&self, position: CubePosition) -> u4 {
-		self.emission.get(self.chunk.get(position) as usize)
+	fn emission(&self, blocks: &PackedCube, position: CubePosition) -> u4 {
+		self.emission.get(blocks.get(position) as usize)
 	}
 
-	fn initial(&self, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
+	fn initial(&self, blocks: &PackedCube, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
 		for position in CubePosition::enumerate() {
-			let emission = self.emission(position);
+			let emission = self.emission(blocks, position);
 
 			// Nothing to do at this position
 			if emission == u4::ZERO {

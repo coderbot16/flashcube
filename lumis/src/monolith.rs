@@ -24,7 +24,7 @@ use vocs::world::world::World;
 
 fn initial_sector<'a, B, F, S>(
 	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
-	sector_sources: &S::SectorSources, opacities: &'a F,
+	sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &'a F,
 ) -> SectorQueue
 where
 	B: 'a + Target + Send + Sync,
@@ -52,7 +52,7 @@ where
 				opacity.set(index, opacity_value);
 			}
 
-			let sources = S::chunk_sources(sector_sources, position);
+			let sources = S::chunk_sources(sector_sources, emission_palette, position);
 
 			let mut light_data = NibbleCube::default();
 
@@ -60,7 +60,7 @@ where
 
 			// TODO: Reuse this!
 			let mut queue = CubeQueue::new();
-			light_operation.initial(&mut queue);
+			light_operation.initial(blocks, &mut queue);
 			light_operation.apply(blocks, &mut queue);
 
 			sector_queue.lock().unwrap().enqueue_spills(position, queue.reset_spills());
@@ -73,7 +73,7 @@ where
 fn full_sector<'a, B, F, S>(
 	block_sector: &'a Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
 	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
-	sector_queue: &mut SectorQueue, sector_sources: &S::SectorSources, opacities: &'a F,
+	sector_queue: &mut SectorQueue, sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &'a F,
 ) -> (u32, u32)
 where
 	B: 'a + Target + Send + Sync,
@@ -90,7 +90,7 @@ where
 			chunk_operations += 1;
 
 			let blocks = block_sector[position].as_ref().unwrap();
-			let sources = S::chunk_sources(sector_sources, position);
+			let sources = S::chunk_sources(sector_sources, emission_palette, position);
 
 			let mut queue = complete_chunk(
 				position,
@@ -244,6 +244,7 @@ pub fn compute_world_light<'a, B, F, T, S>(
 	world: &'a World<IndexedCube<B>>,
 	opacities: &'a F,
 	world_sources: &S::WorldSources,
+	emission_palette: &S::EmissionPalette,
 	tracer: &T,
 ) -> SharedWorld<NoPack<NibbleCube>>
 where
@@ -269,7 +270,7 @@ where
 		let sector_sources = S::sector_sources(world_sources, position);
 
 		let mut sector_queue =
-			initial_sector::<B, F, S>(block_sector, sky_light, &sector_sources, opacities);
+			initial_sector::<B, F, S>(block_sector, sky_light, &sector_sources, emission_palette, opacities);
 
 		let inner_start = Instant::now();
 		tracer.initial_sector(position, inner_start.duration_since(initial_start));
@@ -280,6 +281,7 @@ where
 			empty_light_neighbors,
 			&mut sector_queue,
 			sector_sources,
+			emission_palette,
 			opacities,
 		);
 
@@ -341,6 +343,7 @@ where
 					sky_light_neighbors,
 					&mut sector_queue,
 					sector_sources,
+					emission_palette,
 					opacities,
 				);
 
@@ -374,5 +377,5 @@ where
 {
 	let world_sources = heightmaps;
 
-	compute_world_light::< _, _, _, SkyLightSources>(world, opacities, world_sources, tracer)
+	compute_world_light::< _, _, _, SkyLightSources>(world, opacities, world_sources, &(), tracer)
 }
