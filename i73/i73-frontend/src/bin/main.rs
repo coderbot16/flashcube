@@ -68,8 +68,22 @@ fn run() {
 		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces)
 	});
 
+	let block_light = time("Computing block lighting", || {
+		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
+
+		let mut emissions = HashMap::new();
+
+		emissions.insert(block::STILL_LAVA, u4::new(15));
+		emissions.insert(block::FLOWING_LAVA, u4::new(15));
+
+		let emissions = |block: &Block| emissions.get(block).copied().unwrap_or(u4::new(15));
+
+		// Also logs timing messages
+		lumis::compute_world_blocklight(&world, &opacities, &emissions, &lumis::PrintTraces)
+	});
+
 	time("Writing region file", || {
-		write_region(&world, &sky_light, &heightmaps, &world_biomes)
+		write_region(&world, &sky_light, &block_light, &heightmaps, &world_biomes)
 	});
 }
 
@@ -487,6 +501,7 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 
 fn write_region(
 	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<NibbleCube>>,
+	block_light: &SharedWorld<NoPack<NibbleCube>>,
 	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &HashMap<(i32, i32), Vec<u8>>,
 ) {
@@ -538,15 +553,16 @@ fn write_region(
 				}*/
 
 				let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
+				let block_light = block_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
 
 				sections.push(Section {
 					y: y as i8,
 					blocks: anvil_blocks.blocks,
 					add: anvil_blocks.add,
 					data: anvil_blocks.data,
-					block_light: NibbleCube::default(),
 					// TODO: Cloning this is stupid
-					sky_light: (&*sky_light).clone()
+					sky_light: (&*sky_light).clone(),
+					block_light: (&*block_light).clone()
 				});
 			}
 			

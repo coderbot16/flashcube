@@ -6,7 +6,7 @@ use vocs::view::SpillBitCube;
 mod block;
 mod sky;
 
-pub use block::BlockLightSources;
+pub use block::{BlockLightSources, EmissionPalette};
 pub use sky::SkyLightSources;
 
 pub trait LightSources {

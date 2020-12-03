@@ -8,8 +8,14 @@ use vocs::world::world::World;
 use vocs::world::sector::Sector;
 use std::marker::PhantomData;
 
-pub trait EmissionPalette<B: Target> {
+pub trait EmissionPalette<B: Target>: Sync {
 	fn emission(&self, block: &B) -> u4;
+}
+
+impl<B, T> EmissionPalette<B> for T where B: Target, T: Fn(&B) -> u4 + Sync {
+	fn emission(&self, block: &B) -> u4 {
+		self(block)
+	}
 }
 
 #[derive(Debug)]

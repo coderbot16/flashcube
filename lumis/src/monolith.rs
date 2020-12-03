@@ -1,7 +1,7 @@
 use crate::heightmap::ColumnHeightMap;
 use crate::light::Lighting;
 use crate::queue::{CubeQueue, SectorQueue, WorldQueue};
-use crate::sources::{LightSources, SkyLightSources};
+use crate::sources::{LightSources, BlockLightSources, EmissionPalette, SkyLightSources};
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -378,4 +378,19 @@ where
 	let world_sources = heightmaps;
 
 	compute_world_light::< _, _, _, SkyLightSources>(world, opacities, world_sources, &(), tracer)
+}
+
+pub fn compute_world_blocklight<B, F, E, T>(
+	world: &World<IndexedCube<B>>,
+	opacities: &F,
+	emissions: &E,
+	tracer: &T,
+) -> SharedWorld<NoPack<NibbleCube>>
+where
+	B: Target + Send + Sync,
+	F: Fn(&B) -> u4 + Sync,
+	E: EmissionPalette<B>,
+	T: SkyLightTraces + Sync,
+{
+	compute_world_light::< _, _, _, BlockLightSources<B, E>>(world, opacities, world, emissions, tracer)
 }
