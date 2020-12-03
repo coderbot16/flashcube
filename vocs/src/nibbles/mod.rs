@@ -24,9 +24,13 @@ impl Component for u4 {
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord, Default)]
 pub struct u4(u8);
 impl u4 {
+	pub const ZERO: u4 = u4::new(0);
+	pub const ONE: u4 = u4::new(1);
+	pub const MAX: u4 = u4::new(15);
+
 	/// Casts a u8 to a u4, truncating the value in the process.
 	#[inline]
-	pub fn new(x: u8) -> Self {
+	pub const fn new(x: u8) -> Self {
 		u4(x & 0xF)
 	}
 
