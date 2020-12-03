@@ -67,8 +67,10 @@ where
 			),
 		);
 
-		let light = max(max_value.saturating_sub(u4::new(1)), self.sources.emission(blocks, at))
-			.saturating_sub(opacity);
+		let light = max(
+			max_value.saturating_sub(u4::new(1)).saturating_sub(opacity), 
+			self.sources.emission(blocks, at)
+		);
 
 		if light != self.data.get(at) {
 			self.data.set(at, light);

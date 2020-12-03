@@ -20,7 +20,7 @@ impl<B, T> EmissionPalette<B> for T where B: Target, T: Fn(&B) -> u4 + Sync {
 
 #[derive(Debug)]
 pub struct BlockLightSources<B: Target, E: EmissionPalette<B>> {
-	emission: NibbleArray,
+	emission_array: NibbleArray,
 	phantom_block: PhantomData<B>,
 	phantom_emission: PhantomData<E>
 }
@@ -28,14 +28,14 @@ pub struct BlockLightSources<B: Target, E: EmissionPalette<B>> {
 impl<B: Target, E: EmissionPalette<B>> BlockLightSources<B, E> {
 	pub fn new(chunk: &PackedCube) -> Self {
 		BlockLightSources {
-			emission: NibbleArray::new(1 << chunk.bits()),
+			emission_array: NibbleArray::new(1 << chunk.bits()),
 			phantom_block: PhantomData,
 			phantom_emission: PhantomData
 		}
 	}
 
 	pub fn set_emission(&mut self, raw_index: usize, value: u4) {
-		self.emission.set(raw_index, value)
+		self.emission_array.set(raw_index, value)
 	}
 }
 
@@ -64,7 +64,7 @@ impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLight
 	}
 
 	fn emission(&self, blocks: &PackedCube, position: CubePosition) -> u4 {
-		self.emission.get(blocks.get(position) as usize)
+		self.emission_array.get(blocks.get(position) as usize)
 	}
 
 	fn initial(&self, blocks: &PackedCube, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
