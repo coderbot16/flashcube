@@ -59,7 +59,15 @@ pub struct AnvilBlocks {
 }
 
 impl AnvilBlocks {
-	pub fn from_paletted<'b, B, F>(chunk: &'b IndexedCube<B>, to_anvil_id: &'b F) -> Self 
+	pub fn empty() -> Self {
+		AnvilBlocks {
+			blocks: Box::new([0u8; 4096]),
+			data: NibbleCube::default(),
+			add: None
+		}
+	}
+
+	pub fn from_paletted<'b, B, F>(chunk: &'b IndexedCube<B>, to_anvil_id: &'b F) -> Option<Self> 
 	where B: 'b + Target, F: Fn(&'b B) -> u16, {
 		let mut blocks = Box::new([0u8; 4096]);
 		let mut meta = NibbleCube::default();
@@ -69,12 +77,18 @@ impl AnvilBlocks {
 		// Can't express Anvil IDs over 4095 without Add. TODO: Utilize Counts.
 		let need_add = palette.iter().map(|slot| slot.as_ref().map(to_anvil_id).unwrap_or(0)).any(|id| id > 4095);
 	
+		let mut has_any = false;
+
 		let add = if need_add {
 			let mut add = NibbleCube::default();
 	
 			for position in CubePosition::enumerate() {
 				let raw = storage.get(position);
 				let anvil = to_anvil_id(palette[raw as usize].as_ref().unwrap());
+
+				if anvil != 0 {
+					has_any = true
+				}
 	
 				blocks[position.yzx() as usize] = (anvil >> 4) as u8;
 				meta.set_uncleared(position, u4::new((anvil & 0xF) as u8));
@@ -87,17 +101,25 @@ impl AnvilBlocks {
 				let raw = storage.get(position);
 				let anvil = to_anvil_id(palette[raw as usize].as_ref().unwrap());
 	
+				if anvil != 0 {
+					has_any = true
+				}
+
 				blocks[position.yzx() as usize] = (anvil >> 4) as u8;
 				meta.set_uncleared(position, u4::new((anvil & 0xF) as u8));
 			}
 	
 			None
 		};
-	
-		AnvilBlocks {
+
+		if !has_any {
+			return None
+		}
+
+		Some(AnvilBlocks {
 				blocks,
 				data: meta,
 				add
-		}
+		})
 	}
 }

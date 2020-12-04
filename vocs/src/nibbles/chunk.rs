@@ -5,6 +5,7 @@ use crate::component::CubeStorage;
 
 /// A 16x16 collection of nibbles (`u4`s).
 /// Indexed with CubePosition.
+#[derive(Eq, PartialEq)]
 pub struct NibbleCube(Box<[u8; 2048]>);
 impl NibbleCube {
 	/// Creates a `NibbleCube` from a raw array of `u4x2`s.

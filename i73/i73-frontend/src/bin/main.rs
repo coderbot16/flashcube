@@ -555,12 +555,14 @@ use vocs::world::shared::SharedSector;
 use region::{RegionWriter, ZlibBuffer, ZlibOutput};
 use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
+use lumis::PackedNibbleCube;
+use std::ops::Deref;
 
 fn compress_chunks_in_sector(
 	sector_position: GlobalSectorPosition,
 	blocks: &Sector<IndexedCube<Block>>,
-	sky_light: &SharedSector<NoPack<lumis::PackedNibbleCube>>,
-	block_light: &SharedSector<NoPack<lumis::PackedNibbleCube>>,
+	sky_light: &SharedSector<NoPack<PackedNibbleCube>>,
+	block_light: &SharedSector<NoPack<PackedNibbleCube>>,
 	heightmaps: &Layer<lumis::heightmap::ColumnHeightMap>,
 	biomes: &Layer<Vec<u8>>
 ) -> Layer<ZlibBuffer> {
@@ -580,10 +582,6 @@ fn compress_chunks_in_sector(
 
 			let anvil_blocks = AnvilBlocks::from_paletted(&chunk, &|&id| id.to_anvil_id());
 
-			/*if chunk.anvil_empty() {
-				continue;
-			}*/
-
 			let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
 			let block_light = block_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
 
@@ -594,6 +592,13 @@ fn compress_chunks_in_sector(
 			if !block_light.is_packed() {
 				unpacked_block_lighting += 1;
 			}
+
+			if sky_light.deref() == &PackedNibbleCube::EntirelyLit && block_light.deref() == &PackedNibbleCube::EntirelyDark && anvil_blocks.is_none() {
+				// Don't bother writing this chunk section to a file, it holds no data of value
+				continue
+			}
+
+			let anvil_blocks = anvil_blocks.unwrap_or_else(|| AnvilBlocks::empty());
 
 			sections.push(Section {
 				y: y as i8,

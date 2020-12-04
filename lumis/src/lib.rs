@@ -11,7 +11,7 @@ use vocs::component::CubeStorage;
 use vocs::nibbles::{u4, NibbleCube};
 use vocs::position::CubePosition;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum PackedNibbleCube {
 	Unpacked(NibbleCube),
 	EntirelyDark,
