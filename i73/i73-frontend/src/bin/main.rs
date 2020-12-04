@@ -89,8 +89,12 @@ fn run() {
 	//let (sky_light, block_light) =
 	//	time("Computing lighting", || (compute_sky_light(), compute_block_light()));
 
+	let compressed_chunks = time("Compressing chunks", || {
+		compress_chunks(&world, &sky_light, &block_light, &heightmaps, &world_biomes)
+	});
+
 	time("Writing region file", || {
-		write_region(&world, &sky_light, &block_light, &heightmaps, &world_biomes)
+		write_region(&compressed_chunks)
 	});
 }
 
@@ -110,6 +114,27 @@ fn time<T, F: FnOnce() -> T>(name: &str, task: F) -> T {
 		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
 
 		println!("{} done in {}us ({}us per column)", name, us, us / 1024);
+	}
+
+	value
+}
+
+fn time_sector<T, F: FnOnce() -> T>(name: &str, sector_position: GlobalSectorPosition, task: F) -> T {
+	use std::time::Instant;
+
+	let start = Instant::now();
+	println!("{} for sector {}", name, sector_position);
+
+	let value = task();
+
+	{
+		let end = Instant::now();
+		let time = end.duration_since(start);
+
+		let secs = time.as_secs();
+		let us = (secs * 1000000) + ((time.subsec_nanos() / 1000) as u64);
+
+		println!("{} for sector {} done in {}us ({}us per column)", name, sector_position, us, us / 256);
 	}
 
 	value
@@ -528,6 +553,7 @@ use vocs::world::sector::Sector;
 use vocs::world::shared::SharedSector;
 use region::{RegionWriter, ZlibBuffer, ZlibOutput};
 use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
+use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 
 fn compress_chunks_in_sector(
 	sector_position: GlobalSectorPosition,
@@ -612,19 +638,42 @@ fn compress_chunks_in_sector(
 	let block_mb = unpacked_sky_lighting as f32 * (2048.0 / 1048576.0);
 
 	println!("Lighting memory usage statistics for sector {}:", sector_position);
-	println!("- Block light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_block_lighting, sky_mb, sky_mb * 100.0 / 32.0);
-	println!("-   Sky light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting, block_mb, block_mb * 100.0 / 32.0);
-	println!("-       Total: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting + unpacked_block_lighting, block_mb + sky_mb, (block_mb + sky_mb) * 100.0 / 64.0);
+	println!("- Block light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_block_lighting, sky_mb, sky_mb * 100.0 / 8.0);
+	println!("-   Sky light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting, block_mb, block_mb * 100.0 / 8.0);
+	println!("-       Total: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting + unpacked_block_lighting, block_mb + sky_mb, (block_mb + sky_mb) * 100.0 / 16.0);
 
 	compressed_chunks.map(Option::unwrap)
 }
 
-fn write_region(
+fn compress_chunks(
 	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	block_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<Vec<u8>>>,
-) {
+) -> HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ZlibBuffer>> {
+	let sectors = [
+		GlobalSectorPosition::new(0, 0),
+		GlobalSectorPosition::new(1, 0),
+		GlobalSectorPosition::new(0, 1),
+		GlobalSectorPosition::new(1, 1)
+	];
+
+	sectors.par_iter().map(|&sector_position: &GlobalSectorPosition| {
+		time_sector("Chunk compression", sector_position, || {
+			let blocks = world.get_sector(sector_position).unwrap();
+			let sky_light = sky_light.get_sector(sector_position).unwrap();
+			let block_light = block_light.get_sector(sector_position).unwrap();
+			let heightmaps = heightmaps.get(&sector_position).unwrap();
+			let biomes = world_biomes.get(&sector_position).unwrap();
+
+			let compressed = compress_chunks_in_sector(sector_position, blocks, sky_light, block_light, heightmaps, biomes);
+
+			(sector_position, compressed)
+		})
+	}).collect()
+}
+
+fn write_region(compressed_chunks: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ZlibBuffer>>) {
 	match std::fs::create_dir_all("out/region/") {
 		Ok(()) => (),
 		Err(e) => {
@@ -645,27 +694,7 @@ fn write_region(
 
 	let mut writer = RegionWriter::start(region_file).unwrap();
 
-	let mut compressed_chunks: HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ZlibBuffer>> = HashMap::new();
-
-	println!("Compressing chunks...");
-	for sector_z in 0..2 {
-		for sector_x in 0..2 {
-			let sector_position = GlobalSectorPosition::new(sector_x, sector_z);
-
-			let blocks = world.get_sector(sector_position).unwrap();
-			let sky_light = sky_light.get_sector(sector_position).unwrap();
-			let block_light = block_light.get_sector(sector_position).unwrap();
-			let heightmaps = heightmaps.get(&sector_position).unwrap();
-			let biomes = world_biomes.get(&sector_position).unwrap();
-
-			let compressed = compress_chunks_in_sector(sector_position, blocks, sky_light, block_light, heightmaps, biomes);
-
-			compressed_chunks.insert(sector_position, compressed);
-		}
-	}
-
 	for z in 0..32 {
-		println!("{}", z);
 		for x in 0..32 {
 			let column_position = GlobalColumnPosition::new(x, z);
 			let sector_position = column_position.global_sector();
