@@ -506,15 +506,108 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 	gzip.finish().unwrap();
 }*/
 
+use vocs::position::CubePosition;
+use vocs::world::sector::Sector;
+use vocs::world::shared::SharedSector;
+use region::{RegionWriter, ZlibBuffer, ZlibOutput};
+use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
+
+fn compress_chunks_in_sector(
+	sector_position: GlobalSectorPosition,
+	blocks: &Sector<IndexedCube<Block>>,
+	sky_light: &SharedSector<NoPack<lumis::PackedNibbleCube>>,
+	block_light: &SharedSector<NoPack<lumis::PackedNibbleCube>>,
+	heightmaps: &vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>,
+	biomes: &vocs::unpacked::Layer<Vec<u8>>
+) -> vocs::unpacked::Layer<ZlibBuffer> {
+	let mut unpacked_sky_lighting = 0;
+	let mut unpacked_block_lighting = 0;
+
+	let compressed_chunks: vocs::unpacked::Layer<Option<ZlibBuffer>> = blocks.enumerate_columns().map(|(column_position, column)| {
+		let heightmap = heightmaps[column_position].as_inner();
+		let biomes = &biomes[column_position];
+
+		let mut sections = Vec::new();
+
+		for (y, chunk) in column.iter().enumerate() {
+			let chunk_position = CubePosition::from_layer(y as u8, column_position);
+
+			let chunk = chunk.unwrap();
+
+			let anvil_blocks = AnvilBlocks::from_paletted(&chunk, &|&id| id.to_anvil_id());
+
+			/*if chunk.anvil_empty() {
+				continue;
+			}*/
+
+			let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
+			let block_light = block_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
+
+			if !sky_light.is_packed() {
+				unpacked_sky_lighting += 1
+			}
+
+			if !block_light.is_packed() {
+				unpacked_block_lighting += 1;
+			}
+
+			sections.push(Section {
+				y: y as i8,
+				blocks: anvil_blocks.blocks,
+				add: anvil_blocks.add,
+				data: anvil_blocks.data,
+				// TODO: Cloning this is stupid
+				sky_light: sky_light.clone().unpack(),
+				block_light: block_light.clone().unpack()
+			});
+		}
+			
+		let section_refs: Vec<SectionRef> = sections.iter().map(Section::to_ref).collect();
+
+		let global_column_position = GlobalColumnPosition::combine(sector_position, column_position);
+
+		let column = Column {
+			x: global_column_position.x() as i32,
+			z: global_column_position.z() as i32,
+			last_update: 0,
+			light_populated: true,
+			terrain_populated: true,
+			v: Some(1),
+			inhabited_time: 0,
+			biomes: &biomes,
+			heightmap: heightmap,
+			sections: &section_refs,
+			tile_ticks: &[]
+		};
+
+		let root = ColumnRoot {
+			version: Some(0),
+			column: column
+		};
+
+		let mut output = ZlibOutput::new();
+		root.write(&mut output);
+
+		(column_position, output.finish())
+	}).collect();
+
+	let sky_mb = unpacked_block_lighting as f32 * (2048.0 / 1048576.0);
+	let block_mb = unpacked_sky_lighting as f32 * (2048.0 / 1048576.0);
+
+	println!("Lighting memory usage statistics for sector {}:", sector_position);
+	println!("- Block light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_block_lighting, sky_mb, sky_mb * 100.0 / 32.0);
+	println!("-   Sky light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting, block_mb, block_mb * 100.0 / 32.0);
+	println!("-       Total: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting + unpacked_block_lighting, block_mb + sky_mb, (block_mb + sky_mb) * 100.0 / 64.0);
+
+	compressed_chunks.map(Option::unwrap)
+}
+
 fn write_region(
 	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	block_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &HashMap<(i32, i32), Vec<u8>>,
 ) {
-	use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
-	use region::{RegionWriter, ZlibOutput};
-
 	match std::fs::create_dir_all("out/region/") {
 		Ok(()) => (),
 		Err(e) => {

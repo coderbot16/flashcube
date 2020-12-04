@@ -1,4 +1,5 @@
 use std::ops::{Index, IndexMut};
+use std::iter::FromIterator;
 use crate::position::LayerPosition;
 
 pub struct Layer<T>(Box<[T]>);
@@ -40,5 +41,19 @@ impl<T> Index<LayerPosition> for Layer<T> {
 impl<T> IndexMut<LayerPosition> for Layer<T> {
 	fn index_mut(&mut self, index: LayerPosition) -> &mut Self::Output {
 		&mut self.0[index.zx() as usize]
+	}
+}
+
+// TODO: Implement FromParallelIterator
+
+impl<T> FromIterator<(LayerPosition, T)> for Layer<Option<T>> {
+	fn from_iter<I: IntoIterator<Item = (LayerPosition, T)>>(iter: I) -> Self {
+		let mut target: Layer<Option<T>> = Layer::default();
+
+		for (position, value) in iter {
+			target[position] = Some(value);
+		}
+
+		target
 	}
 }
