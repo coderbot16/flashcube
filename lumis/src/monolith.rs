@@ -180,7 +180,7 @@ where
 	queue
 }
 
-pub trait SkyLightTraces {
+pub trait LightTraces {
 	fn initial_sector(&self, position: GlobalSectorPosition, duration: Duration);
 	fn initial_full_sector(
 		&self, position: GlobalSectorPosition, iterations: u32, chunk_operations: u32,
@@ -192,7 +192,7 @@ pub trait SkyLightTraces {
 	);
 }
 
-pub struct PrintTraces;
+pub struct PrintTraces(pub &'static str);
 
 impl PrintTraces {
 	fn us(duration: Duration) -> u64 {
@@ -200,12 +200,13 @@ impl PrintTraces {
 	}
 }
 
-impl SkyLightTraces for PrintTraces {
+impl LightTraces for PrintTraces {
 	fn initial_sector(&self, position: GlobalSectorPosition, duration: Duration) {
 		let us = Self::us(duration);
 
 		println!(
-			"Initial sky lighting for ({}, {}) done in {}us ({}us per column)",
+			"Initial {} lighting for ({}, {}) done in {}us ({}us per column)",
+			self.0,
 			position.x(),
 			position.z(),
 			us,
@@ -219,7 +220,7 @@ impl SkyLightTraces for PrintTraces {
 	) {
 		let us = Self::us(duration);
 
-		println!("Inner full sky lighting for ({}, {}) done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", position.x(), position.z(), us, us / 256, iterations, chunk_operations);
+		println!("Inner full {} lighting for ({}, {}) done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", self.0, position.x(), position.z(), us, us / 256, iterations, chunk_operations);
 	}
 
 	fn complete_sector(
@@ -228,13 +229,13 @@ impl SkyLightTraces for PrintTraces {
 	) {
 		let us = Self::us(duration);
 
-		println!("Full sky lighting for ({}, {}) [iteration {}] done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", position.x(), position.z(), iteration, us, us / 256, inner_iterations, chunk_operations);
+		println!("Full {} lighting for ({}, {}) [iteration {}] done in {}us ({}us per column): {} iterations, {} post-initial chunk light operations", self.0, position.x(), position.z(), iteration, us, us / 256, inner_iterations, chunk_operations);
 	}
 }
 
 pub struct IgnoreTraces;
 
-impl SkyLightTraces for IgnoreTraces {
+impl LightTraces for IgnoreTraces {
 	fn initial_sector(&self, _: GlobalSectorPosition, _: Duration) {}
 	fn initial_full_sector(&self, _: GlobalSectorPosition, _: u32, _: u32, _: Duration) {}
 	fn complete_sector(&self, _: GlobalSectorPosition, _: u32, _: u32, _: u32, _: Duration) {}
@@ -250,7 +251,7 @@ pub fn compute_world_light<B, F, T, S>(
 where
 	B: Target + Send + Sync,
 	F: Fn(&B) -> u4 + Sync,
-	T: SkyLightTraces + Sync,
+	T: LightTraces + Sync,
 	S: LightSources,
 {
 	let empty_sector: SharedSector<NoPack<NibbleCube>> = SharedSector::new();
@@ -373,7 +374,7 @@ pub fn compute_world_skylight<B, F, T>(
 where
 	B: Target + Send + Sync,
 	F: Fn(&B) -> u4 + Sync,
-	T: SkyLightTraces + Sync,
+	T: LightTraces + Sync,
 {
 	let world_sources = heightmaps;
 
@@ -390,7 +391,7 @@ where
 	B: Target + Send + Sync,
 	F: Fn(&B) -> u4 + Sync,
 	E: EmissionPalette<B>,
-	T: SkyLightTraces + Sync,
+	T: LightTraces + Sync,
 {
 	compute_world_light::< _, _, _, BlockLightSources<B, E>>(world, opacities, world, emissions, tracer)
 }

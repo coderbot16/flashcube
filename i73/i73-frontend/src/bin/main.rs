@@ -65,7 +65,7 @@ fn run() {
 		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		// Also logs timing messages
-		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces)
+		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces("sky"))
 	}), || time("Computing block lighting", || {
 		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
@@ -77,7 +77,7 @@ fn run() {
 		let emissions = |block: &Block| emissions.get(block).copied().unwrap_or(u4::ZERO);
 
 		// Also logs timing messages
-		lumis::compute_world_blocklight(&world, &opacities, &emissions, &lumis::PrintTraces)
+		lumis::compute_world_blocklight(&world, &opacities, &emissions, &lumis::PrintTraces("block"))
 	})));
 
 	time("Writing region file", || {
