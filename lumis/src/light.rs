@@ -34,6 +34,26 @@ where
 	}
 
 	fn update(&mut self, blocks: &PackedCube, queue: &mut CubeQueue, at: CubePosition, opacity: u4) {
+		let emission = self.sources.emission(blocks, at);
+
+		// Fast path: No need to pull in light from neighbors here, if the max light value is
+		// already emitted at this location
+		//
+		// This shaves off a quite significant amount of time from light computation because it
+		// allows us to avoid the gigantic light propagation logic below
+		if emission == u4::MAX {
+			if self.data.get(at) != u4::MAX {
+				self.data.set(at, u4::MAX);
+				queue.enqueue_neighbors(at);
+			}
+
+			return;
+		}
+
+		// In addition to the base opacity, we also subtract 1 light level for each block travelled
+		// (in Manhattan distance)
+		let opacity = opacity.saturating_add(u4::ONE);
+
 		let max_value = max(
 			max(
 				max(
@@ -64,8 +84,8 @@ where
 		);
 
 		let light = max(
-			max_value.saturating_sub(u4::new(1)).saturating_sub(opacity), 
-			self.sources.emission(blocks, at)
+			max_value.saturating_sub(opacity), 
+			emission
 		);
 
 		if light != self.data.get(at) {
