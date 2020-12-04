@@ -143,7 +143,7 @@ fn time_sector<T, F: FnOnce() -> T>(name: &str, sector_position: GlobalSectorPos
 	value
 }
 
-fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<Vec<u8>>>) {
+fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blocks: &mut Sector<IndexedCube<Block>>) -> Layer<Vec<u8>> {
 	let ocean = OceanPass {
 		blocks: OceanBlocks::default(),
 		sea_top: 64,
@@ -177,93 +177,99 @@ fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPositio
 	let caves =
 		i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
 
+	let mut sector_biomes: Layer<Option<Vec<u8>>> = Layer::default();
+
+	for local_column_position in LayerPosition::enumerate() {
+		let column_position = GlobalColumnPosition::combine(sector_position, local_column_position);
+
+		let mut column_chunks = [
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+			IndexedCube::<Block>::new(4, block::AIR),
+		];
+
+		let climate = climates
+			.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
+		let lookup = paint.biome_lookup();
+		let mut biomes = Vec::with_capacity(256);
+
+		for position in LayerPosition::enumerate() {
+			let climate = climate.get(position);
+			let biome = lookup.lookup(climate);
+
+			let id = match biome.name.as_ref() {
+				"rainforest" => 21,      // jungle
+				"seasonal_forest" => 23, // jungle_edge
+				"forest" => 4,           // forest
+				"swampland" => 3,        // mountains
+				"savanna" => 35,         // savanna
+				"shrubland" => 1,        // plains
+				"taiga" => 30,           // cold_taiga
+				"desert" => 2,           // desert
+				"plains" => 1,           // plains
+				"tundra" => 12,          // ice_plains
+				"ice_desert" => 12,      // ice_plains
+				unknown => panic!("Unknown biome {}", unknown),
+			};
+
+			biomes.push(id);
+		}
+
+		sector_biomes[local_column_position] = Some(biomes);
+
+		{
+			let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
+
+			shape.apply(&mut column, &climate, column_position);
+			paint.apply(&mut column, &climate, column_position);
+			ocean.apply(&mut column, &climate, column_position);
+			caves.apply(&mut column, &i73_base::Layer::fill(()), column_position);
+		}
+
+		sector_blocks.set_column(local_column_position, column_chunks);
+	}
+
+	sector_biomes.map(Option::unwrap)
+}
+
+fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<Vec<u8>>>) {
+	let sectors = [
+		GlobalSectorPosition::new(0, 0),
+		GlobalSectorPosition::new(1, 0),
+		GlobalSectorPosition::new(0, 1),
+		GlobalSectorPosition::new(1, 1)
+	];
+
 	let mut world: World<IndexedCube<Block>> = World::new();
-	let mut world_biomes: HashMap<(i32, i32), Vec<u8>> = HashMap::new();
 
-	for x in 0..32 {
-		println!("{}", x);
-		for z in 0..32 {
-			let column_position = GlobalColumnPosition::new(x, z);
-
-			let mut column_chunks = [
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-				IndexedCube::<Block>::new(4, block::AIR),
-			];
-
-			let climate = climates
-				.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
-			let lookup = paint.biome_lookup();
-			let mut biomes = Vec::with_capacity(256);
-
-			for position in LayerPosition::enumerate() {
-				let climate = climate.get(position);
-				let biome = lookup.lookup(climate);
-
-				let id = match biome.name.as_ref() {
-					"rainforest" => 21,      // jungle
-					"seasonal_forest" => 23, // jungle_edge
-					"forest" => 4,           // forest
-					"swampland" => 3,        // mountains
-					"savanna" => 35,         // savanna
-					"shrubland" => 1,        // plains
-					"taiga" => 30,           // cold_taiga
-					"desert" => 2,           // desert
-					"plains" => 1,           // plains
-					"tundra" => 12,          // ice_plains
-					"ice_desert" => 12,      // ice_plains
-					unknown => panic!("Unknown biome {}", unknown),
-				};
-
-				biomes.push(id);
-			}
-
-			world_biomes.insert((x, z), biomes);
-
-			{
-				let mut column: ColumnMut<Block> = ColumnMut::from_array(&mut column_chunks);
-
-				shape.apply(&mut column, &climate, column_position);
-				paint.apply(&mut column, &climate, column_position);
-				ocean.apply(&mut column, &climate, column_position);
-				caves.apply(&mut column, &i73_base::Layer::fill(()), column_position);
-			}
-
-			world.set_column(column_position, column_chunks);
-		}
+	for sector_position in sectors.iter().copied() {
+		world.get_or_create_sector_mut(sector_position);
 	}
 
-	let mut world_biomes_split = HashMap::new();
+	let world_biomes: HashMap<GlobalSectorPosition, Layer<Vec<u8>>> = world
+		.sectors_mut()
+		.par_bridge()
+		.map(|(&sector_position, sector_blocks)| {
+			time_sector("Generating terrain", sector_position, || {
+				(sector_position, generate_terrain_for_sector(sector_position, sector_blocks))
+			})
+		})
+		.collect();
 
-	for sector_z in 0..2 {
-		for sector_x in 0..2 {
-			let sector_position = GlobalSectorPosition::new(sector_x, sector_z);
-			let mut layer: Layer<Option<Vec<u8>>> = Layer::default();
-
-			for local_position in LayerPosition::enumerate() {
-				let column_position = GlobalColumnPosition::combine(sector_position, local_position);
-
-				layer[local_position] = world_biomes.remove(&(column_position.x(), column_position.z()));
-			}
-
-			world_biomes_split.insert(sector_position, layer.map(Option::unwrap));
-		}
-	}
-
-	(world, world_biomes_split)
+	(world, world_biomes)
 }
 
 fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
@@ -418,7 +424,6 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 		(((decoration_rng.next_i64() >> 1) << 1) + 1, ((decoration_rng.next_i64() >> 1) << 1) + 1);
 
 	for x in 0..31 {
-		println!("{}", x);
 		for z in 0..31 {
 			let x_part = (x as i64).wrapping_mul(coefficients.0) as u64;
 			let z_part = (z as i64).wrapping_mul(coefficients.1) as u64;
