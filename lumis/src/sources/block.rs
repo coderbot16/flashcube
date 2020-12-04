@@ -68,6 +68,24 @@ impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLight
 	}
 
 	fn initial(&self, blocks: &PackedCube, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
+		// Optimization: Don't bother performing initial block lighting on chunks that don't have
+		// any block light emitters to begin with
+
+		let mut has_emitters = false;
+
+		for emission in self.emission_array.iter() {
+			if emission != u4::ZERO {
+				has_emitters = true;
+				break;
+			}
+		}
+
+		if !has_emitters {
+			return
+		}
+
+		// If the chunk does have emitters, figure out where they are and place the correct initial
+		// light sources
 		for position in CubePosition::enumerate() {
 			let emission = self.emission(blocks, position);
 
