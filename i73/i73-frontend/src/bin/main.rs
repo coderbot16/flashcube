@@ -13,7 +13,7 @@ extern crate vocs;
 use std::fs::File;
 
 use i73_base::matcher::BlockMatcher;
-use i73_base::{Layer, Pass};
+use i73_base::Pass;
 use i73_base::block::{self, Block};
 use i73_terrain::overworld::ocean::{OceanBlocks, OceanPass};
 use i73_terrain::overworld_173::{self, Settings};
@@ -32,6 +32,7 @@ use i73_noise::sample::Sample;
 use std::collections::HashMap;
 use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::position::{dir, Offset};
+use vocs::unpacked::Layer;
 
 fn main() {
 	time("Generating region (0, 0)", run);
@@ -140,7 +141,7 @@ fn time_sector<T, F: FnOnce() -> T>(name: &str, sector_position: GlobalSectorPos
 	value
 }
 
-fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, vocs::unpacked::Layer<Vec<u8>>>) {
+fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<Vec<u8>>>) {
 	let ocean = OceanPass {
 		blocks: OceanBlocks::default(),
 		sea_top: 64,
@@ -236,7 +237,7 @@ fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPositio
 				shape.apply(&mut column, &climate, column_position);
 				paint.apply(&mut column, &climate, column_position);
 				ocean.apply(&mut column, &climate, column_position);
-				caves.apply(&mut column, &Layer::fill(()), column_position);
+				caves.apply(&mut column, &i73_base::Layer::fill(()), column_position);
 			}
 
 			world.set_column(column_position, column_chunks);
@@ -248,7 +249,7 @@ fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPositio
 	for sector_z in 0..2 {
 		for sector_x in 0..2 {
 			let sector_position = GlobalSectorPosition::new(sector_x, sector_z);
-			let mut layer: vocs::unpacked::Layer<Option<Vec<u8>>> = vocs::unpacked::Layer::default();
+			let mut layer: Layer<Option<Vec<u8>>> = Layer::default();
 
 			for local_position in LayerPosition::enumerate() {
 				let column_position = GlobalColumnPosition::combine(sector_position, local_position);
@@ -560,13 +561,13 @@ fn compress_chunks_in_sector(
 	blocks: &Sector<IndexedCube<Block>>,
 	sky_light: &SharedSector<NoPack<lumis::PackedNibbleCube>>,
 	block_light: &SharedSector<NoPack<lumis::PackedNibbleCube>>,
-	heightmaps: &vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>,
-	biomes: &vocs::unpacked::Layer<Vec<u8>>
-) -> vocs::unpacked::Layer<ZlibBuffer> {
+	heightmaps: &Layer<lumis::heightmap::ColumnHeightMap>,
+	biomes: &Layer<Vec<u8>>
+) -> Layer<ZlibBuffer> {
 	let mut unpacked_sky_lighting = 0;
 	let mut unpacked_block_lighting = 0;
 
-	let compressed_chunks: vocs::unpacked::Layer<Option<ZlibBuffer>> = blocks.enumerate_columns().map(|(column_position, column)| {
+	let compressed_chunks: Layer<Option<ZlibBuffer>> = blocks.enumerate_columns().map(|(column_position, column)| {
 		let heightmap = heightmaps[column_position].as_inner();
 		let biomes = &biomes[column_position];
 
@@ -648,9 +649,9 @@ fn compress_chunks_in_sector(
 fn compress_chunks(
 	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	block_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
-	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
-	world_biomes: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<Vec<u8>>>,
-) -> HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ZlibBuffer>> {
+	heightmaps: &HashMap<GlobalSectorPosition, Layer<lumis::heightmap::ColumnHeightMap>>,
+	world_biomes: &HashMap<GlobalSectorPosition, Layer<Vec<u8>>>,
+) -> HashMap<GlobalSectorPosition, Layer<ZlibBuffer>> {
 	let sectors = [
 		GlobalSectorPosition::new(0, 0),
 		GlobalSectorPosition::new(1, 0),
@@ -673,7 +674,7 @@ fn compress_chunks(
 	}).collect()
 }
 
-fn write_region(compressed_chunks: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<ZlibBuffer>>) {
+fn write_region(compressed_chunks: &HashMap<GlobalSectorPosition, Layer<ZlibBuffer>>) {
 	match std::fs::create_dir_all("out/region/") {
 		Ok(()) => (),
 		Err(e) => {
