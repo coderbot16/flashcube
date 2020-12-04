@@ -218,6 +218,7 @@ dependencies = [
  "lumis",
  "mca",
  "nbt-turbo",
+ "rayon",
  "region",
  "vocs",
 ]

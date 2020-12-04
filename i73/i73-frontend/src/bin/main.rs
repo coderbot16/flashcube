@@ -61,14 +61,12 @@ fn run() {
 		(lumis::compute_world_heightmaps(&world, &predicate), opacities)
 	});
 
-	let sky_light = time("Computing sky lighting", || {
+	let (sky_light, block_light) = time("Computing lighting", || rayon::join(|| time("Computing sky lighting", || {
 		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		// Also logs timing messages
 		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces)
-	});
-
-	let block_light = time("Computing block lighting", || {
+	}), || time("Computing block lighting", || {
 		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		let mut emissions = HashMap::new();
@@ -80,7 +78,7 @@ fn run() {
 
 		// Also logs timing messages
 		lumis::compute_world_blocklight(&world, &opacities, &emissions, &lumis::PrintTraces)
-	});
+	})));
 
 	time("Writing region file", || {
 		write_region(&world, &sky_light, &block_light, &heightmaps, &world_biomes)

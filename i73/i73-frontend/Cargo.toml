@@ -5,6 +5,8 @@ authors = ["coderbot <coderbot16@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+rayon = "1"
+
 vocs = { path = "../../vocs" }
 lumis = { path = "../../lumis" }
 java-rand = "0.2.0"
