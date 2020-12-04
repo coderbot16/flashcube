@@ -83,11 +83,11 @@ fn run() {
 
 	// Uncomment this to do block and sky lighting at the same time
 	// Note that the speed will probably not change much
-	//let (sky_light, block_light) =
-	//	time("Computing lighting", || join(compute_sky_light, compute_block_light));
-
 	let (sky_light, block_light) =
-		time("Computing lighting", || (compute_sky_light(), compute_block_light()));
+		time("Computing lighting", || rayon::join(compute_sky_light, compute_block_light));
+
+	//let (sky_light, block_light) =
+	//	time("Computing lighting", || (compute_sky_light(), compute_block_light()));
 
 	time("Writing region file", || {
 		write_region(&world, &sky_light, &block_light, &heightmaps, &world_biomes)
@@ -535,6 +535,9 @@ fn write_region(
 
 	let mut writer = RegionWriter::start(region_file).unwrap();
 
+	let mut unpacked_sky_lighting = 0;
+	let mut unpacked_block_lighting = 0;
+
 	for z in 0..32 {
 		println!("{}", z);
 		for x in 0..32 {
@@ -561,6 +564,14 @@ fn write_region(
 
 				let sky_light = sky_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
 				let block_light = block_light.get(chunk_position).unwrap()/*_or_else(NibbleCube::default)*/;
+
+				if !sky_light.is_packed() {
+					unpacked_sky_lighting += 1
+				}
+
+				if !block_light.is_packed() {
+					unpacked_block_lighting += 1;
+				}
 
 				sections.push(Section {
 					y: y as i8,
@@ -599,6 +610,14 @@ fn write_region(
 			writer.column(x as u8, z as u8, &output.finish()).unwrap();
 		}
 	}
+
+	let sky_mb = unpacked_block_lighting as f32 * (2048.0 / 1048576.0);
+	let block_mb = unpacked_sky_lighting as f32 * (2048.0 / 1048576.0);
+
+	println!("Lighting memory usage statistics:");
+	println!("- Block light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_block_lighting, sky_mb, sky_mb * 100.0 / 32.0);
+	println!("-   Sky light: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting, block_mb, block_mb * 100.0 / 32.0);
+	println!("-       Total: {} unpacked light volumes requiring {:.3} MB of memory ({:.2}% of original size)", unpacked_sky_lighting + unpacked_block_lighting, block_mb + sky_mb, (block_mb + sky_mb) * 100.0 / 64.0);
 
 	writer.finish().unwrap();
 }
