@@ -660,7 +660,7 @@ fn compress_chunks(
 	];
 
 	sectors.par_iter().map(|&sector_position: &GlobalSectorPosition| {
-		time_sector("Chunk compression", sector_position, || {
+		time_sector("Compressing chunks", sector_position, || {
 			let blocks = world.get_sector(sector_position).unwrap();
 			let sky_light = sky_light.get_sector(sector_position).unwrap();
 			let block_light = block_light.get_sector(sector_position).unwrap();
