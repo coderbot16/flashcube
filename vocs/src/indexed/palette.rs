@@ -141,4 +141,8 @@ impl<B> Palette<B> where B: Target {
 	pub fn entries(&self) -> &[Option<B>] {
 		&self.entries
 	}
+
+	pub(crate) fn remove_entry(&mut self, index: usize) {
+		self.entries[index].take().map(|entry| self.reverse.remove(&entry));
+	}
 }

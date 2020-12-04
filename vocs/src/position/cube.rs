@@ -150,6 +150,8 @@ impl CubePosition {
 }
 
 impl PackedIndex for CubePosition {
+	type Enumerate = Enumerate;
+
 	fn size_factor() -> usize {
 		64
 	}
@@ -162,6 +164,10 @@ impl PackedIndex for CubePosition {
 
 	fn to_usize(&self) -> usize {
 		self.yzx() as usize
+	}
+
+	fn enumerate() -> Self::Enumerate {
+		Self::enumerate()
 	}
 }
 

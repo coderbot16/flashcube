@@ -52,6 +52,8 @@ impl LayerPosition {
 }
 
 impl PackedIndex for LayerPosition {
+	type Enumerate = Enumerate;
+
 	fn size_factor() -> usize {
 		4
 	}
@@ -62,6 +64,10 @@ impl PackedIndex for LayerPosition {
 
 	fn to_usize(&self) -> usize {
 		self.zx() as usize
+	}
+
+	fn enumerate() -> Self::Enumerate {
+		Self::enumerate()
 	}
 }
 

@@ -7,9 +7,13 @@ struct Indices {
 }
 
 pub trait PackedIndex: Copy {
+	type Enumerate: Iterator<Item = Self>;
+
 	fn size_factor() -> usize;
 	fn from_usize(usize: usize) -> Self;
 	fn to_usize(&self) -> usize;
+
+	fn enumerate() -> Self::Enumerate;
 }
 
 #[derive(Debug, Clone)]

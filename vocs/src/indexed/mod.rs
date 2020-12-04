@@ -126,6 +126,21 @@ impl<B, P> IndexedStorage<B, P> where B: Target, P: PackedIndex {
 		}
 	}
 
+	/// Removes all unused entries from the palette
+	pub fn prune_palette(&mut self) {
+		let mut present = bit_vec::BitVec::from_elem(self.palette.entries().len(), false);
+
+		for position in P::enumerate() {
+			present.set(self.storage.get(position) as usize, true);
+		}
+
+		for (index, present) in present.iter().enumerate() {
+			if !present {
+				self.palette.remove_entry(index);
+			}
+		}
+	}
+
 	pub fn bits(&self) -> u8 {
 		self.storage.bits()
 	}
