@@ -21,7 +21,7 @@ use i73_terrain::overworld_173::{self, Settings};
 use vocs::indexed::IndexedCube;
 use vocs::nibbles::u4;
 use vocs::position::{
-	GlobalChunkPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition, QuadPosition,
+	GlobalColumnPosition, GlobalSectorPosition, LayerPosition, QuadPosition,
 };
 use vocs::view::ColumnMut;
 use vocs::world::world::World;
