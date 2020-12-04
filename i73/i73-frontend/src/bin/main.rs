@@ -554,7 +554,7 @@ use vocs::world::sector::Sector;
 use vocs::world::shared::SharedSector;
 use region::{RegionWriter, ZlibBuffer, ZlibOutput};
 use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
-use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
+use rayon::iter::{ParallelIterator, ParallelBridge};
 use lumis::PackedNibbleCube;
 use std::ops::Deref;
 
@@ -563,14 +563,14 @@ fn compress_chunks_in_sector(
 	blocks: &Sector<IndexedCube<Block>>,
 	sky_light: &SharedSector<NoPack<PackedNibbleCube>>,
 	block_light: &SharedSector<NoPack<PackedNibbleCube>>,
-	heightmaps: &Layer<lumis::heightmap::ColumnHeightMap>,
+	height_maps: &Layer<lumis::heightmap::ColumnHeightMap>,
 	biomes: &Layer<Vec<u8>>
 ) -> Layer<ZlibBuffer> {
 	let mut unpacked_sky_lighting = 0;
 	let mut unpacked_block_lighting = 0;
 
 	let compressed_chunks: Layer<Option<ZlibBuffer>> = blocks.enumerate_columns().map(|(column_position, column)| {
-		let heightmap = heightmaps[column_position].as_inner();
+		let height_map = height_maps[column_position].as_inner();
 		let biomes = &biomes[column_position];
 
 		let mut sections = Vec::new();
@@ -624,7 +624,7 @@ fn compress_chunks_in_sector(
 			v: Some(1),
 			inhabited_time: 0,
 			biomes: &biomes,
-			heightmap: heightmap,
+			heightmap: height_map,
 			sections: &section_refs,
 			tile_ticks: &[]
 		};
@@ -657,16 +657,8 @@ fn compress_chunks(
 	heightmaps: &HashMap<GlobalSectorPosition, Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &HashMap<GlobalSectorPosition, Layer<Vec<u8>>>,
 ) -> HashMap<GlobalSectorPosition, Layer<ZlibBuffer>> {
-	let sectors = [
-		GlobalSectorPosition::new(0, 0),
-		GlobalSectorPosition::new(1, 0),
-		GlobalSectorPosition::new(0, 1),
-		GlobalSectorPosition::new(1, 1)
-	];
-
-	sectors.par_iter().map(|&sector_position: &GlobalSectorPosition| {
+	world.sectors().par_bridge().map(|(&sector_position, blocks)| {
 		time_sector("Compressing chunks", sector_position, || {
-			let blocks = world.get_sector(sector_position).unwrap();
 			let sky_light = sky_light.get_sector(sector_position).unwrap();
 			let block_light = block_light.get_sector(sector_position).unwrap();
 			let heightmaps = heightmaps.get(&sector_position).unwrap();
