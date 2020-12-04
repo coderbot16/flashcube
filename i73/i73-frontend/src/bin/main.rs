@@ -30,7 +30,6 @@ use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
 use std::collections::HashMap;
-use vocs::nibbles::NibbleCube;
 use vocs::world::shared::{NoPack, SharedWorld};
 use vocs::position::{dir, Offset};
 
@@ -61,12 +60,14 @@ fn run() {
 		(lumis::compute_world_heightmaps(&world, &predicate), opacities)
 	});
 
-	let (sky_light, block_light) = time("Computing lighting", || rayon::join(|| time("Computing sky lighting", || {
+	let compute_sky_light = || (time("Computing sky lighting", || {
 		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		// Also logs timing messages
 		lumis::compute_world_skylight(&world, &heightmaps, &opacities, &lumis::PrintTraces("sky"))
-	}), || time("Computing block lighting", || {
+	}));
+
+	let compute_block_light = || time("Computing block lighting", || {
 		let opacities = |block: &Block| opacities.get(block).copied().unwrap_or(u4::new(15));
 
 		let mut emissions = HashMap::new();
@@ -78,7 +79,15 @@ fn run() {
 
 		// Also logs timing messages
 		lumis::compute_world_blocklight(&world, &opacities, &emissions, &lumis::PrintTraces("block"))
-	})));
+	});
+
+	// Uncomment this to do block and sky lighting at the same time
+	// Note that the speed will probably not change much
+	//let (sky_light, block_light) =
+	//	time("Computing lighting", || join(compute_sky_light, compute_block_light));
+
+	let (sky_light, block_light) =
+		time("Computing lighting", || (compute_sky_light(), compute_block_light()));
 
 	time("Writing region file", || {
 		write_region(&world, &sky_light, &block_light, &heightmaps, &world_biomes)
@@ -498,8 +507,8 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 }*/
 
 fn write_region(
-	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<NibbleCube>>,
-	block_light: &SharedWorld<NoPack<NibbleCube>>,
+	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
+	block_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	heightmaps: &HashMap<GlobalSectorPosition, vocs::unpacked::Layer<lumis::heightmap::ColumnHeightMap>>,
 	world_biomes: &HashMap<(i32, i32), Vec<u8>>,
 ) {
@@ -559,8 +568,8 @@ fn write_region(
 					add: anvil_blocks.add,
 					data: anvil_blocks.data,
 					// TODO: Cloning this is stupid
-					sky_light: (&*sky_light).clone(),
-					block_light: (&*block_light).clone()
+					sky_light: sky_light.clone().unpack(),
+					block_light: block_light.clone().unpack()
 				});
 			}
 			

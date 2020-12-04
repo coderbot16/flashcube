@@ -1,4 +1,5 @@
 use crate::sources::LightSources;
+use crate::PackedNibbleCube;
 use vocs::indexed::{Target, IndexedCube};
 use vocs::nibbles::{u4, NibbleArray, NibbleCube};
 use vocs::packed::PackedCube;
@@ -67,7 +68,7 @@ impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLight
 		self.emission_array.get(blocks.get(position) as usize)
 	}
 
-	fn initial(&self, blocks: &PackedCube, data: &mut NibbleCube, enqueued: &mut SpillBitCube) {
+	fn initial(&self, blocks: &PackedCube, enqueued: &mut SpillBitCube) -> PackedNibbleCube {
 		// Optimization: Don't bother performing initial block lighting on chunks that don't have
 		// any block light emitters to begin with
 
@@ -81,8 +82,11 @@ impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLight
 		}
 
 		if !has_emitters {
-			return
+			return PackedNibbleCube::EntirelyDark
 		}
+
+		let mut data = NibbleCube::default();
+		let mut set_any = false;
 
 		// If the chunk does have emitters, figure out where they are and place the correct initial
 		// light sources
@@ -96,6 +100,7 @@ impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLight
 
 			// We get to assume that data is all zeroes
 			data.set_uncleared(position, emission);
+			set_any = true;
 			
 			if emission == u4::ONE {
 				// A light level of 1 does not result in neighbor propagation
@@ -109,6 +114,14 @@ impl<B: Target + Sync, E: EmissionPalette<B> + Sync> LightSources for BlockLight
 			enqueued.set_offset_true(position, dir::PlusZ);
 			enqueued.set_offset_true(position, dir::Down);
 			enqueued.set_offset_true(position, dir::Up);
+		}
+
+		if set_any {
+			PackedNibbleCube::Unpacked(data)
+		} else {
+			// This should be a rare occurrence, but it's possible that there are stale palette
+			// entries in the chunk
+			PackedNibbleCube::EntirelyDark
 		}
 	}
 }

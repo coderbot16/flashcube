@@ -2,6 +2,7 @@ use crate::heightmap::ColumnHeightMap;
 use crate::light::Lighting;
 use crate::queue::{CubeQueue, SectorQueue, WorldQueue};
 use crate::sources::{LightSources, BlockLightSources, EmissionPalette, SkyLightSources};
+use crate::PackedNibbleCube;
 
 use rayon::iter::ParallelBridge;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -12,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use vocs::indexed::{IndexedCube, Target};
 use vocs::mask::BitCube;
-use vocs::nibbles::{u4, NibbleArray, NibbleCube};
+use vocs::nibbles::{u4, NibbleArray};
 use vocs::position::{dir, CubePosition, GlobalSectorPosition, Offset};
 use vocs::unpacked::Layer;
 use vocs::view::{Directional, SplitDirectional};
@@ -23,7 +24,7 @@ use vocs::world::world::World;
 // TODO: This whole file should be split up / refactored at some point
 
 fn initial_sector<B, F, S>(
-	block_sector: &Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
+	block_sector: &Sector<IndexedCube<B>>, light: &SharedSector<NoPack<PackedNibbleCube>>,
 	sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &F,
 ) -> SectorQueue
 where
@@ -31,8 +32,7 @@ where
 	F: Fn(&B) -> u4 + Sync,
 	S: LightSources,
 {
-	let empty_lighting = NibbleCube::default();
-	let empty_neighbors = Directional::splat(&empty_lighting);
+	let empty_neighbors = Directional::splat(&PackedNibbleCube::EntirelyDark);
 
 	let sector_queue = Mutex::new(SectorQueue::new());
 
@@ -54,14 +54,17 @@ where
 
 			let sources = S::chunk_sources(sector_sources, emission_palette, position);
 
-			let mut light_data = NibbleCube::default();
-
-			let mut light_operation = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
-
 			// TODO: Reuse this!
 			let mut queue = CubeQueue::new();
-			light_operation.initial(blocks, &mut queue);
-			light_operation.apply(blocks, &mut queue);
+			let mut light_data = sources.initial(blocks, queue.mask_mut());
+
+			if !queue.mask_mut().primary.empty() {
+				// If there's anything queued, it's going to require unpacking the light data anyways
+				light_data.unpack_in_place();
+
+				let mut light_operation = Lighting::new(&mut light_data, empty_neighbors, sources, opacity);
+				light_operation.apply(blocks, &mut queue);
+			}
 
 			sector_queue.lock().unwrap().enqueue_spills(position, queue.reset_spills());
 			light.set(position, NoPack(light_data));
@@ -71,8 +74,8 @@ where
 }
 
 fn full_sector<B, F, S>(
-	block_sector: &Sector<IndexedCube<B>>, light: &SharedSector<NoPack<NibbleCube>>,
-	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>,
+	block_sector: &Sector<IndexedCube<B>>, light: &SharedSector<NoPack<PackedNibbleCube>>,
+	light_neighbors: Directional<&SharedSector<NoPack<PackedNibbleCube>>>,
 	sector_queue: &mut SectorQueue, sector_sources: &S::SectorSources, emission_palette: &S::EmissionPalette, opacities: &F,
 ) -> (u32, u32)
 where
@@ -111,8 +114,8 @@ where
 
 fn complete_chunk<B, F, S>(
 	position: CubePosition, blocks: &IndexedCube<B>,
-	light: &SharedSector<NoPack<NibbleCube>>,
-	light_neighbors: Directional<&SharedSector<NoPack<NibbleCube>>>, incomplete: BitCube,
+	light: &SharedSector<NoPack<PackedNibbleCube>>,
+	light_neighbors: Directional<&SharedSector<NoPack<PackedNibbleCube>>>, incomplete: BitCube,
 	sources: S, opacities: &F,
 ) -> CubeQueue
 where
@@ -121,7 +124,6 @@ where
 	S: LightSources,
 {
 	// TODO: Cache these things!
-	let empty_lighting = NibbleCube::default();
 	let mut queue = CubeQueue::new();
 
 	let (blocks, palette) = blocks.freeze();
@@ -169,7 +171,7 @@ where
 	};
 
 	let neighbors = locks.as_ref().map(|guard| {
-		guard.as_ref().map(|chunk| &chunk.0).unwrap_or(&empty_lighting)
+		guard.as_ref().map(|chunk| &chunk.0).unwrap_or(&PackedNibbleCube::EntirelyDark)
 	});
 
 	let mut light_operation = Lighting::new(&mut central, Directional::combine(neighbors), sources, opacity);
@@ -247,17 +249,17 @@ pub fn compute_world_light<B, F, T, S>(
 	world_sources: &S::WorldSources,
 	emission_palette: &S::EmissionPalette,
 	tracer: &T,
-) -> SharedWorld<NoPack<NibbleCube>>
+) -> SharedWorld<NoPack<PackedNibbleCube>>
 where
 	B: Target + Send + Sync,
 	F: Fn(&B) -> u4 + Sync,
 	T: LightTraces + Sync,
 	S: LightSources,
 {
-	let empty_sector: SharedSector<NoPack<NibbleCube>> = SharedSector::new();
+	let empty_sector: SharedSector<NoPack<PackedNibbleCube>> = SharedSector::new();
 	let empty_light_neighbors = Directional::splat(&empty_sector);
 
-	let mut sky_light: SharedWorld<NoPack<NibbleCube>> = SharedWorld::new();
+	let mut sky_light: SharedWorld<NoPack<PackedNibbleCube>> = SharedWorld::new();
 	let world_queue = Mutex::new(WorldQueue::new());
 
 	world.sectors().map(|entry| *entry.0).for_each(|position| {
@@ -370,7 +372,7 @@ pub fn compute_world_skylight<B, F, T>(
 	heightmaps: &HashMap<GlobalSectorPosition, Layer<ColumnHeightMap>>,
 	opacities: &F,
 	tracer: &T,
-) -> SharedWorld<NoPack<NibbleCube>>
+) -> SharedWorld<NoPack<PackedNibbleCube>>
 where
 	B: Target + Send + Sync,
 	F: Fn(&B) -> u4 + Sync,
@@ -386,7 +388,7 @@ pub fn compute_world_blocklight<B, F, E, T>(
 	opacities: &F,
 	emissions: &E,
 	tracer: &T,
-) -> SharedWorld<NoPack<NibbleCube>>
+) -> SharedWorld<NoPack<PackedNibbleCube>>
 where
 	B: Target + Send + Sync,
 	F: Fn(&B) -> u4 + Sync,

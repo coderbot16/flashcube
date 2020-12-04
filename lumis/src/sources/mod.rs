@@ -1,7 +1,8 @@
-use vocs::nibbles::{u4, NibbleCube};
+use vocs::nibbles::u4;
 use vocs::packed::PackedCube;
 use vocs::position::{CubePosition, GlobalSectorPosition};
 use vocs::view::SpillBitCube;
+use crate::PackedNibbleCube;
 
 mod block;
 mod sky;
@@ -18,7 +19,7 @@ pub trait LightSources {
 	fn chunk_sources(sector_sources: &Self::SectorSources, emission_palette: &Self::EmissionPalette, position: CubePosition) -> Self;
 
 	fn emission(&self, blocks: &PackedCube, position: CubePosition) -> u4;
-	fn initial(&self, blocks: &PackedCube, data: &mut NibbleCube, mask: &mut SpillBitCube);
+	fn initial(&self, blocks: &PackedCube, mask: &mut SpillBitCube) -> PackedNibbleCube;
 }
 
 pub trait RefSync {

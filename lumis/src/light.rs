@@ -1,8 +1,8 @@
 use crate::queue::CubeQueue;
 use crate::sources::LightSources;
+use crate::PackedNibbleCube;
 use std::cmp::max;
-use vocs::component::CubeStorage;
-use vocs::nibbles::{u4, NibbleArray, NibbleCube};
+use vocs::nibbles::{u4, NibbleArray};
 use vocs::packed::PackedCube;
 use vocs::position::{dir, CubePosition, Offset};
 use vocs::view::Directional;
@@ -12,8 +12,8 @@ pub struct Lighting<'n, S>
 where
 	S: LightSources,
 {
-	data: &'n mut NibbleCube,
-	neighbors: Directional<&'n NibbleCube>,
+	data: &'n mut PackedNibbleCube,
+	neighbors: Directional<&'n PackedNibbleCube>,
 	sources: S,
 	opacity: NibbleArray,
 }
@@ -23,7 +23,7 @@ where
 	S: LightSources,
 {
 	pub fn new(
-		data: &'n mut NibbleCube, neighbors: Directional<&'n NibbleCube>, sources: S,
+		data: &'n mut PackedNibbleCube, neighbors: Directional<&'n PackedNibbleCube>, sources: S,
 		opacity: NibbleArray,
 	) -> Self {
 		Lighting { data, neighbors, sources, opacity }
@@ -31,10 +31,6 @@ where
 
 	fn get(&self, at: CubePosition) -> u4 {
 		self.data.get(at)
-	}
-
-	pub fn initial(&mut self, blocks: &PackedCube, queue: &mut CubeQueue) {
-		self.sources.initial(blocks, &mut self.data, queue.mask_mut())
 	}
 
 	fn update(&mut self, blocks: &PackedCube, queue: &mut CubeQueue, at: CubePosition, opacity: u4) {
@@ -88,7 +84,7 @@ where
 		}
 	}
 
-	pub fn decompose(self) -> (&'n mut NibbleCube, S) {
+	pub fn decompose(self) -> (&'n mut PackedNibbleCube, S) {
 		(self.data, self.sources)
 	}
 }
