@@ -74,6 +74,12 @@ impl AnvilBlocks {
 	
 		let (storage, palette) = chunk.freeze();
 	
+		let palette_contains_non_air_blocks = palette.iter().map(|slot| slot.as_ref().map(to_anvil_id).unwrap_or(0)).any(|id| id != 0);
+
+		if !palette_contains_non_air_blocks {
+			return None
+		}
+
 		// Can't express Anvil IDs over 4095 without Add. TODO: Utilize Counts.
 		let need_add = palette.iter().map(|slot| slot.as_ref().map(to_anvil_id).unwrap_or(0)).any(|id| id > 4095);
 	

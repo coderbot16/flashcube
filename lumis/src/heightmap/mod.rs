@@ -19,6 +19,13 @@ pub struct CubeHeightMap {
 
 impl CubeHeightMap {
 	pub fn build(chunk: &PackedCube, matches: &BitVec, mut is_filled: BitLayer) -> Self {
+		// If there are no blocks in this chunk that would match our predicate, then there is no
+		// point in scanning each individual block to check it
+		if matches.is_empty() || !matches.iter().any(|entry| entry) {
+			return CubeHeightMap { heights: NibbleLayer::default(), is_filled };
+		}
+
+		// Check the top layer of the chunk to see which positions are filled
 		for position in LayerPosition::enumerate() {
 			let chunk_position = CubePosition::from_layer(15, position);
 			let matches = matches.get(chunk.get(chunk_position) as usize).unwrap();
@@ -26,10 +33,15 @@ impl CubeHeightMap {
 			is_filled.set_or(position, matches);
 		}
 
+		// If the height map is already full (ie, there is already a matching block in the top
+		// layer of this chunk or in a chunk above this one for each horizontal position), then
+		// there is no point in performing any further computations
 		if is_filled.is_filled(true) {
 			return CubeHeightMap { heights: NibbleLayer::default(), is_filled };
 		}
 
+		// Scan each horizontal stack of blocks within the chunk top-down to find the top matching
+		// block at each horizontal position
 		let mut heights = NibbleLayer::default();
 
 		for layer in LayerPosition::enumerate() {
@@ -37,6 +49,7 @@ impl CubeHeightMap {
 				continue;
 			}
 
+			// Traverse top-down so that we can bail out early
 			for y in (0..15).rev() {
 				let position = CubePosition::from_layer(y, layer);
 

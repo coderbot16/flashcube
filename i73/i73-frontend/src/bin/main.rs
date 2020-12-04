@@ -43,6 +43,8 @@ fn run() {
 
 	time("Decorating terrain", || decorate_terrain(&mut world));
 
+	time("Pruning chunk palettes", || prune_chunk_palettes(&mut world));
+
 	// World is no longer mutable
 	let world = world;
 
@@ -557,6 +559,24 @@ use mca::{AnvilBlocks, Column, ColumnRoot, Section, SectionRef};
 use rayon::iter::{ParallelIterator, ParallelBridge};
 use lumis::PackedNibbleCube;
 use std::ops::Deref;
+
+fn prune_chunk_palettes(world: &mut World<IndexedCube<Block>>) {
+	let sum: u32 = world.sectors_mut().par_bridge().map(|(_, sector): (&GlobalSectorPosition, &mut Sector<IndexedCube<Block>>)| {
+		let sum: u32 = sector.iter_mut().map(Option::as_mut).flatten().map(|chunk| {
+			let palette_before: u32 = chunk.palette().entries().iter().map(|entry| entry.is_some() as u32).sum();
+
+			chunk.prune_palette();
+
+			let palette_after: u32 = chunk.palette().entries().iter().map(|entry| entry.is_some() as u32).sum();
+
+			palette_before - palette_after
+		}).sum();
+
+		sum
+	}).sum();
+
+	println!("Removed {} palette entries across all chunks", sum);
+}
 
 fn compress_chunks_in_sector(
 	sector_position: GlobalSectorPosition,
