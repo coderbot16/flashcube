@@ -1,6 +1,6 @@
 use crate::colorizer::colorize_grass;
 use crate::renderer::{self, duration_us, Renderer};
-use i73_base::{math, Layer, Pass};
+use i73_base::{math, Pass};
 use i73_base::block::{self, Block};
 use i73_biome::climate::{Climate, ClimateSource};
 use crate::Rgb;
@@ -16,6 +16,7 @@ use std::ops::AddAssign;
 use vocs::indexed::IndexedCube;
 use vocs::position::{ColumnPosition, GlobalColumnPosition, GlobalSectorPosition, LayerPosition};
 use vocs::view::ColumnMut;
+use vocs::unpacked::Layer;
 
 // Block types
 const AIR: Block = block::AIR;
@@ -262,7 +263,7 @@ impl FullRenderer {
 			let position = ColumnPosition::from_layer(height, layer_position);
 			let top = *column.get(position);
 
-			let climate = climates.get(layer_position);
+			let climate = climates[layer_position];
 			let mut no_shade = false;
 
 			let color = match top {

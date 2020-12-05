@@ -62,7 +62,7 @@ where
 				map.put_pixel(
 					base.0 + pixel.x() as u32,
 					base.1 + pixel.z() as u32,
-					self.1.map(climates.get(pixel)).into(),
+					self.1.map(climates[pixel]).into(),
 				);
 			}
 		}

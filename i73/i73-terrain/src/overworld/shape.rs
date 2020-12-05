@@ -1,13 +1,14 @@
 use cgmath::{Point2, Vector2, Vector3};
 use i73_base::math;
 use i73_base::block::{self, Block};
-use i73_base::{Layer, Pass};
+use i73_base::Pass;
 use i73_biome::climate::Climate;
 use i73_shape::height::lerp_to_layer;
 use i73_shape::height::HeightSource;
 use i73_shape::volume::{ShapeSettings, TriNoiseSource};
 use vocs::position::{CubePosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
+use vocs::unpacked::Layer;
 
 pub struct ShapeBlocks {
 	pub solid: Block,
@@ -40,7 +41,7 @@ impl Pass<Climate> for ShapePass {
 			for z in 0..5 {
 				let layer = lerp_to_layer(Vector2::new(x as u8, z as u8));
 
-				let climate = climates.get(layer);
+				let climate = climates[layer];
 				let height = self.height.sample(offset + Vector2::new(x as f64, z as f64), climate);
 
 				for y in 0..17 {

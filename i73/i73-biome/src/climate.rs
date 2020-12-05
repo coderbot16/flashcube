@@ -1,11 +1,12 @@
 use cgmath::Point2;
-use i73_base::{math, Layer};
+use i73_base::math;
 use i73_noise::octaves::SimplexOctaves;
 use i73_noise::sample::Sample;
 use java_rand::Random;
 use vocs::component::LayerStorage;
 use vocs::mask::BitLayer;
 use vocs::position::LayerPosition;
+use vocs::unpacked::Layer;
 
 #[derive(Copy, Clone, Debug)]
 pub struct ClimateSettings {
@@ -157,7 +158,7 @@ pub fn freezing_layer(climates: &Layer<Climate>) -> BitLayer {
 	let mut out = BitLayer::default();
 
 	for position in LayerPosition::enumerate() {
-		out.set(position, climates.get(position).freezing());
+		out.set(position, climates[position].freezing());
 	}
 
 	out

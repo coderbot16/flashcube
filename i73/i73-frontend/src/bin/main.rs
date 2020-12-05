@@ -214,7 +214,7 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 		let mut biomes = Vec::with_capacity(256);
 
 		for position in LayerPosition::enumerate() {
-			let climate = climate.get(position);
+			let climate = climate[position];
 			let biome = lookup.lookup(climate);
 
 			let id = match biome.name.as_ref() {
@@ -243,7 +243,7 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 			shape.apply(&mut column, &climate, column_position);
 			paint.apply(&mut column, &climate, column_position);
 			ocean.apply(&mut column, &climate, column_position);
-			caves.apply(&mut column, &i73_base::Layer::fill(()), column_position);
+			caves.apply(&mut column, &Layer::filled(()), column_position);
 		}
 
 		sector_blocks.set_column(local_column_position, column_chunks);

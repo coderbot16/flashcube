@@ -5,8 +5,8 @@ use crate::perlin::Perlin;
 use crate::sample::Sample;
 use crate::simplex::Simplex;
 use cgmath::{Point2, Vector2, Vector3};
-use i73_base::Layer;
 use java_rand::Random;
+use vocs::unpacked::Layer;
 
 #[derive(Debug, Clone)]
 pub struct SimplexOctaves(Vec<Simplex>);
@@ -49,7 +49,7 @@ impl Sample for SimplexOctaves {
 	}
 
 	fn chunk(&self, chunk: (f64, f64)) -> Layer<Self::Output> {
-		let mut result = Layer::fill(0.0);
+		let mut result = Layer::filled(0.0);
 
 		for octave in &self.0 {
 			result += octave.chunk(chunk);
@@ -113,7 +113,7 @@ impl Sample for PerlinOctaves {
 	}
 
 	fn chunk(&self, chunk: (f64, f64)) -> Layer<Self::Output> {
-		self.0.iter().fold(Layer::fill(0.0), |result, perlin| result + perlin.chunk(chunk))
+		self.0.iter().fold(Layer::filled(0.0), |result, perlin| result + perlin.chunk(chunk))
 	}
 }
 

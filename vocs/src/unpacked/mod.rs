@@ -1,4 +1,4 @@
-use std::ops::{Index, IndexMut};
+use std::ops::{Add, AddAssign, Index, IndexMut};
 use std::iter::FromIterator;
 use crate::position::LayerPosition;
 
@@ -41,6 +41,34 @@ impl<T> Index<LayerPosition> for Layer<T> {
 impl<T> IndexMut<LayerPosition> for Layer<T> {
 	fn index_mut(&mut self, index: LayerPosition) -> &mut Self::Output {
 		&mut self.0[index.zx() as usize]
+	}
+}
+
+impl<T> Add for Layer<T>
+where
+	T: Copy + AddAssign,
+{
+	type Output = Self;
+
+	fn add(mut self, rhs: Self) -> Self::Output {
+		for x in 0..256 {
+			// TODO: Iterators.
+			self.0[x] += rhs.0[x];
+		}
+
+		self
+	}
+}
+
+impl<T> AddAssign for Layer<T>
+where
+	T: Copy + AddAssign,
+{
+	fn add_assign(&mut self, rhs: Self) {
+		for x in 0..256 {
+			// TODO: Iterators.
+			self.0[x] += rhs.0[x];
+		}
 	}
 }
 

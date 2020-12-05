@@ -1,10 +1,11 @@
 use cgmath::{Vector2, Vector3};
-use i73_base::{math, Layer, Pass};
+use i73_base::{math, Pass};
 use i73_base::block::{self, Block};
 use i73_shape::volume::{self, TriNoiseSettings, TriNoiseSource};
 use java_rand::Random;
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
+use vocs::unpacked::Layer;
 
 pub fn default_tri_settings() -> TriNoiseSettings {
 	TriNoiseSettings {

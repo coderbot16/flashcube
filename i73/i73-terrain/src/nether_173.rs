@@ -1,10 +1,11 @@
 use cgmath::{Vector2, Vector3};
-use i73_base::{Layer, Pass};
+use i73_base::Pass;
 use i73_base::block::{self, Block};
 use i73_shape::volume::{self, trilinear128, TriNoiseSettings, TriNoiseSource};
 use java_rand::Random;
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
+use vocs::unpacked::Layer;
 
 const NOTCH_PI_F64: f64 = 3.1415926535897931;
 

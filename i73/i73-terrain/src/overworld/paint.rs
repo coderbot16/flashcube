@@ -1,7 +1,7 @@
 use cgmath::{Point2, Vector2, Vector3};
 use i73_base::matcher::BlockMatcher;
 use i73_base::block::{self, Block};
-use i73_base::{Layer, Pass};
+use i73_base::Pass;
 use i73_biome::climate::{Climate, ClimateSettings, ClimateSource};
 use i73_biome::{Biome, Lookup, Surface};
 use i73_noise::octaves::PerlinOctaves;
@@ -11,6 +11,7 @@ use i73_shape::volume::{ShapeSettings, TriNoiseSettings, TriNoiseSource};
 use java_rand::Random;
 use vocs::position::{ColumnPosition, GlobalColumnPosition, LayerPosition};
 use vocs::view::{ColumnAssociation, ColumnBlocks, ColumnMut, ColumnPalettes};
+use vocs::unpacked::Layer;
 
 use crate::overworld::shape::{ShapeBlocks, ShapePass};
 

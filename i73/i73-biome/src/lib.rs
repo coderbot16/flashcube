@@ -9,12 +9,12 @@ pub mod segmented;
 pub mod source;
 
 use climate::Climate;
-use i73_base::Layer;
 use i73_base::block::Block;
 use segmented::Segmented;
 use std::borrow::Cow;
 use vocs::indexed::{IndexedLayer, Target};
 use vocs::position::LayerPosition;
+use vocs::unpacked::Layer;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Biome {
@@ -121,7 +121,7 @@ impl<B: Target> Lookup<B> {
 		let mut layer = IndexedLayer::new(2, self.lookup(Climate::alpha()).clone());
 
 		for position in LayerPosition::enumerate() {
-			let climate = climates.get(position);
+			let climate = climates[position];
 			let biome = self.lookup(climate);
 
 			layer.set_immediate(position, biome);

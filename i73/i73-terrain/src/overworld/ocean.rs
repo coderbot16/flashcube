@@ -1,9 +1,10 @@
 use i73_base::block::{self, Block};
-use i73_base::{Layer, Pass};
+use i73_base::Pass;
 use i73_biome::climate::{self, Climate};
 use vocs::component::LayerStorage;
 use vocs::position::{CubePosition, GlobalColumnPosition, LayerPosition};
 use vocs::view::ColumnMut;
+use vocs::unpacked::Layer;
 
 pub struct OceanBlocks {
 	pub air: Block,
