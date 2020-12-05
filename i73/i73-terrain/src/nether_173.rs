@@ -1,11 +1,13 @@
 use cgmath::{Vector2, Vector3};
 use i73_base::Pass;
-use i73_base::block::{self, Block};
+use i73_base::block::Block;
 use i73_shape::volume::{self, trilinear128, TriNoiseSettings, TriNoiseSource};
 use java_rand::Random;
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
 use vocs::unpacked::Layer;
+
+pub use crate::overworld::shape::ShapeBlocks;
 
 const NOTCH_PI_F64: f64 = 3.1415926535897931;
 
@@ -22,36 +24,19 @@ pub fn default_tri_settings() -> TriNoiseSettings {
 }
 
 pub fn passes(
-	seed: u64, tri_settings: &TriNoiseSettings, blocks: ShapeBlocks, sea_coord: u8,
+	seed: u64, tri_settings: &TriNoiseSettings, blocks: ShapeBlocks
 ) -> ShapePass {
 	let mut rng = Random::new(seed);
 
 	let tri = TriNoiseSource::new(&mut rng, tri_settings);
 
-	ShapePass { blocks, tri, reduction: generate_reduction_table(17), sea_coord }
-}
-
-pub struct ShapeBlocks {
-	pub solid: Block,
-	pub air: Block,
-	pub ocean: Block,
-}
-
-impl Default for ShapeBlocks {
-	fn default() -> Self {
-		ShapeBlocks {
-			solid: block::NETHERRACK,
-			air: block::AIR,
-			ocean: block::STILL_LAVA,
-		}
-	}
+	ShapePass { blocks, tri, reduction: generate_reduction_table(17) }
 }
 
 pub struct ShapePass {
 	blocks: ShapeBlocks,
 	tri: TriNoiseSource,
-	reduction: Vec<f64>,
-	sea_coord: u8,
+	reduction: Vec<f64>
 }
 
 impl Pass<()> for ShapePass {
@@ -78,22 +63,17 @@ impl Pass<()> for ShapePass {
 
 		target.ensure_available(self.blocks.air.clone());
 		target.ensure_available(self.blocks.solid.clone());
-		target.ensure_available(self.blocks.ocean.clone());
 
 		let (mut blocks, palette) = target.freeze_palette();
 
 		let air = palette.reverse_lookup(&self.blocks.air).unwrap();
 		let solid = palette.reverse_lookup(&self.blocks.solid).unwrap();
-		let ocean = palette.reverse_lookup(&self.blocks.ocean).unwrap();
 
 		for i in 0..32768 {
 			let position = ColumnPosition::from_yzx(i);
-			let altitude = position.y();
 
 			let block = if trilinear128(&field, position) > 0.0 {
 				&solid
-			} else if altitude <= self.sea_coord {
-				&ocean
 			} else {
 				&air
 			};
