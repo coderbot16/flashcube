@@ -45,8 +45,8 @@ pub struct Column<'c> {
 	pub terrain_populated: bool,
 	pub v: Option<i8>,
 	pub inhabited_time: i64,
-	pub biomes: &'c [u8],
-	pub heightmap: &'c [u32],
+	pub biomes: &'c [u8; 256],
+	pub heightmap: &'c [u32; 256],
 	pub sections: &'c [SectionRef<'c>],
 	pub tile_ticks: &'c [ScheduledTick], // TODO: Entities, TileEntities
 }

@@ -150,7 +150,7 @@ fn time_sector<T, F: FnOnce() -> T>(name: &str, sector_position: GlobalSectorPos
 	value
 }
 
-fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blocks: &mut Sector<IndexedCube<Block>>) -> Layer<Vec<u8>> {
+fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blocks: &mut Sector<IndexedCube<Block>>) -> Layer<[u8; 256]> {
 	let ocean = OceanPass {
 		blocks: OceanBlocks::default(),
 		sea_top: 64,
@@ -184,7 +184,7 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 	let caves =
 		i73_structure::StructureGenerateNearby::new(8399452073110208023, 8, caves_generator);
 
-	let mut sector_biomes: Layer<Option<Vec<u8>>> = Layer::default();
+	let mut sector_biomes: Layer<Option<[u8; 256]>> = Layer::default();
 
 	for local_column_position in LayerPosition::enumerate() {
 		let column_position = GlobalColumnPosition::combine(sector_position, local_column_position);
@@ -211,7 +211,7 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 		let climate = climates
 			.chunk((column_position.x() as f64 * 16.0, column_position.z() as f64 * 16.0));
 		let lookup = paint.biome_lookup();
-		let mut biomes = Vec::with_capacity(256);
+		let mut biomes = [0u8; 256];
 
 		for position in LayerPosition::enumerate() {
 			let climate = climate[position];
@@ -232,7 +232,7 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 				unknown => panic!("Unknown biome {}", unknown),
 			};
 
-			biomes.push(id);
+			biomes[position.zx() as usize] = id;
 		}
 
 		sector_biomes[local_column_position] = Some(biomes);
@@ -252,14 +252,14 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 	sector_biomes.map(Option::unwrap)
 }
 
-fn generate_terrain(sectors: Vec<GlobalSectorPosition>) -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<Vec<u8>>>) {
+fn generate_terrain(sectors: Vec<GlobalSectorPosition>) -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<[u8; 256]>>) {
 	let mut world: World<IndexedCube<Block>> = World::new();
 
 	for sector_position in sectors.iter().copied() {
 		world.get_or_create_sector_mut(sector_position);
 	}
 
-	let world_biomes: HashMap<GlobalSectorPosition, Layer<Vec<u8>>> = world
+	let world_biomes: HashMap<GlobalSectorPosition, Layer<[u8; 256]>> = world
 		.sectors_mut()
 		.par_bridge()
 		.map(|(&sector_position, sector_blocks)| {
@@ -589,7 +589,7 @@ fn compress_chunks_in_sector(
 	sky_light: &SharedSector<NoPack<PackedNibbleCube>>,
 	block_light: &SharedSector<NoPack<PackedNibbleCube>>,
 	height_maps: &Layer<lumis::heightmap::ColumnHeightMap>,
-	biomes: &Layer<Vec<u8>>
+	biomes: &Layer<[u8; 256]>
 ) -> Layer<ZlibBuffer> {
 	let mut unpacked_sky_lighting = 0;
 	let mut unpacked_block_lighting = 0;
@@ -648,7 +648,7 @@ fn compress_chunks_in_sector(
 			terrain_populated: true,
 			v: Some(1),
 			inhabited_time: 0,
-			biomes: &biomes,
+			biomes: biomes,
 			heightmap: height_map,
 			sections: &section_refs,
 			tile_ticks: &[]
@@ -680,7 +680,7 @@ fn compress_chunks(
 	world: &World<IndexedCube<Block>>, sky_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	block_light: &SharedWorld<NoPack<lumis::PackedNibbleCube>>,
 	heightmaps: &HashMap<GlobalSectorPosition, Layer<lumis::heightmap::ColumnHeightMap>>,
-	world_biomes: &HashMap<GlobalSectorPosition, Layer<Vec<u8>>>,
+	world_biomes: &HashMap<GlobalSectorPosition, Layer<[u8; 256]>>,
 ) -> HashMap<GlobalSectorPosition, Layer<ZlibBuffer>> {
 	world.sectors().par_bridge().map(|(&sector_position, blocks)| {
 		time_sector("Compressing chunks", sector_position, || {
