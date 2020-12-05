@@ -58,28 +58,25 @@ impl Pass<Climate> for ShapePass {
 		for (index, chunk) in target.0.iter_mut().enumerate().take(8) {
 			let section: &[[[f64; 5]; 5]; 3] = array_ref!(field, index * 2, 3);
 
-			if let Some(fill) = is_filled(&section) {
-				if fill {
+			if let Some(solid) = is_filled(&section) {
+				if solid {
 					chunk.fill(self.blocks.solid.clone());
-				} else {
-					chunk.fill(self.blocks.air.clone());
 				}
 
 				continue;
 			}
 
-			chunk.ensure_available(self.blocks.air.clone());
-			chunk.ensure_available(self.blocks.solid.clone());
+			// NB: This line isn't needed because we can assume that the chunk is filled with air
+			// chunk.fill(self.blocks.air.clone());
 
-			let (blocks, palette) = chunk.freeze_palette();
-
-			let air = palette.reverse_lookup(&self.blocks.air).unwrap();
-			let solid = palette.reverse_lookup(&self.blocks.solid).unwrap();
+			let (mut setter, _) = chunk.setter(self.blocks.solid.clone());
 
 			for position in CubePosition::enumerate() {
-				let block = if trilinear(&section, position) > 0.0 { solid } else { air };
-
-				blocks.set(position, block);
+				if trilinear(&section, position) > 0.0 {
+					// It might be possible that this branch is hurting performance, but I couldn't
+					// find anything super conclusive here.
+					setter.set(position);
+				}
 			}
 		}
 	}
