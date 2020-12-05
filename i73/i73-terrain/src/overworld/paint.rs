@@ -166,6 +166,25 @@ impl PaintPass {
 
 		let mut current_surface = if thickness <= 0 { basin } else { surface };
 
+		// NB: To obtain exactly the same surface as vanilla b1.7.3, we should call the
+		// bedrock RNG once per all 128 block positions in the column. Here, we only go
+		// up to the highest chunk section, which results in the random state getting a
+		// bit out of sync.
+		//
+		// To fix this bug, this second loop will correctly call the random number generator
+		// for each block position that isn't getting painted.
+		//
+		// If there are blocks above y=128, the behavior will diverge from vanilla anyways.
+		if max_y < 128 {
+			if let Some(chance) = self.max_bedrock_height {
+				for y in (max_y..128).rev() {
+					if (y as u32) <= rng.next_u32_bound(chance as u32) {
+						todo!("Can't place bedrock at y={} yet!", y);
+					}
+				}
+			}
+		}
+
 		for y in (0..max_y).rev() {
 			let position = ColumnPosition::from_layer(y, layer);
 
