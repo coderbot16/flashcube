@@ -4,7 +4,7 @@ use i73_base::block::Block;
 use java_rand::Random;
 use vocs::component::*;
 use vocs::mask::BitCube;
-use vocs::position::{CubePosition, ColumnPosition, QuadPosition};
+use vocs::position::{CubePosition, ColumnPosition, QuadPosition, LayerPosition};
 use vocs::view::QuadMut;
 
 // Since lakes are always 16x8x16, they will never escape the Quad.
@@ -61,7 +61,7 @@ pub struct LakeBlocks {
 
 impl LakeBlocks {
 	pub fn check_border(
-		&self, lake: &Lake, quad: &mut QuadMut<Block>, lower: ColumnPosition,
+		&self, lake: &Lake, quad: &QuadMut<Block>, lower: ColumnPosition,
 	) -> bool {
 		for x in 0..16 {
 			for z in 0..16 {
@@ -98,22 +98,23 @@ impl LakeBlocks {
 		let liquid = palette.reverse_lookup(&self.liquid).unwrap();
 		let carve = palette.reverse_lookup(&self.carve).unwrap();
 
-		for x in 0..16 {
-			for z in 0..16 {
-				for y in 0..lake.surface {
-					let at = QuadPosition::new(lower.x() + x, lower.y() + y, lower.z() + z);
+		for horizontal_position in LayerPosition::enumerate() {
+			let x = horizontal_position.x();
+			let z = horizontal_position.z();
 
-					if lake.get(volume(x, y, z)) {
-						blocks.set(at, &liquid);
-					}
+			for y in 0..lake.surface {
+				let at = QuadPosition::new(lower.x() + x, lower.y() + y, lower.z() + z);
+
+				if lake.get(volume(x, y, z)) {
+					blocks.set(at, &liquid);
 				}
+			}
 
-				for y in lake.surface..8 {
-					let at = QuadPosition::new(lower.x() + x, lower.y() + y, lower.z() + z);
+			for y in lake.surface..8 {
+				let at = QuadPosition::new(lower.x() + x, lower.y() + y, lower.z() + z);
 
-					if lake.get(volume(x, y, z)) {
-						blocks.set(at, &carve);
-					}
+				if lake.get(volume(x, y, z)) {
+					blocks.set(at, &carve);
 				}
 			}
 		}
