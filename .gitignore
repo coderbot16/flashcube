@@ -3,3 +3,6 @@ out
 
 # Cargo compilation results and caches
 target
+
+# Profiling results
+perf.data
