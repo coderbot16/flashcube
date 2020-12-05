@@ -39,7 +39,14 @@ fn main() {
 }
 
 fn run() {
-	let (mut world, world_biomes) = time("Generating terrain", generate_terrain);
+	let sectors = vec![
+		GlobalSectorPosition::new(0, 0),
+		GlobalSectorPosition::new(1, 0),
+		GlobalSectorPosition::new(0, 1),
+		GlobalSectorPosition::new(1, 1)
+	];
+
+	let (mut world, world_biomes) = time("Generating terrain", || generate_terrain(sectors));
 
 	time("Decorating terrain", || decorate_terrain(&mut world));
 
@@ -245,14 +252,7 @@ fn generate_terrain_for_sector(sector_position: GlobalSectorPosition, sector_blo
 	sector_biomes.map(Option::unwrap)
 }
 
-fn generate_terrain() -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<Vec<u8>>>) {
-	let sectors = [
-		GlobalSectorPosition::new(0, 0),
-		GlobalSectorPosition::new(1, 0),
-		GlobalSectorPosition::new(0, 1),
-		GlobalSectorPosition::new(1, 1)
-	];
-
+fn generate_terrain(sectors: Vec<GlobalSectorPosition>) -> (World<IndexedCube<Block>>, HashMap<GlobalSectorPosition, Layer<Vec<u8>>>) {
 	let mut world: World<IndexedCube<Block>> = World::new();
 
 	for sector_position in sectors.iter().copied() {
