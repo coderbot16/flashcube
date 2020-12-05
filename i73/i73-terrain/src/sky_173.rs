@@ -1,11 +1,13 @@
 use cgmath::{Vector2, Vector3};
 use i73_base::{math, Pass};
-use i73_base::block::{self, Block};
+use i73_base::block::Block;
 use i73_shape::volume::{self, TriNoiseSettings, TriNoiseSource};
 use java_rand::Random;
 use vocs::position::{ColumnPosition, GlobalColumnPosition};
 use vocs::view::ColumnMut;
 use vocs::unpacked::Layer;
+
+pub use crate::overworld::shape::ShapeBlocks;
 
 pub fn default_tri_settings() -> TriNoiseSettings {
 	TriNoiseSettings {
@@ -25,17 +27,6 @@ pub fn passes(seed: u64, tri_settings: &TriNoiseSettings, blocks: ShapeBlocks) -
 	let tri = TriNoiseSource::new(&mut rng, tri_settings);
 
 	ShapePass { blocks, tri }
-}
-
-pub struct ShapeBlocks {
-	pub solid: Block,
-	pub air: Block,
-}
-
-impl Default for ShapeBlocks {
-	fn default() -> Self {
-		ShapeBlocks { solid: block::STONE, air: block::AIR }
-	}
 }
 
 pub struct ShapePass {
