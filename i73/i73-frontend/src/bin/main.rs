@@ -48,6 +48,8 @@ fn run() {
 
 	let (mut world, world_biomes) = time("Generating terrain", || generate_terrain(sectors));
 
+	time("Pruning chunk palettes", || prune_chunk_palettes(&mut world));
+
 	time("Decorating terrain", || decorate_terrain(&mut world));
 
 	time("Pruning chunk palettes", || prune_chunk_palettes(&mut world));

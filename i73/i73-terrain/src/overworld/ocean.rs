@@ -55,6 +55,7 @@ impl Pass<Climate> for OceanPass {
 			return;
 		}
 
+		// TODO: Try to use the Setter API here
 		chunk.ensure_available(self.blocks.ocean);
 
 		if has_ice {
