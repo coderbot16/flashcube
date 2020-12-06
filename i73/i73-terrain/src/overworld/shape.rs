@@ -25,7 +25,7 @@ pub struct ShapePass {
 	pub blocks: ShapeBlocks,
 	pub tri: TriNoiseSource,
 	pub height: HeightSource,
-	pub field: ShapeSettings,
+	pub shape_provider: ShapeSettings,
 }
 
 impl Pass<Climate> for ShapePass {
@@ -35,7 +35,7 @@ impl Pass<Climate> for ShapePass {
 	) {
 		let offset = Point2::new((chunk.x() as f64) * 4.0, (chunk.z() as f64) * 4.0);
 
-		let mut field = [[[0f64; 5]; 5]; 17];
+		let mut terrain_shape = [[[0f64; 5]; 5]; 17];
 
 		for x in 0..5 {
 			for z in 0..5 {
@@ -50,13 +50,13 @@ impl Pass<Climate> for ShapePass {
 						y,
 					);
 
-					field[y][z][x] = self.field.compute_noise_value(y as f64, height, tri);
+					terrain_shape[y][z][x] = self.shape_provider.compute_noise_value(y as f64, height, tri);
 				}
 			}
 		}
 
 		for (index, chunk) in target.0.iter_mut().enumerate().take(8) {
-			let section: &[[[f64; 5]; 5]; 3] = array_ref!(field, index * 2, 3);
+			let section: &[[[f64; 5]; 5]; 3] = array_ref!(terrain_shape, index * 2, 3);
 
 			if let Some(solid) = is_filled(&section) {
 				if solid {

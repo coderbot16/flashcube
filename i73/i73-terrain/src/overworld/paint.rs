@@ -64,7 +64,7 @@ pub fn passes(
 
 	(
 		ClimateSource::new(seed, settings.climate),
-		ShapePass { blocks: settings.shape_blocks, tri, height, field },
+		ShapePass { blocks: settings.shape_blocks, tri, height, shape_provider: field },
 		PaintPass {
 			lookup: biome_lookup,
 			blocks: settings.paint_blocks,
