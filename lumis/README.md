@@ -2,7 +2,7 @@
 
 An incredibly fast library for computing Minecraft lighting using `vocs`.
 
-Lumis achieves both accuracy and high performance by using an efficient BFS-based algorithm that operates directly on chunks. Lumis can compute the lighting for an entire region file in around 1 second, where comparable algorithms like the one in MCEdit would take over a minute. Lumis has been designed specifically to support incredibly scalable threading, which would bring another order-of-magnitude speedup on most systems.
+Lumis achieves both accuracy and high performance by using an efficient BFS-based algorithm that operates directly on chunks. Lumis can compute the lighting for an entire region file in around 125 milliseconds, where comparable algorithms like the one in MCEdit would take over a minute. Lumis uses multiple threads to compute lighting data, allowing the speed to quickly scale with the number of available CPU cores. Even on my i7-4790 system with only 4 cores, I'm able to obtain a 3.3x speedup in many cases compared to if there were no multithreading.
 
 ## Why?
 
@@ -18,4 +18,4 @@ The lighting code originated in the i73 project around October 2017. Only about 
 
 ## Future Work
 
-Lumis is still primarily used in a single-threaded fashion, even if it theoretically supports multithreading. In the process of cleaning up the code, I wish to make multithreaded usage simple and easy.
+Lumis works very well, however the code is is need of cleanup. Furthermore, Lumis does not currently support incrementally updating the lighting data of individual chunks, only computing new data from scratch. It's entirely possible to extend the code to support this, however.
