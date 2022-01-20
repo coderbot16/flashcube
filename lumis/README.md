@@ -19,3 +19,8 @@ The lighting code originated in the i73 project around October 2017. Only about 
 ## Future Work
 
 Lumis works very well, however the code is is need of cleanup. Furthermore, Lumis does not currently support incrementally updating the lighting data of individual chunks, only computing new data from scratch. It's entirely possible to extend the code to support this, however.
+
+
+## Credits
+
+- Word-level parallelism from https://0fps.net/2018/02/21/voxel-lighting/, by Mikola Lysenko
