@@ -1,5 +1,6 @@
 mod large;
 mod normal;
+pub mod modded;
 
 use i73_base::matcher::BlockMatcher;
 use i73_base::block::{self, Block};

@@ -26,7 +26,7 @@ use vocs::position::{
 use vocs::view::ColumnMut;
 use vocs::world::world::World;
 
-use i73_decorator::tree::{LargeTreeDecorator, NormalTreeDecorator};
+use i73_decorator::tree::{self, LargeTreeDecorator, NormalTreeDecorator};
 use i73_decorator::Decorator;
 use i73_noise::sample::Sample;
 use std::collections::HashMap;
@@ -435,7 +435,7 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 			let mut quad =
 				world.get_quad_mut(GlobalColumnPosition::new(x as i32, z as i32)).unwrap();
 
-			'outer: for _ in 0..8 {
+			'outer: for _ in 0..12 {
 				let mut position = QuadPosition::new(
 					decoration_rng.next_u32_bound(16) as u8 + 8,
 					127,
@@ -450,13 +450,21 @@ fn decorate_terrain(world: &mut World<IndexedCube<Block>>) {
 				}
 
 				if decoration_rng.next_bool() {
-					LargeTreeDecorator::default()
+					if (decoration_rng.next_bool()) {
+						tree::modded::pinus_ponderosa::PinusPonderosaTreeDecorator::default().generate(
+							&mut quad,
+							&mut decoration_rng,
+							position.offset(dir::Up).unwrap_or(position),
+						).unwrap();
+					} else {
+						LargeTreeDecorator::default()
 						.generate(
 							&mut quad,
 							&mut decoration_rng,
 							position.offset(dir::Up).unwrap_or(position),
 						)
 						.unwrap();
+					}
 				} else {
 					NormalTreeDecorator::default()
 						.generate(
